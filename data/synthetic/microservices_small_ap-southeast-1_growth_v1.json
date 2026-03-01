@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "name": "Microservices (Growth, ap-southeast-1)",
+    "id": "e7606d41",
+    "pattern": "microservices",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 5,
+    "total_dependencies": 5,
+    "total_cost_monthly": 10536.84,
+    "generated_at": "2026-03-01T19:23:57.707174",
+    "variation_seed": 15394
+  },
+  "services": [
+    {
+      "id": "search-svc-alb-000",
+      "name": "search-svc-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 194.17,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "config-svc-ecs-001",
+      "name": "config-svc-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 3299.74,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "payment-svc-rds-002",
+      "name": "payment-svc-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 5259.09,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "search-svc-elasticache-003",
+      "name": "search-svc-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1617.39,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "config-svc-sqs-004",
+      "name": "config-svc-sqs",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 166.45,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "search-svc-alb-000",
+      "target": "config-svc-ecs-001",
+      "type": "writes",
+      "weight": 0.53
+    },
+    {
+      "source": "config-svc-ecs-001",
+      "target": "payment-svc-rds-002",
+      "type": "reads",
+      "weight": 0.4
+    },
+    {
+      "source": "payment-svc-rds-002",
+      "target": "search-svc-elasticache-003",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "search-svc-elasticache-003",
+      "target": "config-svc-sqs-004",
+      "type": "writes",
+      "weight": 0.48
+    },
+    {
+      "source": "config-svc-ecs-001",
+      "target": "search-svc-alb-000",
+      "type": "writes",
+      "weight": 0.52
+    }
+  ]
+}

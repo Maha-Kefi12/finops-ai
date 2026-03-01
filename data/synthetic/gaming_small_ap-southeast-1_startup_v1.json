@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Gaming (Startup, ap-southeast-1)",
+    "id": "d7b4e8d5",
+    "pattern": "gaming",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 2803.36,
+    "generated_at": "2026-03-01T19:23:57.539144",
+    "variation_seed": 7892
+  },
+  "services": [
+    {
+      "id": "leaderboard-nlb-000",
+      "name": "leaderboard-nlb",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 167.74,
+      "owner": "api-gateway-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "matchmaker-ec2-001",
+      "name": "matchmaker-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1302.81,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "lobby-dynamodb-002",
+      "name": "lobby-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1332.81,
+      "owner": "devops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "leaderboard-nlb-000",
+      "target": "matchmaker-ec2-001",
+      "type": "reads",
+      "weight": 0.79
+    },
+    {
+      "source": "matchmaker-ec2-001",
+      "target": "lobby-dynamodb-002",
+      "type": "writes",
+      "weight": 0.38
+    }
+  ]
+}

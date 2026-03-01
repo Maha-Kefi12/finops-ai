@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Saas (Growth, eu-central-1)",
+    "id": "4e4ef31e",
+    "pattern": "saas",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 4850.62,
+    "generated_at": "2026-03-01T19:23:57.453239",
+    "variation_seed": 4568
+  },
+  "services": [
+    {
+      "id": "tenant-api-000",
+      "name": "tenant-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 289.76,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audit-ecs-001",
+      "name": "audit-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1949.22,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "onboarding-aurora-002",
+      "name": "onboarding-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 2611.64,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "tenant-api-000",
+      "target": "audit-ecs-001",
+      "type": "writes",
+      "weight": 0.75
+    },
+    {
+      "source": "audit-ecs-001",
+      "target": "onboarding-aurora-002",
+      "type": "calls",
+      "weight": 0.82
+    },
+    {
+      "source": "tenant-api-000",
+      "target": "onboarding-aurora-002",
+      "type": "calls",
+      "weight": 0.73
+    }
+  ]
+}

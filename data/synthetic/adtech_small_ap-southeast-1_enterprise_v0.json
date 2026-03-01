@@ -1,0 +1,175 @@
+{
+  "metadata": {
+    "name": "Adtech (Enterprise, ap-southeast-1)",
+    "id": "be2c7292",
+    "pattern": "adtech",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 7,
+    "total_dependencies": 7,
+    "total_cost_monthly": 10623.33,
+    "generated_at": "2026-03-01T19:23:58.644321",
+    "variation_seed": 56338
+  },
+  "services": [
+    {
+      "id": "pacing-alb-000",
+      "name": "pacing-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 129.16,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "frequency-cap-ec2-001",
+      "name": "frequency-cap-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 905.87,
+      "owner": "frontend-guild",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "attribution-dynamodb-002",
+      "name": "attribution-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1876.12,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "pacing-elasticache-003",
+      "name": "pacing-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1469.53,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "frequency-cap-kinesis-004",
+      "name": "frequency-cap-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 997.88,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "central-attribution-005",
+      "name": "central-attribution",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 4354.95,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "public-pacing-006",
+      "name": "public-pacing",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 889.82,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "pacing-alb-000",
+      "target": "frequency-cap-ec2-001",
+      "type": "calls",
+      "weight": 0.99
+    },
+    {
+      "source": "frequency-cap-ec2-001",
+      "target": "attribution-dynamodb-002",
+      "type": "reads",
+      "weight": 0.91
+    },
+    {
+      "source": "attribution-dynamodb-002",
+      "target": "pacing-elasticache-003",
+      "type": "reads",
+      "weight": 0.99
+    },
+    {
+      "source": "pacing-elasticache-003",
+      "target": "frequency-cap-kinesis-004",
+      "type": "calls",
+      "weight": 0.44
+    },
+    {
+      "source": "frequency-cap-kinesis-004",
+      "target": "central-attribution-005",
+      "type": "caches",
+      "weight": 0.37
+    },
+    {
+      "source": "central-attribution-005",
+      "target": "public-pacing-006",
+      "type": "reads",
+      "weight": 0.86
+    },
+    {
+      "source": "central-attribution-005",
+      "target": "attribution-dynamodb-002",
+      "type": "calls",
+      "weight": 0.54
+    }
+  ]
+}

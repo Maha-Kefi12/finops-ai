@@ -1,0 +1,417 @@
+{
+  "metadata": {
+    "name": "Data Pipeline (Enterprise, us-west-2)",
+    "id": "9aad7071",
+    "pattern": "data_pipeline",
+    "complexity": "medium",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 15,
+    "total_dependencies": 26,
+    "total_cost_monthly": 11739.92,
+    "generated_at": "2026-03-01T19:23:57.635245",
+    "variation_seed": 12814
+  },
+  "services": [
+    {
+      "id": "archive-kinesis-000",
+      "name": "archive-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 660.19,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "archive-lambda-001",
+      "name": "archive-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 441.1,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "aggregation-s3-002",
+      "name": "aggregation-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 817.5,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "transform-glue-003",
+      "name": "transform-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 962.72,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "routing-redshift-004",
+      "name": "routing-redshift",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 2423.86,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-transform-005",
+      "name": "edge-transform",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 8.77,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-routing-006",
+      "name": "primary-routing",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 218.96,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-ingestion-007",
+      "name": "realtime-ingestion",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 2035.76,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "staging-aggregation-008",
+      "name": "staging-aggregation",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 102.24,
+      "owner": "api-gateway-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-transform-009",
+      "name": "fast-transform",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 973.73,
+      "owner": "growth-eng",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-transform-010",
+      "name": "secondary-transform",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 2420.48,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-archive-011",
+      "name": "global-archive",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 16.53,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-ingestion-012",
+      "name": "core-ingestion",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 191.32,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-validation-013",
+      "name": "internal-validation",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 80.34,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-replay-014",
+      "name": "secondary-replay",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 386.42,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "archive-kinesis-000",
+      "target": "archive-lambda-001",
+      "type": "reads",
+      "weight": 0.44
+    },
+    {
+      "source": "archive-lambda-001",
+      "target": "aggregation-s3-002",
+      "type": "queries",
+      "weight": 0.84
+    },
+    {
+      "source": "aggregation-s3-002",
+      "target": "transform-glue-003",
+      "type": "triggers",
+      "weight": 0.5
+    },
+    {
+      "source": "transform-glue-003",
+      "target": "routing-redshift-004",
+      "type": "subscribes",
+      "weight": 0.84
+    },
+    {
+      "source": "routing-redshift-004",
+      "target": "edge-transform-005",
+      "type": "triggers",
+      "weight": 0.52
+    },
+    {
+      "source": "edge-transform-005",
+      "target": "primary-routing-006",
+      "type": "queries",
+      "weight": 0.71
+    },
+    {
+      "source": "primary-routing-006",
+      "target": "realtime-ingestion-007",
+      "type": "triggers",
+      "weight": 0.41
+    },
+    {
+      "source": "realtime-ingestion-007",
+      "target": "staging-aggregation-008",
+      "type": "calls",
+      "weight": 0.96
+    },
+    {
+      "source": "staging-aggregation-008",
+      "target": "fast-transform-009",
+      "type": "triggers",
+      "weight": 0.57
+    },
+    {
+      "source": "fast-transform-009",
+      "target": "secondary-transform-010",
+      "type": "caches",
+      "weight": 0.46
+    },
+    {
+      "source": "secondary-transform-010",
+      "target": "global-archive-011",
+      "type": "subscribes",
+      "weight": 0.63
+    },
+    {
+      "source": "global-archive-011",
+      "target": "core-ingestion-012",
+      "type": "writes",
+      "weight": 0.6
+    },
+    {
+      "source": "core-ingestion-012",
+      "target": "internal-validation-013",
+      "type": "caches",
+      "weight": 0.76
+    },
+    {
+      "source": "internal-validation-013",
+      "target": "secondary-replay-014",
+      "type": "writes",
+      "weight": 0.59
+    },
+    {
+      "source": "core-ingestion-012",
+      "target": "aggregation-s3-002",
+      "type": "writes",
+      "weight": 0.35
+    },
+    {
+      "source": "internal-validation-013",
+      "target": "realtime-ingestion-007",
+      "type": "subscribes",
+      "weight": 0.52
+    },
+    {
+      "source": "aggregation-s3-002",
+      "target": "routing-redshift-004",
+      "type": "reads",
+      "weight": 0.52
+    },
+    {
+      "source": "primary-routing-006",
+      "target": "internal-validation-013",
+      "type": "queries",
+      "weight": 0.75
+    },
+    {
+      "source": "staging-aggregation-008",
+      "target": "secondary-transform-010",
+      "type": "caches",
+      "weight": 0.61
+    },
+    {
+      "source": "global-archive-011",
+      "target": "secondary-replay-014",
+      "type": "calls",
+      "weight": 0.93
+    },
+    {
+      "source": "fast-transform-009",
+      "target": "archive-lambda-001",
+      "type": "triggers",
+      "weight": 0.34
+    },
+    {
+      "source": "realtime-ingestion-007",
+      "target": "primary-routing-006",
+      "type": "triggers",
+      "weight": 0.71
+    },
+    {
+      "source": "primary-routing-006",
+      "target": "transform-glue-003",
+      "type": "queries",
+      "weight": 0.57
+    },
+    {
+      "source": "transform-glue-003",
+      "target": "global-archive-011",
+      "type": "queries",
+      "weight": 0.94
+    },
+    {
+      "source": "edge-transform-005",
+      "target": "archive-kinesis-000",
+      "type": "calls",
+      "weight": 0.56
+    },
+    {
+      "source": "routing-redshift-004",
+      "target": "core-ingestion-012",
+      "type": "reads",
+      "weight": 0.68
+    }
+  ]
+}

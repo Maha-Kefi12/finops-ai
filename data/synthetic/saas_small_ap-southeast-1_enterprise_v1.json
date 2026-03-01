@@ -1,0 +1,187 @@
+{
+  "metadata": {
+    "name": "Saas (Enterprise, ap-southeast-1)",
+    "id": "0364e55b",
+    "pattern": "saas",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 7,
+    "total_dependencies": 9,
+    "total_cost_monthly": 12550.7,
+    "generated_at": "2026-03-01T19:23:57.451233",
+    "variation_seed": 4296
+  },
+  "services": [
+    {
+      "id": "onboarding-api-000",
+      "name": "onboarding-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 475.64,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "notification-ecs-001",
+      "name": "notification-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1507.32,
+      "owner": "payments",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "notification-aurora-002",
+      "name": "notification-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 7268.04,
+      "owner": "growth-eng",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "billing-elasticache-003",
+      "name": "billing-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 456.35,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "billing-cognito-004",
+      "name": "billing-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 271.17,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-audit-005",
+      "name": "shared-audit",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 131.95,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "realtime-config-006",
+      "name": "realtime-config",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 2440.23,
+      "owner": "security",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "onboarding-api-000",
+      "target": "notification-ecs-001",
+      "type": "triggers",
+      "weight": 0.41
+    },
+    {
+      "source": "notification-ecs-001",
+      "target": "notification-aurora-002",
+      "type": "caches",
+      "weight": 0.83
+    },
+    {
+      "source": "notification-aurora-002",
+      "target": "billing-elasticache-003",
+      "type": "subscribes",
+      "weight": 0.48
+    },
+    {
+      "source": "billing-elasticache-003",
+      "target": "billing-cognito-004",
+      "type": "writes",
+      "weight": 0.92
+    },
+    {
+      "source": "billing-cognito-004",
+      "target": "shared-audit-005",
+      "type": "reads",
+      "weight": 0.44
+    },
+    {
+      "source": "shared-audit-005",
+      "target": "realtime-config-006",
+      "type": "writes",
+      "weight": 0.74
+    },
+    {
+      "source": "notification-aurora-002",
+      "target": "notification-ecs-001",
+      "type": "queries",
+      "weight": 0.67
+    },
+    {
+      "source": "billing-cognito-004",
+      "target": "notification-ecs-001",
+      "type": "triggers",
+      "weight": 0.7
+    },
+    {
+      "source": "notification-ecs-001",
+      "target": "realtime-config-006",
+      "type": "reads",
+      "weight": 0.85
+    }
+  ]
+}

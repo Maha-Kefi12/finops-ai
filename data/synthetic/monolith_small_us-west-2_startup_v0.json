@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Monolith (Startup, us-west-2)",
+    "id": "ef72fb90",
+    "pattern": "monolith",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 4794.55,
+    "generated_at": "2026-03-01T19:23:58.126339",
+    "variation_seed": 34080
+  },
+  "services": [
+    {
+      "id": "web-tier-alb-000",
+      "name": "web-tier-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 59.03,
+      "owner": "content-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "app-server-ec2-001",
+      "name": "app-server-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1710.24,
+      "owner": "ml-ops",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-jobs-rds-002",
+      "name": "batch-jobs-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 3025.28,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "web-tier-alb-000",
+      "target": "app-server-ec2-001",
+      "type": "writes",
+      "weight": 0.46
+    },
+    {
+      "source": "app-server-ec2-001",
+      "target": "batch-jobs-rds-002",
+      "type": "writes",
+      "weight": 0.9
+    },
+    {
+      "source": "batch-jobs-rds-002",
+      "target": "web-tier-alb-000",
+      "type": "writes",
+      "weight": 0.84
+    }
+  ]
+}

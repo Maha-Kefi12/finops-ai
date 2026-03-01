@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Ml Platform (Enterprise, us-east-1)",
+    "id": "c153676f",
+    "pattern": "ml_platform",
+    "complexity": "small",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 6054.72,
+    "generated_at": "2026-03-01T19:23:57.874758",
+    "variation_seed": 22486
+  },
+  "services": [
+    {
+      "id": "training-sagemaker-000",
+      "name": "training-sagemaker",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 5396.34,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "features-s3-001",
+      "name": "features-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 434.16,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "datasets-glue-002",
+      "name": "datasets-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 224.22,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "training-sagemaker-000",
+      "target": "features-s3-001",
+      "type": "triggers",
+      "weight": 0.71
+    },
+    {
+      "source": "features-s3-001",
+      "target": "datasets-glue-002",
+      "type": "queries",
+      "weight": 0.8
+    },
+    {
+      "source": "datasets-glue-002",
+      "target": "training-sagemaker-000",
+      "type": "queries",
+      "weight": 0.18
+    }
+  ]
+}

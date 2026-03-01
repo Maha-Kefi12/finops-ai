@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Microservices (Enterprise, us-west-2)",
+    "id": "a246fc73",
+    "pattern": "microservices",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 4191.9,
+    "generated_at": "2026-03-01T19:23:57.708943",
+    "variation_seed": 15642
+  },
+  "services": [
+    {
+      "id": "user-svc-alb-000",
+      "name": "user-svc-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 71.36,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audit-svc-ecs-001",
+      "name": "audit-svc-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 2138.56,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "audit-svc-rds-002",
+      "name": "audit-svc-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 1981.98,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "user-svc-alb-000",
+      "target": "audit-svc-ecs-001",
+      "type": "triggers",
+      "weight": 0.97
+    },
+    {
+      "source": "audit-svc-ecs-001",
+      "target": "audit-svc-rds-002",
+      "type": "triggers",
+      "weight": 0.6
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "metadata": {
+    "name": "Media Streaming (Growth, ap-southeast-1)",
+    "id": "3eb09470",
+    "pattern": "media_streaming",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 7,
+    "total_dependencies": 7,
+    "total_cost_monthly": 9270.3,
+    "generated_at": "2026-03-01T19:23:57.960481",
+    "variation_seed": 26554
+  },
+  "services": [
+    {
+      "id": "analytics-cloudfront-000",
+      "name": "analytics-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 1977.44,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "encoder-s3-001",
+      "name": "encoder-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 742.37,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "manifest-mediaconvert-002",
+      "name": "manifest-mediaconvert",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 503.39,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ads-ec2-003",
+      "name": "ads-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 3973.26,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cdn-origin-dynamodb-004",
+      "name": "cdn-origin-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1853.59,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-drm-005",
+      "name": "async-drm",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 203.32,
+      "owner": "frontend-guild",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-ads-006",
+      "name": "core-ads",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 16.93,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "analytics-cloudfront-000",
+      "target": "encoder-s3-001",
+      "type": "triggers",
+      "weight": 0.7
+    },
+    {
+      "source": "encoder-s3-001",
+      "target": "manifest-mediaconvert-002",
+      "type": "writes",
+      "weight": 0.86
+    },
+    {
+      "source": "manifest-mediaconvert-002",
+      "target": "ads-ec2-003",
+      "type": "reads",
+      "weight": 0.54
+    },
+    {
+      "source": "ads-ec2-003",
+      "target": "cdn-origin-dynamodb-004",
+      "type": "triggers",
+      "weight": 0.79
+    },
+    {
+      "source": "cdn-origin-dynamodb-004",
+      "target": "async-drm-005",
+      "type": "calls",
+      "weight": 0.84
+    },
+    {
+      "source": "async-drm-005",
+      "target": "core-ads-006",
+      "type": "calls",
+      "weight": 0.85
+    },
+    {
+      "source": "encoder-s3-001",
+      "target": "ads-ec2-003",
+      "type": "caches",
+      "weight": 0.97
+    }
+  ]
+}

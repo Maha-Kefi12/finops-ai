@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Saas (Growth, ap-southeast-1)",
+    "id": "a84d5c81",
+    "pattern": "saas",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 4652.34,
+    "generated_at": "2026-03-01T19:23:57.450545",
+    "variation_seed": 4196
+  },
+  "services": [
+    {
+      "id": "tenant-api-000",
+      "name": "tenant-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 279.59,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "integrations-ecs-001",
+      "name": "integrations-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 451.02,
+      "owner": "mobile-backend",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "billing-aurora-002",
+      "name": "billing-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 3921.73,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "tenant-api-000",
+      "target": "integrations-ecs-001",
+      "type": "writes",
+      "weight": 0.43
+    },
+    {
+      "source": "integrations-ecs-001",
+      "target": "billing-aurora-002",
+      "type": "subscribes",
+      "weight": 0.61
+    }
+  ]
+}

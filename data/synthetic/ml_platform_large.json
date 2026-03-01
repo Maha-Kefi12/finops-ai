@@ -1,0 +1,177 @@
+{
+  "metadata": {
+    "name": "ML Platform",
+    "pattern": "ml_platform",
+    "complexity": "large",
+    "environment": "production",
+    "region": "us-east-1",
+    "generated_at": "2026-03-01T16:13:45.272347",
+    "total_services": 9,
+    "total_cost_monthly": 30238.8
+  },
+  "services": [
+    {
+      "id": "api-001",
+      "name": "inference-api",
+      "type": "service",
+      "environment": "production",
+      "owner": "ml-team",
+      "cost_monthly": 300,
+      "attributes": {
+        "instance_type": "t3.medium",
+        "instance_count": 10
+      }
+    },
+    {
+      "id": "api-002",
+      "name": "training-api",
+      "type": "service",
+      "environment": "production",
+      "owner": "ml-team",
+      "cost_monthly": 300,
+      "attributes": {
+        "instance_type": "t3.medium",
+        "instance_count": 10
+      }
+    },
+    {
+      "id": "s3-001",
+      "name": "model-artifacts",
+      "type": "storage",
+      "environment": "production",
+      "owner": "ml-team",
+      "cost_monthly": 138.0,
+      "attributes": {
+        "size_gb": 6000,
+        "storage_class": "STANDARD"
+      }
+    },
+    {
+      "id": "worker-001",
+      "name": "training-job",
+      "type": "batch",
+      "environment": "production",
+      "owner": "ml-team",
+      "cost_monthly": 24000,
+      "attributes": {
+        "instance_type": "c5.2xlarge",
+        "instance_count": 100
+      }
+    },
+    {
+      "id": "database_postgres-001",
+      "name": "feature-store",
+      "type": "database",
+      "environment": "production",
+      "owner": "ml-team",
+      "cost_monthly": 1920,
+      "attributes": {
+        "instance_type": "db.m5.2xlarge",
+        "instance_count": 4
+      }
+    },
+    {
+      "id": "cache_redis-001",
+      "name": "feature-cache",
+      "type": "cache",
+      "environment": "production",
+      "owner": "ml-team",
+      "cost_monthly": 1200,
+      "attributes": {
+        "instance_type": "cache.m5.xlarge",
+        "instance_count": 6
+      }
+    },
+    {
+      "id": "s3-002",
+      "name": "training-data",
+      "type": "storage",
+      "environment": "production",
+      "owner": "data-team",
+      "cost_monthly": 460.0,
+      "attributes": {
+        "size_gb": 20000,
+        "storage_class": "STANDARD"
+      }
+    },
+    {
+      "id": "database_postgres-002",
+      "name": "experiment-tracking",
+      "type": "database",
+      "environment": "production",
+      "owner": "ml-team",
+      "cost_monthly": 1920,
+      "attributes": {
+        "instance_type": "db.m5.2xlarge",
+        "instance_count": 4
+      }
+    },
+    {
+      "id": "queue_sqs-001",
+      "name": "training-queue",
+      "type": "queue",
+      "environment": "production",
+      "owner": "ml-team",
+      "cost_monthly": 0.8,
+      "attributes": {
+        "messages_monthly": 2000000
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "api-001",
+      "target": "s3-001",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "api-001",
+      "target": "cache_redis-001",
+      "type": "reads_from",
+      "weight": 0.9
+    },
+    {
+      "source": "api-001",
+      "target": "database_postgres-001",
+      "type": "reads_from",
+      "weight": 0.3
+    },
+    {
+      "source": "api-002",
+      "target": "queue_sqs-001",
+      "type": "writes_to",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-001",
+      "target": "queue_sqs-001",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-001",
+      "target": "s3-002",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-001",
+      "target": "database_postgres-001",
+      "type": "reads_from",
+      "weight": 0.8
+    },
+    {
+      "source": "worker-001",
+      "target": "s3-001",
+      "type": "writes_to",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-001",
+      "target": "database_postgres-002",
+      "type": "writes_to",
+      "weight": 1.0
+    }
+  ]
+}

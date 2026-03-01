@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Fintech (Growth, us-east-1)",
+    "id": "e1d236ff",
+    "pattern": "fintech",
+    "complexity": "small",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 2856.68,
+    "generated_at": "2026-03-01T19:23:58.207968",
+    "variation_seed": 37304
+  },
+  "services": [
+    {
+      "id": "payments-api-000",
+      "name": "payments-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 126.51,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "risk-engine-eks-001",
+      "name": "risk-engine-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 681.56,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "risk-engine-aurora-002",
+      "name": "risk-engine-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 2048.61,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "payments-api-000",
+      "target": "risk-engine-eks-001",
+      "type": "writes",
+      "weight": 0.42
+    },
+    {
+      "source": "risk-engine-eks-001",
+      "target": "risk-engine-aurora-002",
+      "type": "queries",
+      "weight": 0.68
+    }
+  ]
+}

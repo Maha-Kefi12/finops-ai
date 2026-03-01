@@ -1,0 +1,125 @@
+{
+  "metadata": {
+    "name": "Ecommerce (Startup, eu-central-1)",
+    "id": "90891627",
+    "pattern": "ecommerce",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 5,
+    "total_dependencies": 4,
+    "total_cost_monthly": 2336.02,
+    "generated_at": "2026-03-01T19:23:57.362740",
+    "variation_seed": 786
+  },
+  "services": [
+    {
+      "id": "catalog-alb-000",
+      "name": "catalog-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 84.57,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "promotions-ec2-001",
+      "name": "promotions-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 750.67,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "shipping-ec2-002",
+      "name": "shipping-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 359.05,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "catalog-rds-003",
+      "name": "catalog-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 453.43,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "promotions-elasticache-004",
+      "name": "promotions-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 688.3,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "catalog-alb-000",
+      "target": "promotions-ec2-001",
+      "type": "caches",
+      "weight": 0.52
+    },
+    {
+      "source": "promotions-ec2-001",
+      "target": "shipping-ec2-002",
+      "type": "subscribes",
+      "weight": 0.67
+    },
+    {
+      "source": "shipping-ec2-002",
+      "target": "catalog-rds-003",
+      "type": "reads",
+      "weight": 0.92
+    },
+    {
+      "source": "catalog-rds-003",
+      "target": "promotions-elasticache-004",
+      "type": "reads",
+      "weight": 0.96
+    }
+  ]
+}

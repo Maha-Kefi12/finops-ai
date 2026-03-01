@@ -1,0 +1,701 @@
+{
+  "metadata": {
+    "name": "Monolith (Growth, ap-southeast-1)",
+    "id": "d6758305",
+    "pattern": "monolith",
+    "complexity": "large",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 26,
+    "total_dependencies": 44,
+    "total_cost_monthly": 23579.61,
+    "generated_at": "2026-03-01T19:23:58.155525",
+    "variation_seed": 35854
+  },
+  "services": [
+    {
+      "id": "audit-alb-000",
+      "name": "audit-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 188.99,
+      "owner": "payments",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "file-store-ec2-001",
+      "name": "file-store-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1586.03,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "file-store-rds-002",
+      "name": "file-store-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 450.59,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "batch-jobs-s3-003",
+      "name": "batch-jobs-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 457.71,
+      "owner": "payments",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "app-server-cloudwatch-004",
+      "name": "app-server-cloudwatch",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 146.22,
+      "owner": "devops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-scheduler-005",
+      "name": "primary-scheduler",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 2474.85,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "global-web-tier-006",
+      "name": "global-web-tier",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 385.64,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-app-server-007",
+      "name": "global-app-server",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 38.67,
+      "owner": "ml-ops",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-batch-jobs-008",
+      "name": "realtime-batch-jobs",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 197.77,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-reports-009",
+      "name": "realtime-reports",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 33.71,
+      "owner": "payments",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cold-scheduler-010",
+      "name": "cold-scheduler",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 33.07,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-audit-011",
+      "name": "edge-audit",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 87.69,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-mailer-012",
+      "name": "shared-mailer",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1554.08,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-file-store-013",
+      "name": "batch-file-store",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 886.62,
+      "owner": "security",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-scheduler-014",
+      "name": "public-scheduler",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 81.22,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-admin-015",
+      "name": "async-admin",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 743.54,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "async-admin-016",
+      "name": "async-admin",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 2485.95,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-sessions-017",
+      "name": "batch-sessions",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 330.52,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-mailer-018",
+      "name": "regional-mailer",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1223.2,
+      "owner": "api-gateway-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "private-sessions-019",
+      "name": "private-sessions",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 432.54,
+      "owner": "payments",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-sessions-020",
+      "name": "async-sessions",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1930.78,
+      "owner": "content-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-app-server-021",
+      "name": "secondary-app-server",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 1816.65,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "main-app-server-022",
+      "name": "main-app-server",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1522.08,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-web-tier-023",
+      "name": "private-web-tier",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 46.45,
+      "owner": "security",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-sessions-024",
+      "name": "primary-sessions",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1710.19,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-web-tier-025",
+      "name": "central-web-tier",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 2734.85,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "audit-alb-000",
+      "target": "file-store-ec2-001",
+      "type": "triggers",
+      "weight": 0.73
+    },
+    {
+      "source": "file-store-ec2-001",
+      "target": "file-store-rds-002",
+      "type": "subscribes",
+      "weight": 0.85
+    },
+    {
+      "source": "file-store-rds-002",
+      "target": "batch-jobs-s3-003",
+      "type": "queries",
+      "weight": 0.48
+    },
+    {
+      "source": "batch-jobs-s3-003",
+      "target": "app-server-cloudwatch-004",
+      "type": "caches",
+      "weight": 0.31
+    },
+    {
+      "source": "app-server-cloudwatch-004",
+      "target": "primary-scheduler-005",
+      "type": "reads",
+      "weight": 0.95
+    },
+    {
+      "source": "primary-scheduler-005",
+      "target": "global-web-tier-006",
+      "type": "queries",
+      "weight": 0.71
+    },
+    {
+      "source": "global-web-tier-006",
+      "target": "global-app-server-007",
+      "type": "triggers",
+      "weight": 0.79
+    },
+    {
+      "source": "global-app-server-007",
+      "target": "realtime-batch-jobs-008",
+      "type": "subscribes",
+      "weight": 0.64
+    },
+    {
+      "source": "realtime-batch-jobs-008",
+      "target": "realtime-reports-009",
+      "type": "subscribes",
+      "weight": 0.35
+    },
+    {
+      "source": "realtime-reports-009",
+      "target": "cold-scheduler-010",
+      "type": "caches",
+      "weight": 0.68
+    },
+    {
+      "source": "cold-scheduler-010",
+      "target": "edge-audit-011",
+      "type": "writes",
+      "weight": 0.44
+    },
+    {
+      "source": "edge-audit-011",
+      "target": "shared-mailer-012",
+      "type": "triggers",
+      "weight": 0.77
+    },
+    {
+      "source": "shared-mailer-012",
+      "target": "batch-file-store-013",
+      "type": "subscribes",
+      "weight": 0.48
+    },
+    {
+      "source": "batch-file-store-013",
+      "target": "public-scheduler-014",
+      "type": "subscribes",
+      "weight": 0.46
+    },
+    {
+      "source": "public-scheduler-014",
+      "target": "async-admin-015",
+      "type": "triggers",
+      "weight": 0.55
+    },
+    {
+      "source": "async-admin-015",
+      "target": "async-admin-016",
+      "type": "reads",
+      "weight": 0.66
+    },
+    {
+      "source": "async-admin-016",
+      "target": "batch-sessions-017",
+      "type": "caches",
+      "weight": 0.32
+    },
+    {
+      "source": "batch-sessions-017",
+      "target": "regional-mailer-018",
+      "type": "triggers",
+      "weight": 0.63
+    },
+    {
+      "source": "regional-mailer-018",
+      "target": "private-sessions-019",
+      "type": "queries",
+      "weight": 0.44
+    },
+    {
+      "source": "private-sessions-019",
+      "target": "async-sessions-020",
+      "type": "writes",
+      "weight": 0.48
+    },
+    {
+      "source": "async-sessions-020",
+      "target": "secondary-app-server-021",
+      "type": "reads",
+      "weight": 0.48
+    },
+    {
+      "source": "secondary-app-server-021",
+      "target": "main-app-server-022",
+      "type": "reads",
+      "weight": 0.75
+    },
+    {
+      "source": "main-app-server-022",
+      "target": "private-web-tier-023",
+      "type": "reads",
+      "weight": 0.56
+    },
+    {
+      "source": "private-web-tier-023",
+      "target": "primary-sessions-024",
+      "type": "subscribes",
+      "weight": 0.52
+    },
+    {
+      "source": "primary-sessions-024",
+      "target": "central-web-tier-025",
+      "type": "triggers",
+      "weight": 0.89
+    },
+    {
+      "source": "file-store-rds-002",
+      "target": "audit-alb-000",
+      "type": "reads",
+      "weight": 0.85
+    },
+    {
+      "source": "secondary-app-server-021",
+      "target": "file-store-rds-002",
+      "type": "caches",
+      "weight": 0.69
+    },
+    {
+      "source": "file-store-ec2-001",
+      "target": "secondary-app-server-021",
+      "type": "subscribes",
+      "weight": 0.58
+    },
+    {
+      "source": "realtime-reports-009",
+      "target": "realtime-batch-jobs-008",
+      "type": "subscribes",
+      "weight": 0.94
+    },
+    {
+      "source": "regional-mailer-018",
+      "target": "file-store-rds-002",
+      "type": "caches",
+      "weight": 0.31
+    },
+    {
+      "source": "global-web-tier-006",
+      "target": "file-store-ec2-001",
+      "type": "triggers",
+      "weight": 0.93
+    },
+    {
+      "source": "batch-file-store-013",
+      "target": "secondary-app-server-021",
+      "type": "queries",
+      "weight": 0.18
+    },
+    {
+      "source": "async-admin-016",
+      "target": "edge-audit-011",
+      "type": "reads",
+      "weight": 0.78
+    },
+    {
+      "source": "private-sessions-019",
+      "target": "edge-audit-011",
+      "type": "writes",
+      "weight": 0.17
+    },
+    {
+      "source": "public-scheduler-014",
+      "target": "secondary-app-server-021",
+      "type": "reads",
+      "weight": 0.3
+    },
+    {
+      "source": "async-sessions-020",
+      "target": "primary-sessions-024",
+      "type": "writes",
+      "weight": 0.55
+    },
+    {
+      "source": "edge-audit-011",
+      "target": "private-sessions-019",
+      "type": "triggers",
+      "weight": 0.29
+    },
+    {
+      "source": "edge-audit-011",
+      "target": "async-admin-015",
+      "type": "subscribes",
+      "weight": 0.28
+    },
+    {
+      "source": "file-store-ec2-001",
+      "target": "batch-jobs-s3-003",
+      "type": "caches",
+      "weight": 0.81
+    },
+    {
+      "source": "app-server-cloudwatch-004",
+      "target": "batch-file-store-013",
+      "type": "reads",
+      "weight": 0.64
+    },
+    {
+      "source": "main-app-server-022",
+      "target": "private-sessions-019",
+      "type": "subscribes",
+      "weight": 0.74
+    },
+    {
+      "source": "batch-jobs-s3-003",
+      "target": "realtime-batch-jobs-008",
+      "type": "reads",
+      "weight": 0.55
+    },
+    {
+      "source": "batch-file-store-013",
+      "target": "edge-audit-011",
+      "type": "reads",
+      "weight": 0.68
+    },
+    {
+      "source": "private-web-tier-023",
+      "target": "batch-file-store-013",
+      "type": "subscribes",
+      "weight": 0.23
+    }
+  ]
+}

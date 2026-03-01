@@ -1,0 +1,215 @@
+{
+  "metadata": {
+    "name": "Adtech (Enterprise, us-east-1)",
+    "id": "c9aadeef",
+    "pattern": "adtech",
+    "complexity": "medium",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 8,
+    "total_dependencies": 11,
+    "total_cost_monthly": 4886.05,
+    "generated_at": "2026-03-01T19:23:58.649294",
+    "variation_seed": 56896
+  },
+  "services": [
+    {
+      "id": "bidder-alb-000",
+      "name": "bidder-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 194.17,
+      "owner": "content-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "frequency-cap-ec2-001",
+      "name": "frequency-cap-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 532.23,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "frequency-cap-dynamodb-002",
+      "name": "frequency-cap-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1125.3,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "bidder-elasticache-003",
+      "name": "bidder-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 510.4,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "audience-kinesis-004",
+      "name": "audience-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 122.1,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-creative-store-005",
+      "name": "cold-creative-store",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 550.72,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-bidder-006",
+      "name": "backup-bidder",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1398.06,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-creative-store-007",
+      "name": "core-creative-store",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 453.07,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "bidder-alb-000",
+      "target": "frequency-cap-ec2-001",
+      "type": "subscribes",
+      "weight": 0.88
+    },
+    {
+      "source": "frequency-cap-ec2-001",
+      "target": "frequency-cap-dynamodb-002",
+      "type": "reads",
+      "weight": 0.7
+    },
+    {
+      "source": "frequency-cap-dynamodb-002",
+      "target": "bidder-elasticache-003",
+      "type": "calls",
+      "weight": 0.62
+    },
+    {
+      "source": "bidder-elasticache-003",
+      "target": "audience-kinesis-004",
+      "type": "queries",
+      "weight": 0.87
+    },
+    {
+      "source": "audience-kinesis-004",
+      "target": "cold-creative-store-005",
+      "type": "calls",
+      "weight": 0.38
+    },
+    {
+      "source": "cold-creative-store-005",
+      "target": "backup-bidder-006",
+      "type": "subscribes",
+      "weight": 0.64
+    },
+    {
+      "source": "backup-bidder-006",
+      "target": "core-creative-store-007",
+      "type": "triggers",
+      "weight": 0.32
+    },
+    {
+      "source": "backup-bidder-006",
+      "target": "audience-kinesis-004",
+      "type": "queries",
+      "weight": 0.15
+    },
+    {
+      "source": "cold-creative-store-005",
+      "target": "audience-kinesis-004",
+      "type": "caches",
+      "weight": 0.23
+    },
+    {
+      "source": "core-creative-store-007",
+      "target": "bidder-alb-000",
+      "type": "writes",
+      "weight": 0.31
+    },
+    {
+      "source": "bidder-elasticache-003",
+      "target": "frequency-cap-dynamodb-002",
+      "type": "caches",
+      "weight": 0.53
+    }
+  ]
+}

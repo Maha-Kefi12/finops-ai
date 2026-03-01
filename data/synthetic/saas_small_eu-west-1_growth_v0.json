@@ -1,0 +1,103 @@
+{
+  "metadata": {
+    "name": "Saas (Growth, eu-west-1)",
+    "id": "d3e82b3d",
+    "pattern": "saas",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 4,
+    "total_dependencies": 3,
+    "total_cost_monthly": 3793.97,
+    "generated_at": "2026-03-01T19:23:57.449152",
+    "variation_seed": 4010
+  },
+  "services": [
+    {
+      "id": "billing-api-000",
+      "name": "billing-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 343.6,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audit-ecs-001",
+      "name": "audit-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 2486.95,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audit-aurora-002",
+      "name": "audit-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 694.95,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "analytics-elasticache-003",
+      "name": "analytics-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 268.47,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "billing-api-000",
+      "target": "audit-ecs-001",
+      "type": "triggers",
+      "weight": 0.37
+    },
+    {
+      "source": "audit-ecs-001",
+      "target": "audit-aurora-002",
+      "type": "reads",
+      "weight": 0.53
+    },
+    {
+      "source": "audit-aurora-002",
+      "target": "analytics-elasticache-003",
+      "type": "writes",
+      "weight": 0.32
+    }
+  ]
+}

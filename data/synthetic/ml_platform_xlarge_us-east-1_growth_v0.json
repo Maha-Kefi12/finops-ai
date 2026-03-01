@@ -1,0 +1,1591 @@
+{
+  "metadata": {
+    "name": "Ml Platform (Growth, us-east-1)",
+    "id": "71a88399",
+    "pattern": "ml_platform",
+    "complexity": "xlarge",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 49,
+    "total_dependencies": 131,
+    "total_cost_monthly": 10164.9,
+    "generated_at": "2026-03-01T19:23:57.921321",
+    "variation_seed": 25214
+  },
+  "services": [
+    {
+      "id": "datasets-sagemaker-000",
+      "name": "datasets-sagemaker",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 458.11,
+      "owner": "payments",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "datasets-s3-001",
+      "name": "datasets-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 113.54,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "pipeline-glue-002",
+      "name": "pipeline-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 189.68,
+      "owner": "devops",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "features-redshift-003",
+      "name": "features-redshift",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 340.12,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "inference-ec2-004",
+      "name": "inference-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 351.09,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-pipeline-005",
+      "name": "global-pipeline",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 336.1,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-registry-006",
+      "name": "internal-registry",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 284.2,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "primary-datasets-007",
+      "name": "primary-datasets",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 192.24,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "secondary-labeling-008",
+      "name": "secondary-labeling",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 121.94,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-serving-009",
+      "name": "private-serving",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 242.93,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-training-010",
+      "name": "realtime-training",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 187.27,
+      "owner": "growth-eng",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-monitoring-011",
+      "name": "fast-monitoring",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 334.05,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-features-012",
+      "name": "secondary-features",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 51.4,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "realtime-labeling-013",
+      "name": "realtime-labeling",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 395.26,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-pipeline-014",
+      "name": "private-pipeline",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 302.01,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-monitoring-015",
+      "name": "secondary-monitoring",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 257.16,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-experiment-016",
+      "name": "realtime-experiment",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 279.91,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-experiment-017",
+      "name": "regional-experiment",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 79.06,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-experiment-018",
+      "name": "cold-experiment",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 322.51,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-monitoring-019",
+      "name": "staging-monitoring",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 226.4,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "async-labeling-020",
+      "name": "async-labeling",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 334.94,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-monitoring-021",
+      "name": "shared-monitoring",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 62.75,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-serving-022",
+      "name": "central-serving",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 64.28,
+      "owner": "content-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-labeling-023",
+      "name": "async-labeling",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 286.15,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-pipeline-024",
+      "name": "staging-pipeline",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 186.77,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-inference-025",
+      "name": "secondary-inference",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 26.38,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-labeling-026",
+      "name": "edge-labeling",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 153.36,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "main-pipeline-027",
+      "name": "main-pipeline",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 203.52,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-pipeline-028",
+      "name": "async-pipeline",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 332.18,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "public-pipeline-029",
+      "name": "public-pipeline",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 239.94,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-labeling-030",
+      "name": "primary-labeling",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 102.89,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-training-031",
+      "name": "edge-training",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 268.84,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-datasets-032",
+      "name": "central-datasets",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 328.35,
+      "owner": "data-eng",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "async-registry-033",
+      "name": "async-registry",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 212.61,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-monitoring-034",
+      "name": "private-monitoring",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 51.89,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-registry-035",
+      "name": "async-registry",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 191.65,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "batch-training-036",
+      "name": "batch-training",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 287.29,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "hot-pipeline-037",
+      "name": "hot-pipeline",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 20.2,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-training-038",
+      "name": "hot-training",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 8.2,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-registry-039",
+      "name": "backup-registry",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 60.83,
+      "owner": "frontend-guild",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "backup-monitoring-040",
+      "name": "backup-monitoring",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 39.61,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "central-registry-041",
+      "name": "central-registry",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 34.38,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "realtime-registry-042",
+      "name": "realtime-registry",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 176.75,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-labeling-043",
+      "name": "main-labeling",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 393.16,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "realtime-labeling-044",
+      "name": "realtime-labeling",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 12.35,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-monitoring-045",
+      "name": "regional-monitoring",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 78.02,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-inference-046",
+      "name": "hot-inference",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 280.36,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-monitoring-047",
+      "name": "public-monitoring",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 319.91,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-monitoring-048",
+      "name": "private-monitoring",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 342.36,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "datasets-sagemaker-000",
+      "target": "datasets-s3-001",
+      "type": "triggers",
+      "weight": 0.94
+    },
+    {
+      "source": "datasets-s3-001",
+      "target": "pipeline-glue-002",
+      "type": "subscribes",
+      "weight": 0.73
+    },
+    {
+      "source": "pipeline-glue-002",
+      "target": "features-redshift-003",
+      "type": "writes",
+      "weight": 0.32
+    },
+    {
+      "source": "features-redshift-003",
+      "target": "inference-ec2-004",
+      "type": "triggers",
+      "weight": 0.65
+    },
+    {
+      "source": "inference-ec2-004",
+      "target": "global-pipeline-005",
+      "type": "writes",
+      "weight": 0.99
+    },
+    {
+      "source": "global-pipeline-005",
+      "target": "internal-registry-006",
+      "type": "reads",
+      "weight": 0.75
+    },
+    {
+      "source": "internal-registry-006",
+      "target": "primary-datasets-007",
+      "type": "caches",
+      "weight": 0.4
+    },
+    {
+      "source": "primary-datasets-007",
+      "target": "secondary-labeling-008",
+      "type": "writes",
+      "weight": 0.32
+    },
+    {
+      "source": "secondary-labeling-008",
+      "target": "private-serving-009",
+      "type": "reads",
+      "weight": 0.73
+    },
+    {
+      "source": "private-serving-009",
+      "target": "realtime-training-010",
+      "type": "reads",
+      "weight": 0.95
+    },
+    {
+      "source": "realtime-training-010",
+      "target": "fast-monitoring-011",
+      "type": "subscribes",
+      "weight": 0.36
+    },
+    {
+      "source": "fast-monitoring-011",
+      "target": "secondary-features-012",
+      "type": "calls",
+      "weight": 0.45
+    },
+    {
+      "source": "secondary-features-012",
+      "target": "realtime-labeling-013",
+      "type": "subscribes",
+      "weight": 0.77
+    },
+    {
+      "source": "realtime-labeling-013",
+      "target": "private-pipeline-014",
+      "type": "triggers",
+      "weight": 0.58
+    },
+    {
+      "source": "private-pipeline-014",
+      "target": "secondary-monitoring-015",
+      "type": "caches",
+      "weight": 0.91
+    },
+    {
+      "source": "secondary-monitoring-015",
+      "target": "realtime-experiment-016",
+      "type": "calls",
+      "weight": 0.36
+    },
+    {
+      "source": "realtime-experiment-016",
+      "target": "regional-experiment-017",
+      "type": "reads",
+      "weight": 0.65
+    },
+    {
+      "source": "regional-experiment-017",
+      "target": "cold-experiment-018",
+      "type": "writes",
+      "weight": 0.34
+    },
+    {
+      "source": "cold-experiment-018",
+      "target": "staging-monitoring-019",
+      "type": "queries",
+      "weight": 0.77
+    },
+    {
+      "source": "staging-monitoring-019",
+      "target": "async-labeling-020",
+      "type": "queries",
+      "weight": 0.41
+    },
+    {
+      "source": "async-labeling-020",
+      "target": "shared-monitoring-021",
+      "type": "calls",
+      "weight": 0.53
+    },
+    {
+      "source": "shared-monitoring-021",
+      "target": "central-serving-022",
+      "type": "calls",
+      "weight": 0.58
+    },
+    {
+      "source": "central-serving-022",
+      "target": "async-labeling-023",
+      "type": "queries",
+      "weight": 0.59
+    },
+    {
+      "source": "async-labeling-023",
+      "target": "staging-pipeline-024",
+      "type": "calls",
+      "weight": 0.94
+    },
+    {
+      "source": "staging-pipeline-024",
+      "target": "secondary-inference-025",
+      "type": "calls",
+      "weight": 0.89
+    },
+    {
+      "source": "secondary-inference-025",
+      "target": "edge-labeling-026",
+      "type": "reads",
+      "weight": 0.76
+    },
+    {
+      "source": "edge-labeling-026",
+      "target": "main-pipeline-027",
+      "type": "caches",
+      "weight": 0.62
+    },
+    {
+      "source": "main-pipeline-027",
+      "target": "async-pipeline-028",
+      "type": "caches",
+      "weight": 0.48
+    },
+    {
+      "source": "async-pipeline-028",
+      "target": "public-pipeline-029",
+      "type": "writes",
+      "weight": 0.33
+    },
+    {
+      "source": "public-pipeline-029",
+      "target": "primary-labeling-030",
+      "type": "calls",
+      "weight": 0.32
+    },
+    {
+      "source": "primary-labeling-030",
+      "target": "edge-training-031",
+      "type": "subscribes",
+      "weight": 0.51
+    },
+    {
+      "source": "edge-training-031",
+      "target": "central-datasets-032",
+      "type": "queries",
+      "weight": 0.77
+    },
+    {
+      "source": "central-datasets-032",
+      "target": "async-registry-033",
+      "type": "caches",
+      "weight": 0.79
+    },
+    {
+      "source": "async-registry-033",
+      "target": "private-monitoring-034",
+      "type": "writes",
+      "weight": 0.56
+    },
+    {
+      "source": "private-monitoring-034",
+      "target": "async-registry-035",
+      "type": "calls",
+      "weight": 0.43
+    },
+    {
+      "source": "async-registry-035",
+      "target": "batch-training-036",
+      "type": "subscribes",
+      "weight": 0.96
+    },
+    {
+      "source": "batch-training-036",
+      "target": "hot-pipeline-037",
+      "type": "triggers",
+      "weight": 0.92
+    },
+    {
+      "source": "hot-pipeline-037",
+      "target": "hot-training-038",
+      "type": "subscribes",
+      "weight": 0.38
+    },
+    {
+      "source": "hot-training-038",
+      "target": "backup-registry-039",
+      "type": "reads",
+      "weight": 0.7
+    },
+    {
+      "source": "backup-registry-039",
+      "target": "backup-monitoring-040",
+      "type": "queries",
+      "weight": 0.54
+    },
+    {
+      "source": "backup-monitoring-040",
+      "target": "central-registry-041",
+      "type": "writes",
+      "weight": 0.68
+    },
+    {
+      "source": "central-registry-041",
+      "target": "realtime-registry-042",
+      "type": "queries",
+      "weight": 0.9
+    },
+    {
+      "source": "realtime-registry-042",
+      "target": "main-labeling-043",
+      "type": "writes",
+      "weight": 0.76
+    },
+    {
+      "source": "main-labeling-043",
+      "target": "realtime-labeling-044",
+      "type": "calls",
+      "weight": 0.64
+    },
+    {
+      "source": "realtime-labeling-044",
+      "target": "regional-monitoring-045",
+      "type": "writes",
+      "weight": 0.63
+    },
+    {
+      "source": "regional-monitoring-045",
+      "target": "hot-inference-046",
+      "type": "caches",
+      "weight": 0.67
+    },
+    {
+      "source": "hot-inference-046",
+      "target": "public-monitoring-047",
+      "type": "writes",
+      "weight": 0.36
+    },
+    {
+      "source": "public-monitoring-047",
+      "target": "private-monitoring-048",
+      "type": "queries",
+      "weight": 0.54
+    },
+    {
+      "source": "secondary-labeling-008",
+      "target": "batch-training-036",
+      "type": "subscribes",
+      "weight": 0.61
+    },
+    {
+      "source": "main-labeling-043",
+      "target": "batch-training-036",
+      "type": "triggers",
+      "weight": 0.26
+    },
+    {
+      "source": "edge-labeling-026",
+      "target": "async-pipeline-028",
+      "type": "subscribes",
+      "weight": 0.31
+    },
+    {
+      "source": "hot-inference-046",
+      "target": "regional-experiment-017",
+      "type": "subscribes",
+      "weight": 0.27
+    },
+    {
+      "source": "private-monitoring-034",
+      "target": "secondary-inference-025",
+      "type": "writes",
+      "weight": 0.13
+    },
+    {
+      "source": "public-pipeline-029",
+      "target": "cold-experiment-018",
+      "type": "triggers",
+      "weight": 0.74
+    },
+    {
+      "source": "realtime-experiment-016",
+      "target": "primary-datasets-007",
+      "type": "subscribes",
+      "weight": 0.86
+    },
+    {
+      "source": "async-registry-035",
+      "target": "secondary-labeling-008",
+      "type": "queries",
+      "weight": 0.38
+    },
+    {
+      "source": "realtime-labeling-013",
+      "target": "internal-registry-006",
+      "type": "calls",
+      "weight": 0.98
+    },
+    {
+      "source": "edge-training-031",
+      "target": "async-registry-035",
+      "type": "caches",
+      "weight": 0.87
+    },
+    {
+      "source": "realtime-experiment-016",
+      "target": "secondary-inference-025",
+      "type": "triggers",
+      "weight": 0.26
+    },
+    {
+      "source": "primary-datasets-007",
+      "target": "datasets-sagemaker-000",
+      "type": "calls",
+      "weight": 0.21
+    },
+    {
+      "source": "edge-labeling-026",
+      "target": "staging-monitoring-019",
+      "type": "caches",
+      "weight": 0.28
+    },
+    {
+      "source": "central-datasets-032",
+      "target": "backup-registry-039",
+      "type": "subscribes",
+      "weight": 0.58
+    },
+    {
+      "source": "secondary-labeling-008",
+      "target": "public-pipeline-029",
+      "type": "subscribes",
+      "weight": 0.67
+    },
+    {
+      "source": "public-monitoring-047",
+      "target": "realtime-registry-042",
+      "type": "calls",
+      "weight": 0.22
+    },
+    {
+      "source": "central-serving-022",
+      "target": "backup-registry-039",
+      "type": "caches",
+      "weight": 0.3
+    },
+    {
+      "source": "regional-experiment-017",
+      "target": "private-serving-009",
+      "type": "writes",
+      "weight": 0.71
+    },
+    {
+      "source": "backup-registry-039",
+      "target": "central-datasets-032",
+      "type": "subscribes",
+      "weight": 0.19
+    },
+    {
+      "source": "central-datasets-032",
+      "target": "realtime-experiment-016",
+      "type": "triggers",
+      "weight": 0.46
+    },
+    {
+      "source": "internal-registry-006",
+      "target": "async-registry-033",
+      "type": "writes",
+      "weight": 0.92
+    },
+    {
+      "source": "async-pipeline-028",
+      "target": "internal-registry-006",
+      "type": "calls",
+      "weight": 0.6
+    },
+    {
+      "source": "staging-monitoring-019",
+      "target": "private-monitoring-034",
+      "type": "queries",
+      "weight": 0.12
+    },
+    {
+      "source": "central-datasets-032",
+      "target": "staging-monitoring-019",
+      "type": "subscribes",
+      "weight": 0.47
+    },
+    {
+      "source": "staging-pipeline-024",
+      "target": "async-pipeline-028",
+      "type": "triggers",
+      "weight": 0.39
+    },
+    {
+      "source": "private-serving-009",
+      "target": "backup-registry-039",
+      "type": "queries",
+      "weight": 0.95
+    },
+    {
+      "source": "hot-inference-046",
+      "target": "central-registry-041",
+      "type": "triggers",
+      "weight": 0.39
+    },
+    {
+      "source": "private-pipeline-014",
+      "target": "global-pipeline-005",
+      "type": "caches",
+      "weight": 0.1
+    },
+    {
+      "source": "internal-registry-006",
+      "target": "datasets-sagemaker-000",
+      "type": "writes",
+      "weight": 0.27
+    },
+    {
+      "source": "realtime-training-010",
+      "target": "central-datasets-032",
+      "type": "subscribes",
+      "weight": 0.67
+    },
+    {
+      "source": "realtime-labeling-044",
+      "target": "public-monitoring-047",
+      "type": "calls",
+      "weight": 0.63
+    },
+    {
+      "source": "batch-training-036",
+      "target": "realtime-labeling-044",
+      "type": "queries",
+      "weight": 0.99
+    },
+    {
+      "source": "realtime-registry-042",
+      "target": "private-monitoring-048",
+      "type": "subscribes",
+      "weight": 0.82
+    },
+    {
+      "source": "central-registry-041",
+      "target": "edge-training-031",
+      "type": "caches",
+      "weight": 0.9
+    },
+    {
+      "source": "main-pipeline-027",
+      "target": "async-registry-033",
+      "type": "caches",
+      "weight": 0.4
+    },
+    {
+      "source": "public-pipeline-029",
+      "target": "main-pipeline-027",
+      "type": "writes",
+      "weight": 0.93
+    },
+    {
+      "source": "datasets-sagemaker-000",
+      "target": "cold-experiment-018",
+      "type": "caches",
+      "weight": 0.38
+    },
+    {
+      "source": "staging-monitoring-019",
+      "target": "fast-monitoring-011",
+      "type": "reads",
+      "weight": 0.55
+    },
+    {
+      "source": "main-labeling-043",
+      "target": "private-pipeline-014",
+      "type": "subscribes",
+      "weight": 0.74
+    },
+    {
+      "source": "secondary-monitoring-015",
+      "target": "staging-monitoring-019",
+      "type": "writes",
+      "weight": 0.4
+    },
+    {
+      "source": "edge-labeling-026",
+      "target": "primary-labeling-030",
+      "type": "caches",
+      "weight": 0.87
+    },
+    {
+      "source": "realtime-labeling-013",
+      "target": "inference-ec2-004",
+      "type": "subscribes",
+      "weight": 0.15
+    },
+    {
+      "source": "private-pipeline-014",
+      "target": "realtime-training-010",
+      "type": "subscribes",
+      "weight": 0.5
+    },
+    {
+      "source": "central-datasets-032",
+      "target": "regional-monitoring-045",
+      "type": "reads",
+      "weight": 0.68
+    },
+    {
+      "source": "staging-monitoring-019",
+      "target": "pipeline-glue-002",
+      "type": "queries",
+      "weight": 0.91
+    },
+    {
+      "source": "main-labeling-043",
+      "target": "async-labeling-023",
+      "type": "reads",
+      "weight": 0.12
+    },
+    {
+      "source": "main-pipeline-027",
+      "target": "async-registry-035",
+      "type": "subscribes",
+      "weight": 0.89
+    },
+    {
+      "source": "cold-experiment-018",
+      "target": "secondary-monitoring-015",
+      "type": "subscribes",
+      "weight": 0.17
+    },
+    {
+      "source": "staging-monitoring-019",
+      "target": "staging-pipeline-024",
+      "type": "subscribes",
+      "weight": 0.89
+    },
+    {
+      "source": "primary-datasets-007",
+      "target": "internal-registry-006",
+      "type": "subscribes",
+      "weight": 0.91
+    },
+    {
+      "source": "backup-monitoring-040",
+      "target": "main-labeling-043",
+      "type": "writes",
+      "weight": 0.8
+    },
+    {
+      "source": "edge-labeling-026",
+      "target": "realtime-labeling-013",
+      "type": "queries",
+      "weight": 0.19
+    },
+    {
+      "source": "regional-monitoring-045",
+      "target": "staging-monitoring-019",
+      "type": "calls",
+      "weight": 0.98
+    },
+    {
+      "source": "hot-inference-046",
+      "target": "batch-training-036",
+      "type": "reads",
+      "weight": 0.59
+    },
+    {
+      "source": "fast-monitoring-011",
+      "target": "async-registry-033",
+      "type": "triggers",
+      "weight": 0.42
+    },
+    {
+      "source": "pipeline-glue-002",
+      "target": "fast-monitoring-011",
+      "type": "calls",
+      "weight": 0.11
+    },
+    {
+      "source": "central-serving-022",
+      "target": "main-labeling-043",
+      "type": "writes",
+      "weight": 0.41
+    },
+    {
+      "source": "secondary-inference-025",
+      "target": "global-pipeline-005",
+      "type": "writes",
+      "weight": 0.37
+    },
+    {
+      "source": "batch-training-036",
+      "target": "inference-ec2-004",
+      "type": "writes",
+      "weight": 0.42
+    },
+    {
+      "source": "edge-labeling-026",
+      "target": "async-labeling-020",
+      "type": "triggers",
+      "weight": 0.77
+    },
+    {
+      "source": "realtime-experiment-016",
+      "target": "central-datasets-032",
+      "type": "reads",
+      "weight": 0.36
+    },
+    {
+      "source": "private-serving-009",
+      "target": "hot-pipeline-037",
+      "type": "caches",
+      "weight": 0.41
+    },
+    {
+      "source": "hot-training-038",
+      "target": "secondary-labeling-008",
+      "type": "caches",
+      "weight": 0.55
+    },
+    {
+      "source": "fast-monitoring-011",
+      "target": "batch-training-036",
+      "type": "reads",
+      "weight": 0.26
+    },
+    {
+      "source": "regional-monitoring-045",
+      "target": "datasets-sagemaker-000",
+      "type": "caches",
+      "weight": 0.78
+    },
+    {
+      "source": "main-labeling-043",
+      "target": "features-redshift-003",
+      "type": "calls",
+      "weight": 0.98
+    },
+    {
+      "source": "central-serving-022",
+      "target": "features-redshift-003",
+      "type": "calls",
+      "weight": 0.99
+    },
+    {
+      "source": "private-serving-009",
+      "target": "shared-monitoring-021",
+      "type": "reads",
+      "weight": 0.36
+    },
+    {
+      "source": "batch-training-036",
+      "target": "async-registry-035",
+      "type": "calls",
+      "weight": 0.57
+    },
+    {
+      "source": "hot-training-038",
+      "target": "datasets-s3-001",
+      "type": "writes",
+      "weight": 0.69
+    },
+    {
+      "source": "datasets-sagemaker-000",
+      "target": "primary-labeling-030",
+      "type": "subscribes",
+      "weight": 0.98
+    },
+    {
+      "source": "shared-monitoring-021",
+      "target": "secondary-features-012",
+      "type": "triggers",
+      "weight": 0.31
+    },
+    {
+      "source": "shared-monitoring-021",
+      "target": "async-pipeline-028",
+      "type": "reads",
+      "weight": 0.69
+    },
+    {
+      "source": "realtime-experiment-016",
+      "target": "backup-registry-039",
+      "type": "caches",
+      "weight": 0.53
+    },
+    {
+      "source": "hot-pipeline-037",
+      "target": "primary-labeling-030",
+      "type": "caches",
+      "weight": 0.96
+    },
+    {
+      "source": "regional-monitoring-045",
+      "target": "async-registry-035",
+      "type": "queries",
+      "weight": 0.4
+    },
+    {
+      "source": "shared-monitoring-021",
+      "target": "main-labeling-043",
+      "type": "caches",
+      "weight": 0.87
+    },
+    {
+      "source": "secondary-features-012",
+      "target": "inference-ec2-004",
+      "type": "subscribes",
+      "weight": 0.53
+    },
+    {
+      "source": "datasets-sagemaker-000",
+      "target": "regional-experiment-017",
+      "type": "writes",
+      "weight": 0.87
+    },
+    {
+      "source": "batch-training-036",
+      "target": "main-labeling-043",
+      "type": "reads",
+      "weight": 0.43
+    },
+    {
+      "source": "realtime-experiment-016",
+      "target": "secondary-labeling-008",
+      "type": "reads",
+      "weight": 0.79
+    },
+    {
+      "source": "cold-experiment-018",
+      "target": "async-registry-033",
+      "type": "subscribes",
+      "weight": 0.53
+    },
+    {
+      "source": "datasets-s3-001",
+      "target": "main-pipeline-027",
+      "type": "writes",
+      "weight": 0.1
+    }
+  ]
+}

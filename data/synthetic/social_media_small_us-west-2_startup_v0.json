@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Social Media (Startup, us-west-2)",
+    "id": "698fa93c",
+    "pattern": "social_media",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 3940.5,
+    "generated_at": "2026-03-01T19:23:58.560066",
+    "variation_seed": 52680
+  },
+  "services": [
+    {
+      "id": "profiles-alb-000",
+      "name": "profiles-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 191.28,
+      "owner": "api-gateway-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "profiles-eks-001",
+      "name": "profiles-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 1828.75,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "media-upload-aurora-002",
+      "name": "media-upload-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 1920.47,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "profiles-alb-000",
+      "target": "profiles-eks-001",
+      "type": "writes",
+      "weight": 0.74
+    },
+    {
+      "source": "profiles-eks-001",
+      "target": "media-upload-aurora-002",
+      "type": "writes",
+      "weight": 0.91
+    },
+    {
+      "source": "media-upload-aurora-002",
+      "target": "profiles-eks-001",
+      "type": "triggers",
+      "weight": 0.41
+    }
+  ]
+}

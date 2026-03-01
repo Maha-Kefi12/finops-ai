@@ -1,0 +1,159 @@
+{
+  "metadata": {
+    "name": "Adtech (Growth, eu-central-1)",
+    "id": "993473e8",
+    "pattern": "adtech",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 6,
+    "total_dependencies": 7,
+    "total_cost_monthly": 11924.53,
+    "generated_at": "2026-03-01T19:23:58.646772",
+    "variation_seed": 56686
+  },
+  "services": [
+    {
+      "id": "reports-alb-000",
+      "name": "reports-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 88.33,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "reports-ec2-001",
+      "name": "reports-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 2640.78,
+      "owner": "security",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "pacing-dynamodb-002",
+      "name": "pacing-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 671.78,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "bidder-elasticache-003",
+      "name": "bidder-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 2009.47,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "bidder-kinesis-004",
+      "name": "bidder-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 67.58,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-bidder-005",
+      "name": "fast-bidder",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 6446.59,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "reports-alb-000",
+      "target": "reports-ec2-001",
+      "type": "reads",
+      "weight": 0.61
+    },
+    {
+      "source": "reports-ec2-001",
+      "target": "pacing-dynamodb-002",
+      "type": "triggers",
+      "weight": 0.42
+    },
+    {
+      "source": "pacing-dynamodb-002",
+      "target": "bidder-elasticache-003",
+      "type": "reads",
+      "weight": 0.92
+    },
+    {
+      "source": "bidder-elasticache-003",
+      "target": "bidder-kinesis-004",
+      "type": "caches",
+      "weight": 0.61
+    },
+    {
+      "source": "bidder-kinesis-004",
+      "target": "fast-bidder-005",
+      "type": "caches",
+      "weight": 0.7
+    },
+    {
+      "source": "fast-bidder-005",
+      "target": "reports-alb-000",
+      "type": "writes",
+      "weight": 0.99
+    },
+    {
+      "source": "reports-ec2-001",
+      "target": "fast-bidder-005",
+      "type": "queries",
+      "weight": 0.21
+    }
+  ]
+}

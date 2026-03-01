@@ -1,0 +1,143 @@
+{
+  "metadata": {
+    "name": "Monolith (Enterprise, eu-central-1)",
+    "id": "44600f89",
+    "pattern": "monolith",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 5,
+    "total_dependencies": 7,
+    "total_cost_monthly": 7229.61,
+    "generated_at": "2026-03-01T19:23:58.128735",
+    "variation_seed": 34428
+  },
+  "services": [
+    {
+      "id": "admin-alb-000",
+      "name": "admin-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 80.52,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "web-tier-ec2-001",
+      "name": "web-tier-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 2204.42,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "file-store-rds-002",
+      "name": "file-store-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 4454.16,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "app-server-s3-003",
+      "name": "app-server-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 160.3,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audit-elasticache-004",
+      "name": "audit-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 330.21,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "admin-alb-000",
+      "target": "web-tier-ec2-001",
+      "type": "subscribes",
+      "weight": 0.74
+    },
+    {
+      "source": "web-tier-ec2-001",
+      "target": "file-store-rds-002",
+      "type": "queries",
+      "weight": 0.51
+    },
+    {
+      "source": "file-store-rds-002",
+      "target": "app-server-s3-003",
+      "type": "subscribes",
+      "weight": 0.53
+    },
+    {
+      "source": "app-server-s3-003",
+      "target": "audit-elasticache-004",
+      "type": "subscribes",
+      "weight": 0.77
+    },
+    {
+      "source": "app-server-s3-003",
+      "target": "web-tier-ec2-001",
+      "type": "caches",
+      "weight": 0.95
+    },
+    {
+      "source": "file-store-rds-002",
+      "target": "audit-elasticache-004",
+      "type": "writes",
+      "weight": 0.79
+    },
+    {
+      "source": "admin-alb-000",
+      "target": "audit-elasticache-004",
+      "type": "triggers",
+      "weight": 0.39
+    }
+  ]
+}

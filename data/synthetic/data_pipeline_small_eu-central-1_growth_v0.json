@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Data Pipeline (Growth, eu-central-1)",
+    "id": "02a9e9c6",
+    "pattern": "data_pipeline",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 956.8,
+    "generated_at": "2026-03-01T19:23:57.623291",
+    "variation_seed": 12008
+  },
+  "services": [
+    {
+      "id": "transform-kinesis-000",
+      "name": "transform-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 400.97,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "routing-lambda-001",
+      "name": "routing-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 31.2,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "routing-s3-002",
+      "name": "routing-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 524.63,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "transform-kinesis-000",
+      "target": "routing-lambda-001",
+      "type": "triggers",
+      "weight": 0.94
+    },
+    {
+      "source": "routing-lambda-001",
+      "target": "routing-s3-002",
+      "type": "subscribes",
+      "weight": 0.63
+    },
+    {
+      "source": "routing-s3-002",
+      "target": "routing-lambda-001",
+      "type": "writes",
+      "weight": 0.11
+    }
+  ]
+}

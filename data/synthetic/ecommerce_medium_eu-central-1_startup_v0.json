@@ -1,0 +1,233 @@
+{
+  "metadata": {
+    "name": "Ecommerce (Startup, eu-central-1)",
+    "id": "23dec36a",
+    "pattern": "ecommerce",
+    "complexity": "medium",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 8,
+    "total_dependencies": 14,
+    "total_cost_monthly": 1688.04,
+    "generated_at": "2026-03-01T19:23:57.375797",
+    "variation_seed": 1716
+  },
+  "services": [
+    {
+      "id": "storefront-alb-000",
+      "name": "storefront-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 154.57,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "pricing-ec2-001",
+      "name": "pricing-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 370.89,
+      "owner": "payments",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "inventory-ec2-002",
+      "name": "inventory-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 243.62,
+      "owner": "data-eng",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "checkout-rds-003",
+      "name": "checkout-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 256.66,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "pricing-elasticache-004",
+      "name": "pricing-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 192.48,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-storefront-005",
+      "name": "backup-storefront",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 108.56,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-checkout-006",
+      "name": "staging-checkout",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 304.04,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "private-inventory-007",
+      "name": "private-inventory",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 57.22,
+      "owner": "platform-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "storefront-alb-000",
+      "target": "pricing-ec2-001",
+      "type": "caches",
+      "weight": 0.33
+    },
+    {
+      "source": "pricing-ec2-001",
+      "target": "inventory-ec2-002",
+      "type": "writes",
+      "weight": 0.54
+    },
+    {
+      "source": "inventory-ec2-002",
+      "target": "checkout-rds-003",
+      "type": "writes",
+      "weight": 0.84
+    },
+    {
+      "source": "checkout-rds-003",
+      "target": "pricing-elasticache-004",
+      "type": "reads",
+      "weight": 0.6
+    },
+    {
+      "source": "pricing-elasticache-004",
+      "target": "backup-storefront-005",
+      "type": "reads",
+      "weight": 0.5
+    },
+    {
+      "source": "backup-storefront-005",
+      "target": "staging-checkout-006",
+      "type": "writes",
+      "weight": 0.81
+    },
+    {
+      "source": "staging-checkout-006",
+      "target": "private-inventory-007",
+      "type": "reads",
+      "weight": 0.39
+    },
+    {
+      "source": "pricing-ec2-001",
+      "target": "storefront-alb-000",
+      "type": "caches",
+      "weight": 0.24
+    },
+    {
+      "source": "private-inventory-007",
+      "target": "staging-checkout-006",
+      "type": "queries",
+      "weight": 0.8
+    },
+    {
+      "source": "pricing-elasticache-004",
+      "target": "storefront-alb-000",
+      "type": "caches",
+      "weight": 0.99
+    },
+    {
+      "source": "private-inventory-007",
+      "target": "storefront-alb-000",
+      "type": "subscribes",
+      "weight": 0.48
+    },
+    {
+      "source": "staging-checkout-006",
+      "target": "backup-storefront-005",
+      "type": "queries",
+      "weight": 0.73
+    },
+    {
+      "source": "staging-checkout-006",
+      "target": "storefront-alb-000",
+      "type": "caches",
+      "weight": 0.9
+    },
+    {
+      "source": "pricing-ec2-001",
+      "target": "staging-checkout-006",
+      "type": "reads",
+      "weight": 0.51
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "name": "Social Media (Startup, eu-west-1)",
+    "id": "0e9aaf51",
+    "pattern": "social_media",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 4,
+    "total_dependencies": 4,
+    "total_cost_monthly": 2426.54,
+    "generated_at": "2026-03-01T19:23:58.557240",
+    "variation_seed": 52308
+  },
+  "services": [
+    {
+      "id": "messaging-alb-000",
+      "name": "messaging-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 214.42,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "media-upload-eks-001",
+      "name": "media-upload-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 1278.04,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "moderation-aurora-002",
+      "name": "moderation-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 700.15,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "feed-elasticache-003",
+      "name": "feed-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 233.93,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "messaging-alb-000",
+      "target": "media-upload-eks-001",
+      "type": "reads",
+      "weight": 0.58
+    },
+    {
+      "source": "media-upload-eks-001",
+      "target": "moderation-aurora-002",
+      "type": "queries",
+      "weight": 0.84
+    },
+    {
+      "source": "moderation-aurora-002",
+      "target": "feed-elasticache-003",
+      "type": "triggers",
+      "weight": 0.97
+    },
+    {
+      "source": "moderation-aurora-002",
+      "target": "media-upload-eks-001",
+      "type": "caches",
+      "weight": 0.95
+    }
+  ]
+}

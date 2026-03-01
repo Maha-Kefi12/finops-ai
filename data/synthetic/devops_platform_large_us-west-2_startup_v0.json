@@ -1,0 +1,749 @@
+{
+  "metadata": {
+    "name": "Devops Platform (Startup, us-west-2)",
+    "id": "00a6453d",
+    "pattern": "devops_platform",
+    "complexity": "large",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 29,
+    "total_dependencies": 44,
+    "total_cost_monthly": 3138.54,
+    "generated_at": "2026-03-01T19:23:58.754867",
+    "variation_seed": 61980
+  },
+  "services": [
+    {
+      "id": "deploy-agent-alb-000",
+      "name": "deploy-agent-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 95.94,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "ci-runner-eks-001",
+      "name": "ci-runner-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 219.59,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "deploy-agent-rds-002",
+      "name": "deploy-agent-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 166.39,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "orchestrator-s3-003",
+      "name": "orchestrator-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 122.46,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "monitoring-elasticache-004",
+      "name": "monitoring-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 145.51,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-deploy-agent-005",
+      "name": "batch-deploy-agent",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 166.33,
+      "owner": "identity-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-registry-006",
+      "name": "fast-registry",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 6.33,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "primary-dashboard-007",
+      "name": "primary-dashboard",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 149.43,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-secret-vault-008",
+      "name": "secondary-secret-vault",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 25.75,
+      "owner": "identity-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "shared-ci-runner-009",
+      "name": "shared-ci-runner",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 22.19,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "secondary-artifact-store-010",
+      "name": "secondary-artifact-store",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 59.59,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-log-aggregator-011",
+      "name": "private-log-aggregator",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 34.93,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "async-ci-runner-012",
+      "name": "async-ci-runner",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 40.85,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-log-aggregator-013",
+      "name": "edge-log-aggregator",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 107.51,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-registry-014",
+      "name": "primary-registry",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 127.55,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-registry-015",
+      "name": "hot-registry",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 181.97,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-orchestrator-016",
+      "name": "batch-orchestrator",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 149.17,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "async-log-aggregator-017",
+      "name": "async-log-aggregator",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 96.96,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-ci-runner-018",
+      "name": "main-ci-runner",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 70.16,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-secret-vault-019",
+      "name": "main-secret-vault",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 41.61,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-orchestrator-020",
+      "name": "hot-orchestrator",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Memcached",
+      "cost_monthly": 83.07,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-dashboard-021",
+      "name": "fast-dashboard",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 126.18,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-ci-runner-022",
+      "name": "staging-ci-runner",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 150.12,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-dashboard-023",
+      "name": "shared-dashboard",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 180.42,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-scanner-024",
+      "name": "realtime-scanner",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 115.85,
+      "owner": "api-gateway-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-ci-runner-025",
+      "name": "edge-ci-runner",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 114.12,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "regional-registry-026",
+      "name": "regional-registry",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 110.43,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-dashboard-027",
+      "name": "fast-dashboard",
+      "type": "storage",
+      "aws_service": "Amazon EFS",
+      "cost_monthly": 121.67,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-artifact-store-028",
+      "name": "primary-artifact-store",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 106.46,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "deploy-agent-alb-000",
+      "target": "ci-runner-eks-001",
+      "type": "queries",
+      "weight": 0.77
+    },
+    {
+      "source": "ci-runner-eks-001",
+      "target": "deploy-agent-rds-002",
+      "type": "calls",
+      "weight": 0.82
+    },
+    {
+      "source": "deploy-agent-rds-002",
+      "target": "orchestrator-s3-003",
+      "type": "writes",
+      "weight": 0.8
+    },
+    {
+      "source": "orchestrator-s3-003",
+      "target": "monitoring-elasticache-004",
+      "type": "reads",
+      "weight": 0.86
+    },
+    {
+      "source": "monitoring-elasticache-004",
+      "target": "batch-deploy-agent-005",
+      "type": "calls",
+      "weight": 0.71
+    },
+    {
+      "source": "batch-deploy-agent-005",
+      "target": "fast-registry-006",
+      "type": "caches",
+      "weight": 0.66
+    },
+    {
+      "source": "fast-registry-006",
+      "target": "primary-dashboard-007",
+      "type": "writes",
+      "weight": 0.57
+    },
+    {
+      "source": "primary-dashboard-007",
+      "target": "secondary-secret-vault-008",
+      "type": "subscribes",
+      "weight": 0.96
+    },
+    {
+      "source": "secondary-secret-vault-008",
+      "target": "shared-ci-runner-009",
+      "type": "queries",
+      "weight": 0.85
+    },
+    {
+      "source": "shared-ci-runner-009",
+      "target": "secondary-artifact-store-010",
+      "type": "writes",
+      "weight": 0.94
+    },
+    {
+      "source": "secondary-artifact-store-010",
+      "target": "private-log-aggregator-011",
+      "type": "caches",
+      "weight": 0.61
+    },
+    {
+      "source": "private-log-aggregator-011",
+      "target": "async-ci-runner-012",
+      "type": "reads",
+      "weight": 0.45
+    },
+    {
+      "source": "async-ci-runner-012",
+      "target": "edge-log-aggregator-013",
+      "type": "writes",
+      "weight": 0.39
+    },
+    {
+      "source": "edge-log-aggregator-013",
+      "target": "primary-registry-014",
+      "type": "writes",
+      "weight": 0.88
+    },
+    {
+      "source": "primary-registry-014",
+      "target": "hot-registry-015",
+      "type": "subscribes",
+      "weight": 0.89
+    },
+    {
+      "source": "hot-registry-015",
+      "target": "batch-orchestrator-016",
+      "type": "subscribes",
+      "weight": 0.72
+    },
+    {
+      "source": "batch-orchestrator-016",
+      "target": "async-log-aggregator-017",
+      "type": "reads",
+      "weight": 0.55
+    },
+    {
+      "source": "async-log-aggregator-017",
+      "target": "main-ci-runner-018",
+      "type": "caches",
+      "weight": 0.4
+    },
+    {
+      "source": "main-ci-runner-018",
+      "target": "main-secret-vault-019",
+      "type": "reads",
+      "weight": 0.37
+    },
+    {
+      "source": "main-secret-vault-019",
+      "target": "hot-orchestrator-020",
+      "type": "queries",
+      "weight": 0.75
+    },
+    {
+      "source": "hot-orchestrator-020",
+      "target": "fast-dashboard-021",
+      "type": "triggers",
+      "weight": 0.69
+    },
+    {
+      "source": "fast-dashboard-021",
+      "target": "staging-ci-runner-022",
+      "type": "queries",
+      "weight": 0.55
+    },
+    {
+      "source": "staging-ci-runner-022",
+      "target": "shared-dashboard-023",
+      "type": "calls",
+      "weight": 0.35
+    },
+    {
+      "source": "shared-dashboard-023",
+      "target": "realtime-scanner-024",
+      "type": "reads",
+      "weight": 0.94
+    },
+    {
+      "source": "realtime-scanner-024",
+      "target": "edge-ci-runner-025",
+      "type": "reads",
+      "weight": 0.69
+    },
+    {
+      "source": "edge-ci-runner-025",
+      "target": "regional-registry-026",
+      "type": "caches",
+      "weight": 0.55
+    },
+    {
+      "source": "regional-registry-026",
+      "target": "fast-dashboard-027",
+      "type": "caches",
+      "weight": 0.96
+    },
+    {
+      "source": "fast-dashboard-027",
+      "target": "primary-artifact-store-028",
+      "type": "writes",
+      "weight": 0.98
+    },
+    {
+      "source": "async-ci-runner-012",
+      "target": "main-ci-runner-018",
+      "type": "queries",
+      "weight": 0.13
+    },
+    {
+      "source": "batch-deploy-agent-005",
+      "target": "hot-orchestrator-020",
+      "type": "reads",
+      "weight": 0.77
+    },
+    {
+      "source": "main-ci-runner-018",
+      "target": "batch-orchestrator-016",
+      "type": "writes",
+      "weight": 0.85
+    },
+    {
+      "source": "staging-ci-runner-022",
+      "target": "secondary-secret-vault-008",
+      "type": "subscribes",
+      "weight": 0.97
+    },
+    {
+      "source": "shared-ci-runner-009",
+      "target": "fast-dashboard-027",
+      "type": "subscribes",
+      "weight": 0.86
+    },
+    {
+      "source": "realtime-scanner-024",
+      "target": "hot-registry-015",
+      "type": "writes",
+      "weight": 0.99
+    },
+    {
+      "source": "primary-dashboard-007",
+      "target": "ci-runner-eks-001",
+      "type": "reads",
+      "weight": 0.1
+    },
+    {
+      "source": "edge-ci-runner-025",
+      "target": "fast-registry-006",
+      "type": "queries",
+      "weight": 0.52
+    },
+    {
+      "source": "primary-dashboard-007",
+      "target": "edge-log-aggregator-013",
+      "type": "calls",
+      "weight": 0.37
+    },
+    {
+      "source": "shared-dashboard-023",
+      "target": "fast-dashboard-021",
+      "type": "writes",
+      "weight": 0.86
+    },
+    {
+      "source": "edge-log-aggregator-013",
+      "target": "deploy-agent-rds-002",
+      "type": "calls",
+      "weight": 0.56
+    },
+    {
+      "source": "edge-ci-runner-025",
+      "target": "async-log-aggregator-017",
+      "type": "reads",
+      "weight": 0.89
+    },
+    {
+      "source": "deploy-agent-rds-002",
+      "target": "monitoring-elasticache-004",
+      "type": "reads",
+      "weight": 0.59
+    },
+    {
+      "source": "main-secret-vault-019",
+      "target": "secondary-secret-vault-008",
+      "type": "writes",
+      "weight": 0.32
+    },
+    {
+      "source": "ci-runner-eks-001",
+      "target": "async-log-aggregator-017",
+      "type": "caches",
+      "weight": 0.89
+    },
+    {
+      "source": "primary-registry-014",
+      "target": "primary-dashboard-007",
+      "type": "subscribes",
+      "weight": 0.47
+    }
+  ]
+}

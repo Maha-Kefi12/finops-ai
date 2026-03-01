@@ -1,0 +1,215 @@
+{
+  "metadata": {
+    "name": "Serverless (Growth, ap-southeast-1)",
+    "id": "43446fd3",
+    "pattern": "serverless",
+    "complexity": "medium",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 8,
+    "total_dependencies": 11,
+    "total_cost_monthly": 1489.7,
+    "generated_at": "2026-03-01T19:23:57.803238",
+    "variation_seed": 20006
+  },
+  "services": [
+    {
+      "id": "handler-api-000",
+      "name": "handler-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 461.62,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "validator-lambda-001",
+      "name": "validator-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 424.74,
+      "owner": "growth-eng",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "router-dynamodb-002",
+      "name": "router-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 94.86,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "validator-s3-003",
+      "name": "validator-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 232.96,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "notifier-step-004",
+      "name": "notifier-step",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 23.99,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-authorizer-005",
+      "name": "realtime-authorizer",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 51.35,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-authorizer-006",
+      "name": "hot-authorizer",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 90.33,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-handler-007",
+      "name": "async-handler",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 109.85,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "handler-api-000",
+      "target": "validator-lambda-001",
+      "type": "calls",
+      "weight": 0.42
+    },
+    {
+      "source": "validator-lambda-001",
+      "target": "router-dynamodb-002",
+      "type": "triggers",
+      "weight": 0.49
+    },
+    {
+      "source": "router-dynamodb-002",
+      "target": "validator-s3-003",
+      "type": "writes",
+      "weight": 0.34
+    },
+    {
+      "source": "validator-s3-003",
+      "target": "notifier-step-004",
+      "type": "queries",
+      "weight": 0.4
+    },
+    {
+      "source": "notifier-step-004",
+      "target": "realtime-authorizer-005",
+      "type": "triggers",
+      "weight": 0.96
+    },
+    {
+      "source": "realtime-authorizer-005",
+      "target": "hot-authorizer-006",
+      "type": "caches",
+      "weight": 0.72
+    },
+    {
+      "source": "hot-authorizer-006",
+      "target": "async-handler-007",
+      "type": "caches",
+      "weight": 0.85
+    },
+    {
+      "source": "handler-api-000",
+      "target": "async-handler-007",
+      "type": "subscribes",
+      "weight": 0.61
+    },
+    {
+      "source": "validator-s3-003",
+      "target": "hot-authorizer-006",
+      "type": "triggers",
+      "weight": 0.36
+    },
+    {
+      "source": "async-handler-007",
+      "target": "notifier-step-004",
+      "type": "calls",
+      "weight": 0.15
+    },
+    {
+      "source": "router-dynamodb-002",
+      "target": "async-handler-007",
+      "type": "reads",
+      "weight": 0.66
+    }
+  ]
+}

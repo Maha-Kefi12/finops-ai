@@ -1,0 +1,215 @@
+{
+  "metadata": {
+    "name": "Iot (Enterprise, us-east-1)",
+    "id": "0e63a8fe",
+    "pattern": "iot",
+    "complexity": "medium",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 8,
+    "total_dependencies": 11,
+    "total_cost_monthly": 3277.56,
+    "generated_at": "2026-03-01T19:23:58.050004",
+    "variation_seed": 30894
+  },
+  "services": [
+    {
+      "id": "device-mgr-iot-000",
+      "name": "device-mgr-iot",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 505.03,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "telemetry-kinesis-001",
+      "name": "telemetry-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 633.93,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fleet-lambda-002",
+      "name": "fleet-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 314.83,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fleet-dynamodb-003",
+      "name": "fleet-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 153.81,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "rules-engine-s3-004",
+      "name": "rules-engine-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 395.77,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "backup-shadow-005",
+      "name": "backup-shadow",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 352.53,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-shadow-006",
+      "name": "shared-shadow",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 26.12,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-commands-007",
+      "name": "cold-commands",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 895.54,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "device-mgr-iot-000",
+      "target": "telemetry-kinesis-001",
+      "type": "queries",
+      "weight": 0.45
+    },
+    {
+      "source": "telemetry-kinesis-001",
+      "target": "fleet-lambda-002",
+      "type": "subscribes",
+      "weight": 0.9
+    },
+    {
+      "source": "fleet-lambda-002",
+      "target": "fleet-dynamodb-003",
+      "type": "queries",
+      "weight": 0.6
+    },
+    {
+      "source": "fleet-dynamodb-003",
+      "target": "rules-engine-s3-004",
+      "type": "writes",
+      "weight": 0.63
+    },
+    {
+      "source": "rules-engine-s3-004",
+      "target": "backup-shadow-005",
+      "type": "calls",
+      "weight": 0.36
+    },
+    {
+      "source": "backup-shadow-005",
+      "target": "shared-shadow-006",
+      "type": "writes",
+      "weight": 0.46
+    },
+    {
+      "source": "shared-shadow-006",
+      "target": "cold-commands-007",
+      "type": "caches",
+      "weight": 0.43
+    },
+    {
+      "source": "shared-shadow-006",
+      "target": "rules-engine-s3-004",
+      "type": "triggers",
+      "weight": 0.43
+    },
+    {
+      "source": "shared-shadow-006",
+      "target": "device-mgr-iot-000",
+      "type": "subscribes",
+      "weight": 0.72
+    },
+    {
+      "source": "fleet-lambda-002",
+      "target": "backup-shadow-005",
+      "type": "caches",
+      "weight": 0.9
+    },
+    {
+      "source": "cold-commands-007",
+      "target": "backup-shadow-005",
+      "type": "subscribes",
+      "weight": 0.2
+    }
+  ]
+}

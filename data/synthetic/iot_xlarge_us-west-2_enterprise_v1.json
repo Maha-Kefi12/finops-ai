@@ -1,0 +1,1109 @@
+{
+  "metadata": {
+    "name": "Iot (Enterprise, us-west-2)",
+    "id": "e0dbb39f",
+    "pattern": "iot",
+    "complexity": "xlarge",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 35,
+    "total_dependencies": 88,
+    "total_cost_monthly": 28247.05,
+    "generated_at": "2026-03-01T19:23:58.113001",
+    "variation_seed": 33312
+  },
+  "services": [
+    {
+      "id": "commands-iot-000",
+      "name": "commands-iot",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 733.81,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "digital-twin-kinesis-001",
+      "name": "digital-twin-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 602.57,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "digital-twin-lambda-002",
+      "name": "digital-twin-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 138.73,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "commands-dynamodb-003",
+      "name": "commands-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 301.08,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "firmware-s3-004",
+      "name": "firmware-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 280.26,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-shadow-005",
+      "name": "hot-shadow",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 67.87,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-shadow-006",
+      "name": "staging-shadow",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1430.53,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cold-device-mgr-007",
+      "name": "cold-device-mgr",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 653.67,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-device-mgr-008",
+      "name": "core-device-mgr",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 499.71,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-fleet-009",
+      "name": "shared-fleet",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 18.27,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cold-fleet-010",
+      "name": "cold-fleet",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 149.17,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "shared-rules-engine-011",
+      "name": "shared-rules-engine",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 51.12,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-telemetry-012",
+      "name": "shared-telemetry",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 175.57,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-commands-013",
+      "name": "edge-commands",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 829.62,
+      "owner": "api-gateway-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-digital-twin-014",
+      "name": "shared-digital-twin",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 582.63,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-telemetry-015",
+      "name": "batch-telemetry",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 908.5,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-telemetry-016",
+      "name": "fast-telemetry",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 17.61,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-alerts-017",
+      "name": "core-alerts",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 2527.13,
+      "owner": "security",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "main-firmware-018",
+      "name": "main-firmware",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 36.44,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-firmware-019",
+      "name": "fast-firmware",
+      "type": "storage",
+      "aws_service": "Amazon EFS",
+      "cost_monthly": 169.59,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-telemetry-020",
+      "name": "fast-telemetry",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 54.99,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-rules-engine-021",
+      "name": "batch-rules-engine",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 1618.49,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "central-commands-022",
+      "name": "central-commands",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1561.22,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-alerts-023",
+      "name": "private-alerts",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 597.09,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "primary-digital-twin-024",
+      "name": "primary-digital-twin",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 35.86,
+      "owner": "ml-ops",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "central-firmware-025",
+      "name": "central-firmware",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 665.17,
+      "owner": "api-gateway-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-commands-026",
+      "name": "private-commands",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 1702.12,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-alerts-027",
+      "name": "primary-alerts",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 2934.14,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-provisioning-028",
+      "name": "fast-provisioning",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 2680.4,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-telemetry-029",
+      "name": "private-telemetry",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 195.23,
+      "owner": "growth-eng",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-firmware-030",
+      "name": "private-firmware",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Memcached",
+      "cost_monthly": 1078.75,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-commands-031",
+      "name": "backup-commands",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 2845.89,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-shadow-032",
+      "name": "public-shadow",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 25.58,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-commands-033",
+      "name": "private-commands",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 2011.59,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "secondary-telemetry-034",
+      "name": "secondary-telemetry",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 66.65,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "commands-iot-000",
+      "target": "digital-twin-kinesis-001",
+      "type": "queries",
+      "weight": 0.98
+    },
+    {
+      "source": "digital-twin-kinesis-001",
+      "target": "digital-twin-lambda-002",
+      "type": "queries",
+      "weight": 0.31
+    },
+    {
+      "source": "digital-twin-lambda-002",
+      "target": "commands-dynamodb-003",
+      "type": "queries",
+      "weight": 0.55
+    },
+    {
+      "source": "commands-dynamodb-003",
+      "target": "firmware-s3-004",
+      "type": "subscribes",
+      "weight": 0.61
+    },
+    {
+      "source": "firmware-s3-004",
+      "target": "hot-shadow-005",
+      "type": "triggers",
+      "weight": 0.51
+    },
+    {
+      "source": "hot-shadow-005",
+      "target": "staging-shadow-006",
+      "type": "triggers",
+      "weight": 0.37
+    },
+    {
+      "source": "staging-shadow-006",
+      "target": "cold-device-mgr-007",
+      "type": "reads",
+      "weight": 0.94
+    },
+    {
+      "source": "cold-device-mgr-007",
+      "target": "core-device-mgr-008",
+      "type": "reads",
+      "weight": 0.79
+    },
+    {
+      "source": "core-device-mgr-008",
+      "target": "shared-fleet-009",
+      "type": "triggers",
+      "weight": 0.64
+    },
+    {
+      "source": "shared-fleet-009",
+      "target": "cold-fleet-010",
+      "type": "caches",
+      "weight": 0.67
+    },
+    {
+      "source": "cold-fleet-010",
+      "target": "shared-rules-engine-011",
+      "type": "subscribes",
+      "weight": 0.33
+    },
+    {
+      "source": "shared-rules-engine-011",
+      "target": "shared-telemetry-012",
+      "type": "caches",
+      "weight": 1.0
+    },
+    {
+      "source": "shared-telemetry-012",
+      "target": "edge-commands-013",
+      "type": "subscribes",
+      "weight": 0.86
+    },
+    {
+      "source": "edge-commands-013",
+      "target": "shared-digital-twin-014",
+      "type": "subscribes",
+      "weight": 0.31
+    },
+    {
+      "source": "shared-digital-twin-014",
+      "target": "batch-telemetry-015",
+      "type": "reads",
+      "weight": 0.64
+    },
+    {
+      "source": "batch-telemetry-015",
+      "target": "fast-telemetry-016",
+      "type": "caches",
+      "weight": 0.67
+    },
+    {
+      "source": "fast-telemetry-016",
+      "target": "core-alerts-017",
+      "type": "calls",
+      "weight": 0.63
+    },
+    {
+      "source": "core-alerts-017",
+      "target": "main-firmware-018",
+      "type": "writes",
+      "weight": 0.81
+    },
+    {
+      "source": "main-firmware-018",
+      "target": "fast-firmware-019",
+      "type": "writes",
+      "weight": 0.58
+    },
+    {
+      "source": "fast-firmware-019",
+      "target": "fast-telemetry-020",
+      "type": "writes",
+      "weight": 0.76
+    },
+    {
+      "source": "fast-telemetry-020",
+      "target": "batch-rules-engine-021",
+      "type": "queries",
+      "weight": 0.61
+    },
+    {
+      "source": "batch-rules-engine-021",
+      "target": "central-commands-022",
+      "type": "calls",
+      "weight": 0.61
+    },
+    {
+      "source": "central-commands-022",
+      "target": "private-alerts-023",
+      "type": "triggers",
+      "weight": 0.64
+    },
+    {
+      "source": "private-alerts-023",
+      "target": "primary-digital-twin-024",
+      "type": "subscribes",
+      "weight": 0.6
+    },
+    {
+      "source": "primary-digital-twin-024",
+      "target": "central-firmware-025",
+      "type": "calls",
+      "weight": 0.99
+    },
+    {
+      "source": "central-firmware-025",
+      "target": "private-commands-026",
+      "type": "triggers",
+      "weight": 1.0
+    },
+    {
+      "source": "private-commands-026",
+      "target": "primary-alerts-027",
+      "type": "reads",
+      "weight": 0.39
+    },
+    {
+      "source": "primary-alerts-027",
+      "target": "fast-provisioning-028",
+      "type": "writes",
+      "weight": 0.82
+    },
+    {
+      "source": "fast-provisioning-028",
+      "target": "private-telemetry-029",
+      "type": "reads",
+      "weight": 0.33
+    },
+    {
+      "source": "private-telemetry-029",
+      "target": "private-firmware-030",
+      "type": "caches",
+      "weight": 0.94
+    },
+    {
+      "source": "private-firmware-030",
+      "target": "backup-commands-031",
+      "type": "calls",
+      "weight": 0.77
+    },
+    {
+      "source": "backup-commands-031",
+      "target": "public-shadow-032",
+      "type": "reads",
+      "weight": 0.63
+    },
+    {
+      "source": "public-shadow-032",
+      "target": "private-commands-033",
+      "type": "caches",
+      "weight": 0.41
+    },
+    {
+      "source": "private-commands-033",
+      "target": "secondary-telemetry-034",
+      "type": "writes",
+      "weight": 0.65
+    },
+    {
+      "source": "primary-alerts-027",
+      "target": "batch-rules-engine-021",
+      "type": "queries",
+      "weight": 0.51
+    },
+    {
+      "source": "hot-shadow-005",
+      "target": "fast-telemetry-020",
+      "type": "calls",
+      "weight": 0.43
+    },
+    {
+      "source": "batch-telemetry-015",
+      "target": "digital-twin-kinesis-001",
+      "type": "triggers",
+      "weight": 0.59
+    },
+    {
+      "source": "edge-commands-013",
+      "target": "fast-firmware-019",
+      "type": "calls",
+      "weight": 0.84
+    },
+    {
+      "source": "private-telemetry-029",
+      "target": "core-device-mgr-008",
+      "type": "reads",
+      "weight": 0.84
+    },
+    {
+      "source": "main-firmware-018",
+      "target": "batch-telemetry-015",
+      "type": "queries",
+      "weight": 0.11
+    },
+    {
+      "source": "commands-iot-000",
+      "target": "shared-rules-engine-011",
+      "type": "triggers",
+      "weight": 0.77
+    },
+    {
+      "source": "secondary-telemetry-034",
+      "target": "shared-rules-engine-011",
+      "type": "writes",
+      "weight": 0.76
+    },
+    {
+      "source": "commands-iot-000",
+      "target": "firmware-s3-004",
+      "type": "writes",
+      "weight": 0.83
+    },
+    {
+      "source": "shared-fleet-009",
+      "target": "digital-twin-lambda-002",
+      "type": "reads",
+      "weight": 0.47
+    },
+    {
+      "source": "shared-rules-engine-011",
+      "target": "private-commands-026",
+      "type": "calls",
+      "weight": 0.28
+    },
+    {
+      "source": "secondary-telemetry-034",
+      "target": "core-device-mgr-008",
+      "type": "triggers",
+      "weight": 0.38
+    },
+    {
+      "source": "shared-digital-twin-014",
+      "target": "primary-digital-twin-024",
+      "type": "queries",
+      "weight": 0.36
+    },
+    {
+      "source": "private-commands-026",
+      "target": "commands-iot-000",
+      "type": "triggers",
+      "weight": 0.98
+    },
+    {
+      "source": "fast-firmware-019",
+      "target": "firmware-s3-004",
+      "type": "writes",
+      "weight": 0.19
+    },
+    {
+      "source": "fast-provisioning-028",
+      "target": "fast-firmware-019",
+      "type": "calls",
+      "weight": 0.18
+    },
+    {
+      "source": "private-commands-033",
+      "target": "digital-twin-lambda-002",
+      "type": "subscribes",
+      "weight": 0.75
+    },
+    {
+      "source": "primary-alerts-027",
+      "target": "commands-iot-000",
+      "type": "triggers",
+      "weight": 0.73
+    },
+    {
+      "source": "cold-device-mgr-007",
+      "target": "edge-commands-013",
+      "type": "calls",
+      "weight": 0.75
+    },
+    {
+      "source": "secondary-telemetry-034",
+      "target": "central-firmware-025",
+      "type": "calls",
+      "weight": 0.69
+    },
+    {
+      "source": "firmware-s3-004",
+      "target": "shared-rules-engine-011",
+      "type": "reads",
+      "weight": 0.21
+    },
+    {
+      "source": "commands-dynamodb-003",
+      "target": "private-telemetry-029",
+      "type": "caches",
+      "weight": 0.44
+    },
+    {
+      "source": "shared-rules-engine-011",
+      "target": "staging-shadow-006",
+      "type": "calls",
+      "weight": 0.14
+    },
+    {
+      "source": "fast-telemetry-020",
+      "target": "cold-device-mgr-007",
+      "type": "caches",
+      "weight": 0.71
+    },
+    {
+      "source": "private-firmware-030",
+      "target": "core-device-mgr-008",
+      "type": "caches",
+      "weight": 0.8
+    },
+    {
+      "source": "public-shadow-032",
+      "target": "firmware-s3-004",
+      "type": "caches",
+      "weight": 0.22
+    },
+    {
+      "source": "staging-shadow-006",
+      "target": "private-commands-033",
+      "type": "writes",
+      "weight": 0.17
+    },
+    {
+      "source": "shared-digital-twin-014",
+      "target": "core-device-mgr-008",
+      "type": "calls",
+      "weight": 0.21
+    },
+    {
+      "source": "private-commands-033",
+      "target": "private-firmware-030",
+      "type": "reads",
+      "weight": 0.68
+    },
+    {
+      "source": "fast-firmware-019",
+      "target": "fast-telemetry-016",
+      "type": "calls",
+      "weight": 0.91
+    },
+    {
+      "source": "shared-rules-engine-011",
+      "target": "cold-device-mgr-007",
+      "type": "queries",
+      "weight": 0.13
+    },
+    {
+      "source": "fast-telemetry-016",
+      "target": "batch-rules-engine-021",
+      "type": "queries",
+      "weight": 0.26
+    },
+    {
+      "source": "public-shadow-032",
+      "target": "primary-alerts-027",
+      "type": "triggers",
+      "weight": 0.67
+    },
+    {
+      "source": "central-firmware-025",
+      "target": "private-alerts-023",
+      "type": "writes",
+      "weight": 0.55
+    },
+    {
+      "source": "shared-digital-twin-014",
+      "target": "backup-commands-031",
+      "type": "writes",
+      "weight": 0.6
+    },
+    {
+      "source": "batch-telemetry-015",
+      "target": "shared-telemetry-012",
+      "type": "reads",
+      "weight": 0.59
+    },
+    {
+      "source": "firmware-s3-004",
+      "target": "core-device-mgr-008",
+      "type": "reads",
+      "weight": 0.83
+    },
+    {
+      "source": "fast-telemetry-016",
+      "target": "fast-firmware-019",
+      "type": "calls",
+      "weight": 0.17
+    },
+    {
+      "source": "private-telemetry-029",
+      "target": "fast-telemetry-020",
+      "type": "queries",
+      "weight": 0.58
+    },
+    {
+      "source": "cold-fleet-010",
+      "target": "primary-alerts-027",
+      "type": "calls",
+      "weight": 0.3
+    },
+    {
+      "source": "cold-device-mgr-007",
+      "target": "main-firmware-018",
+      "type": "writes",
+      "weight": 0.42
+    },
+    {
+      "source": "fast-firmware-019",
+      "target": "private-firmware-030",
+      "type": "writes",
+      "weight": 0.99
+    },
+    {
+      "source": "backup-commands-031",
+      "target": "commands-dynamodb-003",
+      "type": "caches",
+      "weight": 0.3
+    },
+    {
+      "source": "primary-alerts-027",
+      "target": "shared-digital-twin-014",
+      "type": "queries",
+      "weight": 0.87
+    },
+    {
+      "source": "firmware-s3-004",
+      "target": "core-alerts-017",
+      "type": "calls",
+      "weight": 0.55
+    },
+    {
+      "source": "commands-iot-000",
+      "target": "backup-commands-031",
+      "type": "caches",
+      "weight": 0.22
+    },
+    {
+      "source": "shared-digital-twin-014",
+      "target": "digital-twin-kinesis-001",
+      "type": "caches",
+      "weight": 0.3
+    },
+    {
+      "source": "private-commands-033",
+      "target": "primary-digital-twin-024",
+      "type": "triggers",
+      "weight": 0.99
+    },
+    {
+      "source": "private-commands-026",
+      "target": "digital-twin-kinesis-001",
+      "type": "caches",
+      "weight": 0.74
+    },
+    {
+      "source": "private-telemetry-029",
+      "target": "fast-provisioning-028",
+      "type": "queries",
+      "weight": 0.8
+    },
+    {
+      "source": "private-telemetry-029",
+      "target": "shared-telemetry-012",
+      "type": "reads",
+      "weight": 0.75
+    },
+    {
+      "source": "staging-shadow-006",
+      "target": "private-telemetry-029",
+      "type": "reads",
+      "weight": 0.6
+    },
+    {
+      "source": "batch-rules-engine-021",
+      "target": "main-firmware-018",
+      "type": "queries",
+      "weight": 0.49
+    },
+    {
+      "source": "primary-digital-twin-024",
+      "target": "digital-twin-kinesis-001",
+      "type": "queries",
+      "weight": 0.1
+    }
+  ]
+}

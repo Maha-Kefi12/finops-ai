@@ -1,0 +1,137 @@
+{
+  "metadata": {
+    "name": "Edtech (Startup, ap-southeast-1)",
+    "id": "3b676ece",
+    "pattern": "edtech",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 5,
+    "total_dependencies": 6,
+    "total_cost_monthly": 2089.24,
+    "generated_at": "2026-03-01T19:23:58.385069",
+    "variation_seed": 45092
+  },
+  "services": [
+    {
+      "id": "forums-cloudfront-000",
+      "name": "forums-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 249.05,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "enrollment-ec2-001",
+      "name": "enrollment-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 206.19,
+      "owner": "payments",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "assessments-rds-002",
+      "name": "assessments-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 555.89,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "progress-s3-003",
+      "name": "progress-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 955.31,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "progress-elasticache-004",
+      "name": "progress-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 122.8,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "forums-cloudfront-000",
+      "target": "enrollment-ec2-001",
+      "type": "reads",
+      "weight": 0.83
+    },
+    {
+      "source": "enrollment-ec2-001",
+      "target": "assessments-rds-002",
+      "type": "caches",
+      "weight": 0.83
+    },
+    {
+      "source": "assessments-rds-002",
+      "target": "progress-s3-003",
+      "type": "triggers",
+      "weight": 0.99
+    },
+    {
+      "source": "progress-s3-003",
+      "target": "progress-elasticache-004",
+      "type": "writes",
+      "weight": 0.33
+    },
+    {
+      "source": "progress-elasticache-004",
+      "target": "progress-s3-003",
+      "type": "triggers",
+      "weight": 0.67
+    },
+    {
+      "source": "progress-elasticache-004",
+      "target": "enrollment-ec2-001",
+      "type": "queries",
+      "weight": 0.62
+    }
+  ]
+}

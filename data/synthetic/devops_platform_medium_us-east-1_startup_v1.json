@@ -1,0 +1,233 @@
+{
+  "metadata": {
+    "name": "Devops Platform (Startup, us-east-1)",
+    "id": "46258904",
+    "pattern": "devops_platform",
+    "complexity": "medium",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 8,
+    "total_dependencies": 14,
+    "total_cost_monthly": 2254.87,
+    "generated_at": "2026-03-01T19:23:58.729561",
+    "variation_seed": 60530
+  },
+  "services": [
+    {
+      "id": "ci-runner-alb-000",
+      "name": "ci-runner-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 39.38,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "log-aggregator-eks-001",
+      "name": "log-aggregator-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 478.1,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "artifact-store-rds-002",
+      "name": "artifact-store-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 285.71,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "artifact-store-s3-003",
+      "name": "artifact-store-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 461.44,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "scanner-elasticache-004",
+      "name": "scanner-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 385.22,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "realtime-log-aggregator-005",
+      "name": "realtime-log-aggregator",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 453.63,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-artifact-store-006",
+      "name": "core-artifact-store",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 60.56,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "async-deploy-agent-007",
+      "name": "async-deploy-agent",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 90.83,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "ci-runner-alb-000",
+      "target": "log-aggregator-eks-001",
+      "type": "triggers",
+      "weight": 0.97
+    },
+    {
+      "source": "log-aggregator-eks-001",
+      "target": "artifact-store-rds-002",
+      "type": "caches",
+      "weight": 0.62
+    },
+    {
+      "source": "artifact-store-rds-002",
+      "target": "artifact-store-s3-003",
+      "type": "queries",
+      "weight": 0.98
+    },
+    {
+      "source": "artifact-store-s3-003",
+      "target": "scanner-elasticache-004",
+      "type": "triggers",
+      "weight": 0.55
+    },
+    {
+      "source": "scanner-elasticache-004",
+      "target": "realtime-log-aggregator-005",
+      "type": "reads",
+      "weight": 0.63
+    },
+    {
+      "source": "realtime-log-aggregator-005",
+      "target": "core-artifact-store-006",
+      "type": "reads",
+      "weight": 0.82
+    },
+    {
+      "source": "core-artifact-store-006",
+      "target": "async-deploy-agent-007",
+      "type": "triggers",
+      "weight": 0.44
+    },
+    {
+      "source": "async-deploy-agent-007",
+      "target": "artifact-store-rds-002",
+      "type": "writes",
+      "weight": 0.5
+    },
+    {
+      "source": "realtime-log-aggregator-005",
+      "target": "async-deploy-agent-007",
+      "type": "queries",
+      "weight": 0.46
+    },
+    {
+      "source": "log-aggregator-eks-001",
+      "target": "artifact-store-s3-003",
+      "type": "triggers",
+      "weight": 0.7
+    },
+    {
+      "source": "realtime-log-aggregator-005",
+      "target": "artifact-store-s3-003",
+      "type": "calls",
+      "weight": 0.18
+    },
+    {
+      "source": "log-aggregator-eks-001",
+      "target": "ci-runner-alb-000",
+      "type": "caches",
+      "weight": 0.55
+    },
+    {
+      "source": "log-aggregator-eks-001",
+      "target": "async-deploy-agent-007",
+      "type": "reads",
+      "weight": 0.34
+    },
+    {
+      "source": "core-artifact-store-006",
+      "target": "scanner-elasticache-004",
+      "type": "caches",
+      "weight": 0.34
+    }
+  ]
+}

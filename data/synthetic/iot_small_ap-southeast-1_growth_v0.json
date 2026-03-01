@@ -1,0 +1,153 @@
+{
+  "metadata": {
+    "name": "Iot (Growth, ap-southeast-1)",
+    "id": "a4b55084",
+    "pattern": "iot",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 6,
+    "total_dependencies": 6,
+    "total_cost_monthly": 3530.03,
+    "generated_at": "2026-03-01T19:23:58.044566",
+    "variation_seed": 30236
+  },
+  "services": [
+    {
+      "id": "alerts-iot-000",
+      "name": "alerts-iot",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 92.13,
+      "owner": "growth-eng",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "firmware-kinesis-001",
+      "name": "firmware-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 854.59,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "rules-engine-lambda-002",
+      "name": "rules-engine-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 476.54,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fleet-dynamodb-003",
+      "name": "fleet-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 148.05,
+      "owner": "payments",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "alerts-s3-004",
+      "name": "alerts-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 791.59,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-provisioning-005",
+      "name": "batch-provisioning",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1167.13,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "alerts-iot-000",
+      "target": "firmware-kinesis-001",
+      "type": "queries",
+      "weight": 0.5
+    },
+    {
+      "source": "firmware-kinesis-001",
+      "target": "rules-engine-lambda-002",
+      "type": "subscribes",
+      "weight": 0.32
+    },
+    {
+      "source": "rules-engine-lambda-002",
+      "target": "fleet-dynamodb-003",
+      "type": "subscribes",
+      "weight": 0.67
+    },
+    {
+      "source": "fleet-dynamodb-003",
+      "target": "alerts-s3-004",
+      "type": "caches",
+      "weight": 0.96
+    },
+    {
+      "source": "alerts-s3-004",
+      "target": "batch-provisioning-005",
+      "type": "queries",
+      "weight": 0.35
+    },
+    {
+      "source": "alerts-iot-000",
+      "target": "alerts-s3-004",
+      "type": "subscribes",
+      "weight": 0.55
+    }
+  ]
+}

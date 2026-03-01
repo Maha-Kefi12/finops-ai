@@ -1,0 +1,159 @@
+{
+  "metadata": {
+    "name": "Social Media (Enterprise, eu-west-1)",
+    "id": "10474c44",
+    "pattern": "social_media",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 6,
+    "total_dependencies": 7,
+    "total_cost_monthly": 12319.42,
+    "generated_at": "2026-03-01T19:23:58.558133",
+    "variation_seed": 52432
+  },
+  "services": [
+    {
+      "id": "moderation-alb-000",
+      "name": "moderation-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 21.72,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "feed-eks-001",
+      "name": "feed-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 1445.5,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "messaging-aurora-002",
+      "name": "messaging-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 7943.02,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "messaging-elasticache-003",
+      "name": "messaging-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1449.87,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "profiles-cloudfront-004",
+      "name": "profiles-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 778.34,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-moderation-005",
+      "name": "staging-moderation",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 680.97,
+      "owner": "security",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "moderation-alb-000",
+      "target": "feed-eks-001",
+      "type": "reads",
+      "weight": 0.4
+    },
+    {
+      "source": "feed-eks-001",
+      "target": "messaging-aurora-002",
+      "type": "caches",
+      "weight": 0.64
+    },
+    {
+      "source": "messaging-aurora-002",
+      "target": "messaging-elasticache-003",
+      "type": "queries",
+      "weight": 0.95
+    },
+    {
+      "source": "messaging-elasticache-003",
+      "target": "profiles-cloudfront-004",
+      "type": "writes",
+      "weight": 0.99
+    },
+    {
+      "source": "profiles-cloudfront-004",
+      "target": "staging-moderation-005",
+      "type": "caches",
+      "weight": 0.49
+    },
+    {
+      "source": "feed-eks-001",
+      "target": "staging-moderation-005",
+      "type": "caches",
+      "weight": 0.35
+    },
+    {
+      "source": "messaging-elasticache-003",
+      "target": "staging-moderation-005",
+      "type": "calls",
+      "weight": 0.68
+    }
+  ]
+}

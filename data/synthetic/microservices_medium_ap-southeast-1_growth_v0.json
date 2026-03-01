@@ -1,0 +1,283 @@
+{
+  "metadata": {
+    "name": "Microservices (Growth, ap-southeast-1)",
+    "id": "3200b0e7",
+    "pattern": "microservices",
+    "complexity": "medium",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 10,
+    "total_dependencies": 17,
+    "total_cost_monthly": 4959.25,
+    "generated_at": "2026-03-01T19:23:57.716742",
+    "variation_seed": 16286
+  },
+  "services": [
+    {
+      "id": "webhook-svc-alb-000",
+      "name": "webhook-svc-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 113.09,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "order-svc-ecs-001",
+      "name": "order-svc-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1171.86,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "order-svc-rds-002",
+      "name": "order-svc-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 1594.47,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "notification-svc-elasticache-003",
+      "name": "notification-svc-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 832.4,
+      "owner": "payments",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "config-svc-sqs-004",
+      "name": "config-svc-sqs",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 59.09,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-order-svc-005",
+      "name": "fast-order-svc",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 79.7,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "realtime-payment-svc-006",
+      "name": "realtime-payment-svc",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 483.7,
+      "owner": "security",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-user-svc-007",
+      "name": "private-user-svc",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 213.17,
+      "owner": "security",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "fast-order-svc-008",
+      "name": "fast-order-svc",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 95.75,
+      "owner": "security",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-gateway-009",
+      "name": "public-gateway",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 316.02,
+      "owner": "security",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "webhook-svc-alb-000",
+      "target": "order-svc-ecs-001",
+      "type": "queries",
+      "weight": 0.69
+    },
+    {
+      "source": "order-svc-ecs-001",
+      "target": "order-svc-rds-002",
+      "type": "reads",
+      "weight": 0.7
+    },
+    {
+      "source": "order-svc-rds-002",
+      "target": "notification-svc-elasticache-003",
+      "type": "caches",
+      "weight": 0.98
+    },
+    {
+      "source": "notification-svc-elasticache-003",
+      "target": "config-svc-sqs-004",
+      "type": "subscribes",
+      "weight": 0.81
+    },
+    {
+      "source": "config-svc-sqs-004",
+      "target": "fast-order-svc-005",
+      "type": "queries",
+      "weight": 0.99
+    },
+    {
+      "source": "fast-order-svc-005",
+      "target": "realtime-payment-svc-006",
+      "type": "reads",
+      "weight": 0.87
+    },
+    {
+      "source": "realtime-payment-svc-006",
+      "target": "private-user-svc-007",
+      "type": "caches",
+      "weight": 0.33
+    },
+    {
+      "source": "private-user-svc-007",
+      "target": "fast-order-svc-008",
+      "type": "queries",
+      "weight": 0.79
+    },
+    {
+      "source": "fast-order-svc-008",
+      "target": "public-gateway-009",
+      "type": "triggers",
+      "weight": 0.31
+    },
+    {
+      "source": "private-user-svc-007",
+      "target": "fast-order-svc-005",
+      "type": "writes",
+      "weight": 0.44
+    },
+    {
+      "source": "webhook-svc-alb-000",
+      "target": "notification-svc-elasticache-003",
+      "type": "writes",
+      "weight": 0.76
+    },
+    {
+      "source": "private-user-svc-007",
+      "target": "public-gateway-009",
+      "type": "caches",
+      "weight": 0.39
+    },
+    {
+      "source": "public-gateway-009",
+      "target": "webhook-svc-alb-000",
+      "type": "subscribes",
+      "weight": 0.43
+    },
+    {
+      "source": "config-svc-sqs-004",
+      "target": "private-user-svc-007",
+      "type": "caches",
+      "weight": 0.74
+    },
+    {
+      "source": "private-user-svc-007",
+      "target": "webhook-svc-alb-000",
+      "type": "calls",
+      "weight": 0.38
+    },
+    {
+      "source": "config-svc-sqs-004",
+      "target": "webhook-svc-alb-000",
+      "type": "subscribes",
+      "weight": 0.55
+    },
+    {
+      "source": "order-svc-rds-002",
+      "target": "private-user-svc-007",
+      "type": "subscribes",
+      "weight": 0.6
+    }
+  ]
+}

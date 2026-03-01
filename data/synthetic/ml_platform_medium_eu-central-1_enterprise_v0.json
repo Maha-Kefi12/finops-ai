@@ -1,0 +1,281 @@
+{
+  "metadata": {
+    "name": "Ml Platform (Enterprise, eu-central-1)",
+    "id": "655720bd",
+    "pattern": "ml_platform",
+    "complexity": "medium",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 11,
+    "total_dependencies": 14,
+    "total_cost_monthly": 23285.35,
+    "generated_at": "2026-03-01T19:23:57.892782",
+    "variation_seed": 24160
+  },
+  "services": [
+    {
+      "id": "datasets-sagemaker-000",
+      "name": "datasets-sagemaker",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 8394.88,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "features-s3-001",
+      "name": "features-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 303.22,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "monitoring-glue-002",
+      "name": "monitoring-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 829.37,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "experiment-redshift-003",
+      "name": "experiment-redshift",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 4918.19,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "pipeline-ec2-004",
+      "name": "pipeline-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 4176.34,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-serving-005",
+      "name": "global-serving",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 483.86,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "central-inference-006",
+      "name": "central-inference",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 654.44,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "realtime-pipeline-007",
+      "name": "realtime-pipeline",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 105.2,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-pipeline-008",
+      "name": "batch-pipeline",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 2520.94,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-datasets-009",
+      "name": "secondary-datasets",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 725.73,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-training-010",
+      "name": "main-training",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 173.18,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "datasets-sagemaker-000",
+      "target": "features-s3-001",
+      "type": "triggers",
+      "weight": 0.43
+    },
+    {
+      "source": "features-s3-001",
+      "target": "monitoring-glue-002",
+      "type": "calls",
+      "weight": 0.77
+    },
+    {
+      "source": "monitoring-glue-002",
+      "target": "experiment-redshift-003",
+      "type": "triggers",
+      "weight": 0.78
+    },
+    {
+      "source": "experiment-redshift-003",
+      "target": "pipeline-ec2-004",
+      "type": "caches",
+      "weight": 0.69
+    },
+    {
+      "source": "pipeline-ec2-004",
+      "target": "global-serving-005",
+      "type": "queries",
+      "weight": 0.95
+    },
+    {
+      "source": "global-serving-005",
+      "target": "central-inference-006",
+      "type": "writes",
+      "weight": 0.48
+    },
+    {
+      "source": "central-inference-006",
+      "target": "realtime-pipeline-007",
+      "type": "subscribes",
+      "weight": 0.53
+    },
+    {
+      "source": "realtime-pipeline-007",
+      "target": "batch-pipeline-008",
+      "type": "reads",
+      "weight": 0.98
+    },
+    {
+      "source": "batch-pipeline-008",
+      "target": "secondary-datasets-009",
+      "type": "reads",
+      "weight": 0.61
+    },
+    {
+      "source": "secondary-datasets-009",
+      "target": "main-training-010",
+      "type": "writes",
+      "weight": 0.56
+    },
+    {
+      "source": "central-inference-006",
+      "target": "main-training-010",
+      "type": "queries",
+      "weight": 0.63
+    },
+    {
+      "source": "experiment-redshift-003",
+      "target": "realtime-pipeline-007",
+      "type": "writes",
+      "weight": 0.21
+    },
+    {
+      "source": "features-s3-001",
+      "target": "secondary-datasets-009",
+      "type": "writes",
+      "weight": 0.39
+    },
+    {
+      "source": "main-training-010",
+      "target": "global-serving-005",
+      "type": "subscribes",
+      "weight": 0.92
+    }
+  ]
+}

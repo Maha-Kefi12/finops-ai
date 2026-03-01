@@ -1,0 +1,1131 @@
+{
+  "metadata": {
+    "name": "Ecommerce (Growth, us-east-1)",
+    "id": "93891b77",
+    "pattern": "ecommerce",
+    "complexity": "xlarge",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 42,
+    "total_dependencies": 73,
+    "total_cost_monthly": 25160.4,
+    "generated_at": "2026-03-01T19:23:57.409528",
+    "variation_seed": 2932
+  },
+  "services": [
+    {
+      "id": "catalog-alb-000",
+      "name": "catalog-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 130.9,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "promotions-ec2-001",
+      "name": "promotions-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 533.54,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "catalog-ec2-002",
+      "name": "catalog-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1342.97,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "reviews-rds-003",
+      "name": "reviews-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 1272.07,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cart-elasticache-004",
+      "name": "cart-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1360.92,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "internal-cart-005",
+      "name": "internal-cart",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 47.31,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-storefront-006",
+      "name": "public-storefront",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 53.16,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-promotions-007",
+      "name": "edge-promotions",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 340.69,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-cart-008",
+      "name": "central-cart",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 859.39,
+      "owner": "frontend-guild",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-catalog-009",
+      "name": "edge-catalog",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1189.84,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-inventory-010",
+      "name": "hot-inventory",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 105.05,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "global-shipping-011",
+      "name": "global-shipping",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 67.18,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-pricing-012",
+      "name": "primary-pricing",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 679.62,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-promotions-013",
+      "name": "cold-promotions",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 131.2,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "main-inventory-014",
+      "name": "main-inventory",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 706.41,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-reviews-015",
+      "name": "shared-reviews",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 76.17,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-reviews-016",
+      "name": "regional-reviews",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 768.34,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-returns-017",
+      "name": "global-returns",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 1426.64,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-returns-018",
+      "name": "cold-returns",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 574.53,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "shared-promotions-019",
+      "name": "shared-promotions",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 413.61,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-checkout-020",
+      "name": "global-checkout",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 170.58,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-returns-021",
+      "name": "secondary-returns",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 773.37,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-checkout-022",
+      "name": "central-checkout",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 14.62,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cold-promotions-023",
+      "name": "cold-promotions",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 53.57,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-shipping-024",
+      "name": "private-shipping",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1224.69,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-inventory-025",
+      "name": "internal-inventory",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 1189.63,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-inventory-026",
+      "name": "staging-inventory",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 679.23,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-catalog-027",
+      "name": "batch-catalog",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 681.57,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-storefront-028",
+      "name": "central-storefront",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 536.08,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-reviews-029",
+      "name": "global-reviews",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 981.66,
+      "owner": "api-gateway-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cold-catalog-030",
+      "name": "cold-catalog",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 163.0,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-catalog-031",
+      "name": "staging-catalog",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 839.13,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-checkout-032",
+      "name": "main-checkout",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 454.68,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "fast-pricing-033",
+      "name": "fast-pricing",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 35.14,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-reviews-034",
+      "name": "main-reviews",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 699.15,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-cart-035",
+      "name": "private-cart",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 895.63,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "staging-shipping-036",
+      "name": "staging-shipping",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 142.2,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-pricing-037",
+      "name": "cold-pricing",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1406.44,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-promotions-038",
+      "name": "core-promotions",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 125.03,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-reviews-039",
+      "name": "staging-reviews",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 870.04,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-pricing-040",
+      "name": "edge-pricing",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 1122.41,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "staging-reviews-041",
+      "name": "staging-reviews",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 23.01,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "catalog-alb-000",
+      "target": "promotions-ec2-001",
+      "type": "queries",
+      "weight": 0.95
+    },
+    {
+      "source": "promotions-ec2-001",
+      "target": "catalog-ec2-002",
+      "type": "caches",
+      "weight": 0.36
+    },
+    {
+      "source": "catalog-ec2-002",
+      "target": "reviews-rds-003",
+      "type": "queries",
+      "weight": 0.66
+    },
+    {
+      "source": "reviews-rds-003",
+      "target": "cart-elasticache-004",
+      "type": "caches",
+      "weight": 0.33
+    },
+    {
+      "source": "cart-elasticache-004",
+      "target": "internal-cart-005",
+      "type": "queries",
+      "weight": 0.54
+    },
+    {
+      "source": "internal-cart-005",
+      "target": "public-storefront-006",
+      "type": "subscribes",
+      "weight": 0.59
+    },
+    {
+      "source": "public-storefront-006",
+      "target": "edge-promotions-007",
+      "type": "writes",
+      "weight": 0.76
+    },
+    {
+      "source": "edge-promotions-007",
+      "target": "central-cart-008",
+      "type": "triggers",
+      "weight": 0.83
+    },
+    {
+      "source": "central-cart-008",
+      "target": "edge-catalog-009",
+      "type": "writes",
+      "weight": 0.51
+    },
+    {
+      "source": "edge-catalog-009",
+      "target": "hot-inventory-010",
+      "type": "queries",
+      "weight": 0.67
+    },
+    {
+      "source": "hot-inventory-010",
+      "target": "global-shipping-011",
+      "type": "triggers",
+      "weight": 0.59
+    },
+    {
+      "source": "global-shipping-011",
+      "target": "primary-pricing-012",
+      "type": "calls",
+      "weight": 0.98
+    },
+    {
+      "source": "primary-pricing-012",
+      "target": "cold-promotions-013",
+      "type": "reads",
+      "weight": 0.59
+    },
+    {
+      "source": "cold-promotions-013",
+      "target": "main-inventory-014",
+      "type": "calls",
+      "weight": 0.54
+    },
+    {
+      "source": "main-inventory-014",
+      "target": "shared-reviews-015",
+      "type": "calls",
+      "weight": 0.56
+    },
+    {
+      "source": "shared-reviews-015",
+      "target": "regional-reviews-016",
+      "type": "writes",
+      "weight": 0.4
+    },
+    {
+      "source": "regional-reviews-016",
+      "target": "global-returns-017",
+      "type": "triggers",
+      "weight": 0.41
+    },
+    {
+      "source": "global-returns-017",
+      "target": "cold-returns-018",
+      "type": "calls",
+      "weight": 0.62
+    },
+    {
+      "source": "cold-returns-018",
+      "target": "shared-promotions-019",
+      "type": "triggers",
+      "weight": 0.3
+    },
+    {
+      "source": "shared-promotions-019",
+      "target": "global-checkout-020",
+      "type": "triggers",
+      "weight": 0.61
+    },
+    {
+      "source": "global-checkout-020",
+      "target": "secondary-returns-021",
+      "type": "caches",
+      "weight": 0.93
+    },
+    {
+      "source": "secondary-returns-021",
+      "target": "central-checkout-022",
+      "type": "calls",
+      "weight": 0.41
+    },
+    {
+      "source": "central-checkout-022",
+      "target": "cold-promotions-023",
+      "type": "subscribes",
+      "weight": 0.53
+    },
+    {
+      "source": "cold-promotions-023",
+      "target": "private-shipping-024",
+      "type": "writes",
+      "weight": 0.65
+    },
+    {
+      "source": "private-shipping-024",
+      "target": "internal-inventory-025",
+      "type": "queries",
+      "weight": 0.36
+    },
+    {
+      "source": "internal-inventory-025",
+      "target": "staging-inventory-026",
+      "type": "reads",
+      "weight": 0.43
+    },
+    {
+      "source": "staging-inventory-026",
+      "target": "batch-catalog-027",
+      "type": "queries",
+      "weight": 0.61
+    },
+    {
+      "source": "batch-catalog-027",
+      "target": "central-storefront-028",
+      "type": "reads",
+      "weight": 0.6
+    },
+    {
+      "source": "central-storefront-028",
+      "target": "global-reviews-029",
+      "type": "triggers",
+      "weight": 0.68
+    },
+    {
+      "source": "global-reviews-029",
+      "target": "cold-catalog-030",
+      "type": "queries",
+      "weight": 0.71
+    },
+    {
+      "source": "cold-catalog-030",
+      "target": "staging-catalog-031",
+      "type": "writes",
+      "weight": 0.36
+    },
+    {
+      "source": "staging-catalog-031",
+      "target": "main-checkout-032",
+      "type": "queries",
+      "weight": 0.69
+    },
+    {
+      "source": "main-checkout-032",
+      "target": "fast-pricing-033",
+      "type": "subscribes",
+      "weight": 0.9
+    },
+    {
+      "source": "fast-pricing-033",
+      "target": "main-reviews-034",
+      "type": "subscribes",
+      "weight": 0.32
+    },
+    {
+      "source": "main-reviews-034",
+      "target": "private-cart-035",
+      "type": "queries",
+      "weight": 0.33
+    },
+    {
+      "source": "private-cart-035",
+      "target": "staging-shipping-036",
+      "type": "calls",
+      "weight": 0.96
+    },
+    {
+      "source": "staging-shipping-036",
+      "target": "cold-pricing-037",
+      "type": "writes",
+      "weight": 0.84
+    },
+    {
+      "source": "cold-pricing-037",
+      "target": "core-promotions-038",
+      "type": "triggers",
+      "weight": 0.51
+    },
+    {
+      "source": "core-promotions-038",
+      "target": "staging-reviews-039",
+      "type": "reads",
+      "weight": 0.79
+    },
+    {
+      "source": "staging-reviews-039",
+      "target": "edge-pricing-040",
+      "type": "caches",
+      "weight": 0.3
+    },
+    {
+      "source": "edge-pricing-040",
+      "target": "staging-reviews-041",
+      "type": "calls",
+      "weight": 0.65
+    },
+    {
+      "source": "edge-catalog-009",
+      "target": "promotions-ec2-001",
+      "type": "subscribes",
+      "weight": 0.52
+    },
+    {
+      "source": "staging-shipping-036",
+      "target": "staging-catalog-031",
+      "type": "subscribes",
+      "weight": 0.25
+    },
+    {
+      "source": "global-checkout-020",
+      "target": "internal-inventory-025",
+      "type": "calls",
+      "weight": 0.4
+    },
+    {
+      "source": "private-shipping-024",
+      "target": "primary-pricing-012",
+      "type": "caches",
+      "weight": 0.72
+    },
+    {
+      "source": "central-cart-008",
+      "target": "private-shipping-024",
+      "type": "triggers",
+      "weight": 0.49
+    },
+    {
+      "source": "staging-reviews-041",
+      "target": "private-cart-035",
+      "type": "triggers",
+      "weight": 0.45
+    },
+    {
+      "source": "catalog-ec2-002",
+      "target": "edge-catalog-009",
+      "type": "calls",
+      "weight": 0.97
+    },
+    {
+      "source": "public-storefront-006",
+      "target": "hot-inventory-010",
+      "type": "queries",
+      "weight": 0.84
+    },
+    {
+      "source": "primary-pricing-012",
+      "target": "reviews-rds-003",
+      "type": "calls",
+      "weight": 0.33
+    },
+    {
+      "source": "promotions-ec2-001",
+      "target": "fast-pricing-033",
+      "type": "caches",
+      "weight": 0.13
+    },
+    {
+      "source": "staging-inventory-026",
+      "target": "private-shipping-024",
+      "type": "triggers",
+      "weight": 0.97
+    },
+    {
+      "source": "shared-promotions-019",
+      "target": "central-cart-008",
+      "type": "triggers",
+      "weight": 0.45
+    },
+    {
+      "source": "global-checkout-020",
+      "target": "primary-pricing-012",
+      "type": "calls",
+      "weight": 0.12
+    },
+    {
+      "source": "core-promotions-038",
+      "target": "promotions-ec2-001",
+      "type": "reads",
+      "weight": 0.13
+    },
+    {
+      "source": "cold-promotions-023",
+      "target": "catalog-ec2-002",
+      "type": "triggers",
+      "weight": 0.16
+    },
+    {
+      "source": "cart-elasticache-004",
+      "target": "global-shipping-011",
+      "type": "reads",
+      "weight": 0.15
+    },
+    {
+      "source": "fast-pricing-033",
+      "target": "cold-promotions-023",
+      "type": "subscribes",
+      "weight": 0.65
+    },
+    {
+      "source": "public-storefront-006",
+      "target": "central-checkout-022",
+      "type": "subscribes",
+      "weight": 0.92
+    },
+    {
+      "source": "catalog-ec2-002",
+      "target": "global-reviews-029",
+      "type": "writes",
+      "weight": 0.51
+    },
+    {
+      "source": "catalog-alb-000",
+      "target": "main-inventory-014",
+      "type": "subscribes",
+      "weight": 0.21
+    },
+    {
+      "source": "staging-reviews-041",
+      "target": "central-storefront-028",
+      "type": "triggers",
+      "weight": 0.13
+    },
+    {
+      "source": "promotions-ec2-001",
+      "target": "staging-inventory-026",
+      "type": "reads",
+      "weight": 0.96
+    },
+    {
+      "source": "cold-promotions-023",
+      "target": "hot-inventory-010",
+      "type": "caches",
+      "weight": 0.95
+    },
+    {
+      "source": "catalog-ec2-002",
+      "target": "internal-cart-005",
+      "type": "writes",
+      "weight": 0.47
+    },
+    {
+      "source": "batch-catalog-027",
+      "target": "cold-promotions-023",
+      "type": "queries",
+      "weight": 0.38
+    },
+    {
+      "source": "core-promotions-038",
+      "target": "central-checkout-022",
+      "type": "caches",
+      "weight": 0.24
+    },
+    {
+      "source": "central-checkout-022",
+      "target": "staging-inventory-026",
+      "type": "subscribes",
+      "weight": 0.7
+    },
+    {
+      "source": "public-storefront-006",
+      "target": "cold-returns-018",
+      "type": "writes",
+      "weight": 0.76
+    },
+    {
+      "source": "central-checkout-022",
+      "target": "regional-reviews-016",
+      "type": "caches",
+      "weight": 0.41
+    },
+    {
+      "source": "fast-pricing-033",
+      "target": "promotions-ec2-001",
+      "type": "subscribes",
+      "weight": 0.74
+    },
+    {
+      "source": "core-promotions-038",
+      "target": "batch-catalog-027",
+      "type": "triggers",
+      "weight": 0.26
+    },
+    {
+      "source": "private-cart-035",
+      "target": "global-returns-017",
+      "type": "triggers",
+      "weight": 0.12
+    }
+  ]
+}

@@ -1,0 +1,165 @@
+{
+  "metadata": {
+    "name": "Data Pipeline",
+    "pattern": "data_pipeline",
+    "complexity": "medium",
+    "environment": "production",
+    "region": "us-east-1",
+    "generated_at": "2026-03-01T16:13:45.269884",
+    "total_services": 8,
+    "total_cost_monthly": 15410.0
+  },
+  "services": [
+    {
+      "id": "api-001",
+      "name": "data-ingest-api",
+      "type": "service",
+      "environment": "production",
+      "owner": "data-team",
+      "cost_monthly": 600,
+      "attributes": {
+        "instance_type": "t3.large",
+        "instance_count": 10
+      }
+    },
+    {
+      "id": "worker-001",
+      "name": "stream-processor",
+      "type": "batch",
+      "environment": "production",
+      "owner": "data-team",
+      "cost_monthly": 4800,
+      "attributes": {
+        "instance_type": "c5.2xlarge",
+        "instance_count": 20
+      }
+    },
+    {
+      "id": "s3-001",
+      "name": "raw-data-lake",
+      "type": "storage",
+      "environment": "production",
+      "owner": "data-team",
+      "cost_monthly": 2300.0,
+      "attributes": {
+        "size_gb": 100000,
+        "storage_class": "STANDARD"
+      }
+    },
+    {
+      "id": "s3-002",
+      "name": "processed-data",
+      "type": "storage",
+      "environment": "production",
+      "owner": "data-team",
+      "cost_monthly": 5750.0,
+      "attributes": {
+        "size_gb": 250000,
+        "storage_class": "STANDARD"
+      }
+    },
+    {
+      "id": "worker-002",
+      "name": "etl-pipeline",
+      "type": "batch",
+      "environment": "production",
+      "owner": "data-team",
+      "cost_monthly": 360,
+      "attributes": {
+        "instance_type": "c5.large",
+        "instance_count": 6
+      }
+    },
+    {
+      "id": "database_postgres-001",
+      "name": "analytics-db",
+      "type": "database",
+      "environment": "production",
+      "owner": "data-team",
+      "cost_monthly": 960,
+      "attributes": {
+        "instance_type": "db.m5.2xlarge",
+        "instance_count": 2
+      }
+    },
+    {
+      "id": "queue_sqs-001",
+      "name": "data-queue",
+      "type": "queue",
+      "environment": "production",
+      "owner": "data-team",
+      "cost_monthly": 40.0,
+      "attributes": {
+        "messages_monthly": 100000000
+      }
+    },
+    {
+      "id": "api-002",
+      "name": "reporting-api",
+      "type": "service",
+      "environment": "production",
+      "owner": "analytics-team",
+      "cost_monthly": 600,
+      "attributes": {
+        "instance_type": "t3.large",
+        "instance_count": 10
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "api-001",
+      "target": "s3-001",
+      "type": "writes_to",
+      "weight": 1.0
+    },
+    {
+      "source": "api-001",
+      "target": "queue_sqs-001",
+      "type": "writes_to",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-001",
+      "target": "queue_sqs-001",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-001",
+      "target": "s3-001",
+      "type": "writes_to",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-002",
+      "target": "s3-001",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-002",
+      "target": "s3-002",
+      "type": "writes_to",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-002",
+      "target": "database_postgres-001",
+      "type": "writes_to",
+      "weight": 0.8
+    },
+    {
+      "source": "api-002",
+      "target": "database_postgres-001",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "api-002",
+      "target": "s3-002",
+      "type": "reads_from",
+      "weight": 0.5
+    }
+  ]
+}

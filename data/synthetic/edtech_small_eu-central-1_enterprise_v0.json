@@ -1,0 +1,137 @@
+{
+  "metadata": {
+    "name": "Edtech (Enterprise, eu-central-1)",
+    "id": "989ffc37",
+    "pattern": "edtech",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 5,
+    "total_dependencies": 6,
+    "total_cost_monthly": 4633.52,
+    "generated_at": "2026-03-01T19:23:58.388038",
+    "variation_seed": 45550
+  },
+  "services": [
+    {
+      "id": "certificates-cloudfront-000",
+      "name": "certificates-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 3233.94,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "assessments-ec2-001",
+      "name": "assessments-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 916.72,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "gradebook-rds-002",
+      "name": "gradebook-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 281.0,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "enrollment-s3-003",
+      "name": "enrollment-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 60.78,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "gradebook-elasticache-004",
+      "name": "gradebook-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 141.08,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "certificates-cloudfront-000",
+      "target": "assessments-ec2-001",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "assessments-ec2-001",
+      "target": "gradebook-rds-002",
+      "type": "queries",
+      "weight": 0.42
+    },
+    {
+      "source": "gradebook-rds-002",
+      "target": "enrollment-s3-003",
+      "type": "triggers",
+      "weight": 0.4
+    },
+    {
+      "source": "enrollment-s3-003",
+      "target": "gradebook-elasticache-004",
+      "type": "triggers",
+      "weight": 0.75
+    },
+    {
+      "source": "enrollment-s3-003",
+      "target": "assessments-ec2-001",
+      "type": "writes",
+      "weight": 0.95
+    },
+    {
+      "source": "certificates-cloudfront-000",
+      "target": "gradebook-rds-002",
+      "type": "reads",
+      "weight": 0.8
+    }
+  ]
+}

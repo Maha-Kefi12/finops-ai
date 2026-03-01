@@ -1,0 +1,159 @@
+{
+  "metadata": {
+    "name": "Microservices (Startup, eu-west-1)",
+    "id": "ed2e487d",
+    "pattern": "microservices",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 6,
+    "total_dependencies": 7,
+    "total_cost_monthly": 2388.46,
+    "generated_at": "2026-03-01T19:23:57.705558",
+    "variation_seed": 15146
+  },
+  "services": [
+    {
+      "id": "config-svc-alb-000",
+      "name": "config-svc-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 75.8,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "report-svc-ecs-001",
+      "name": "report-svc-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 785.59,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "search-svc-rds-002",
+      "name": "search-svc-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 779.55,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audit-svc-elasticache-003",
+      "name": "audit-svc-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 512.4,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "config-svc-sqs-004",
+      "name": "config-svc-sqs",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 70.36,
+      "owner": "frontend-guild",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-audit-svc-005",
+      "name": "hot-audit-svc",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 164.76,
+      "owner": "frontend-guild",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "config-svc-alb-000",
+      "target": "report-svc-ecs-001",
+      "type": "caches",
+      "weight": 0.83
+    },
+    {
+      "source": "report-svc-ecs-001",
+      "target": "search-svc-rds-002",
+      "type": "reads",
+      "weight": 0.64
+    },
+    {
+      "source": "search-svc-rds-002",
+      "target": "audit-svc-elasticache-003",
+      "type": "reads",
+      "weight": 0.79
+    },
+    {
+      "source": "audit-svc-elasticache-003",
+      "target": "config-svc-sqs-004",
+      "type": "writes",
+      "weight": 0.62
+    },
+    {
+      "source": "config-svc-sqs-004",
+      "target": "hot-audit-svc-005",
+      "type": "subscribes",
+      "weight": 0.75
+    },
+    {
+      "source": "search-svc-rds-002",
+      "target": "config-svc-alb-000",
+      "type": "reads",
+      "weight": 0.66
+    },
+    {
+      "source": "audit-svc-elasticache-003",
+      "target": "report-svc-ecs-001",
+      "type": "writes",
+      "weight": 0.4
+    }
+  ]
+}

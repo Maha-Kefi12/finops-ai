@@ -1,0 +1,159 @@
+{
+  "metadata": {
+    "name": "Data Pipeline (Growth, us-east-1)",
+    "id": "ace884da",
+    "pattern": "data_pipeline",
+    "complexity": "small",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 6,
+    "total_dependencies": 7,
+    "total_cost_monthly": 7304.38,
+    "generated_at": "2026-03-01T19:23:57.618520",
+    "variation_seed": 11302
+  },
+  "services": [
+    {
+      "id": "aggregation-kinesis-000",
+      "name": "aggregation-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 739.2,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ingestion-lambda-001",
+      "name": "ingestion-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 278.61,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "validation-s3-002",
+      "name": "validation-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 785.75,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "ingestion-glue-003",
+      "name": "ingestion-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 319.44,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "enrichment-redshift-004",
+      "name": "enrichment-redshift",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 5083.26,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-aggregation-005",
+      "name": "private-aggregation",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 98.12,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "aggregation-kinesis-000",
+      "target": "ingestion-lambda-001",
+      "type": "triggers",
+      "weight": 0.97
+    },
+    {
+      "source": "ingestion-lambda-001",
+      "target": "validation-s3-002",
+      "type": "writes",
+      "weight": 0.87
+    },
+    {
+      "source": "validation-s3-002",
+      "target": "ingestion-glue-003",
+      "type": "reads",
+      "weight": 0.88
+    },
+    {
+      "source": "ingestion-glue-003",
+      "target": "enrichment-redshift-004",
+      "type": "writes",
+      "weight": 0.71
+    },
+    {
+      "source": "enrichment-redshift-004",
+      "target": "private-aggregation-005",
+      "type": "caches",
+      "weight": 0.53
+    },
+    {
+      "source": "private-aggregation-005",
+      "target": "aggregation-kinesis-000",
+      "type": "queries",
+      "weight": 0.23
+    },
+    {
+      "source": "validation-s3-002",
+      "target": "private-aggregation-005",
+      "type": "caches",
+      "weight": 0.7
+    }
+  ]
+}

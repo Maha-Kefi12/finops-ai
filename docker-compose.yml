@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: finops
+      POSTGRES_PASSWORD: finops_secret
+      POSTGRES_DB: finops_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U finops -d finops_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://finops:finops_secret@postgres:5432/finops_db
+      ENVIRONMENT: development
+      DATA_DIR: /app/data/synthetic
+      OLLAMA_URL: http://host.docker.internal:11434
+      FINOPS_MODEL: finops-aws
+      PYTHONPATH: /app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data/synthetic:/app/data/synthetic:ro
+      - ./data/behavioral:/app/data/behavioral:ro
+      - ./data/rag_index:/app/data/rag_index
+      - ./src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      VITE_API_TARGET: http://backend:8000
+      VITE_PORT: "3001"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

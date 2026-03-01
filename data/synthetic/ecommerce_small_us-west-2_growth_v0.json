@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Ecommerce (Growth, us-west-2)",
+    "id": "5a07e875",
+    "pattern": "ecommerce",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 1823.46,
+    "generated_at": "2026-03-01T19:23:57.361967",
+    "variation_seed": 662
+  },
+  "services": [
+    {
+      "id": "cart-alb-000",
+      "name": "cart-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 167.76,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "pricing-ec2-001",
+      "name": "pricing-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 676.22,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "storefront-ec2-002",
+      "name": "storefront-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 979.48,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "cart-alb-000",
+      "target": "pricing-ec2-001",
+      "type": "calls",
+      "weight": 0.71
+    },
+    {
+      "source": "pricing-ec2-001",
+      "target": "storefront-ec2-002",
+      "type": "queries",
+      "weight": 0.89
+    },
+    {
+      "source": "cart-alb-000",
+      "target": "storefront-ec2-002",
+      "type": "caches",
+      "weight": 0.65
+    }
+  ]
+}

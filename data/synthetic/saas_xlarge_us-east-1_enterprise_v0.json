@@ -1,0 +1,1519 @@
+{
+  "metadata": {
+    "name": "Saas (Enterprise, us-east-1)",
+    "id": "1d0aacd2",
+    "pattern": "saas",
+    "complexity": "xlarge",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 49,
+    "total_dependencies": 119,
+    "total_cost_monthly": 33637.51,
+    "generated_at": "2026-03-01T19:23:57.496980",
+    "variation_seed": 6676
+  },
+  "services": [
+    {
+      "id": "onboarding-api-000",
+      "name": "onboarding-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 360.01,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audit-ecs-001",
+      "name": "audit-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1205.25,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "analytics-aurora-002",
+      "name": "analytics-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 2508.19,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "workspace-elasticache-003",
+      "name": "workspace-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1528.49,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "workspace-cognito-004",
+      "name": "workspace-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 26.27,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-integrations-005",
+      "name": "regional-integrations",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 70.83,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "batch-config-006",
+      "name": "batch-config",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 219.08,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-tenant-007",
+      "name": "central-tenant",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 213.78,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-notification-008",
+      "name": "staging-notification",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 32.46,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-onboarding-009",
+      "name": "batch-onboarding",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 107.87,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-integrations-010",
+      "name": "regional-integrations",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 1103.43,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-analytics-011",
+      "name": "shared-analytics",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 418.18,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-billing-012",
+      "name": "fast-billing",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 148.51,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-notification-013",
+      "name": "global-notification",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 487.08,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-integrations-014",
+      "name": "hot-integrations",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 21.4,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-notification-015",
+      "name": "hot-notification",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 2160.4,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-billing-016",
+      "name": "hot-billing",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 4594.54,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-audit-017",
+      "name": "backup-audit",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1232.65,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-billing-018",
+      "name": "primary-billing",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 130.56,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-tenant-019",
+      "name": "edge-tenant",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 729.73,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-workspace-020",
+      "name": "realtime-workspace",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1364.24,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "main-analytics-021",
+      "name": "main-analytics",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 327.05,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-onboarding-022",
+      "name": "async-onboarding",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 156.58,
+      "owner": "api-gateway-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-notification-023",
+      "name": "core-notification",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 593.36,
+      "owner": "security",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-notification-024",
+      "name": "private-notification",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 1014.89,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-config-025",
+      "name": "regional-config",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1841.78,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "secondary-billing-026",
+      "name": "secondary-billing",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 436.03,
+      "owner": "payments",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-audit-027",
+      "name": "realtime-audit",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 837.51,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "central-billing-028",
+      "name": "central-billing",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 100.73,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-analytics-029",
+      "name": "shared-analytics",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 111.02,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-onboarding-030",
+      "name": "realtime-onboarding",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 18.75,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "realtime-audit-031",
+      "name": "realtime-audit",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 3142.56,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "main-audit-032",
+      "name": "main-audit",
+      "type": "storage",
+      "aws_service": "Amazon EFS",
+      "cost_monthly": 41.73,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "realtime-billing-033",
+      "name": "realtime-billing",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 91.28,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-integrations-034",
+      "name": "fast-integrations",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 194.55,
+      "owner": "payments",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-analytics-035",
+      "name": "secondary-analytics",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Memcached",
+      "cost_monthly": 1483.44,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-onboarding-036",
+      "name": "batch-onboarding",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 452.37,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-workspace-037",
+      "name": "public-workspace",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 26.66,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-tenant-038",
+      "name": "hot-tenant",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 153.53,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-integrations-039",
+      "name": "internal-integrations",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 41.3,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "batch-auth-040",
+      "name": "batch-auth",
+      "type": "storage",
+      "aws_service": "Amazon EFS",
+      "cost_monthly": 441.78,
+      "owner": "growth-eng",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-tenant-041",
+      "name": "secondary-tenant",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 6.75,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-config-042",
+      "name": "realtime-config",
+      "type": "storage",
+      "aws_service": "Amazon EFS",
+      "cost_monthly": 208.6,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-notification-043",
+      "name": "global-notification",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 70.57,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-config-044",
+      "name": "primary-config",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 103.51,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "backup-workspace-045",
+      "name": "backup-workspace",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 635.02,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "core-tenant-046",
+      "name": "core-tenant",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 1958.71,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-config-047",
+      "name": "realtime-config",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 460.84,
+      "owner": "frontend-guild",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-integrations-048",
+      "name": "private-integrations",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 23.66,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "onboarding-api-000",
+      "target": "audit-ecs-001",
+      "type": "writes",
+      "weight": 0.37
+    },
+    {
+      "source": "audit-ecs-001",
+      "target": "analytics-aurora-002",
+      "type": "reads",
+      "weight": 0.39
+    },
+    {
+      "source": "analytics-aurora-002",
+      "target": "workspace-elasticache-003",
+      "type": "caches",
+      "weight": 0.95
+    },
+    {
+      "source": "workspace-elasticache-003",
+      "target": "workspace-cognito-004",
+      "type": "writes",
+      "weight": 0.48
+    },
+    {
+      "source": "workspace-cognito-004",
+      "target": "regional-integrations-005",
+      "type": "queries",
+      "weight": 0.48
+    },
+    {
+      "source": "regional-integrations-005",
+      "target": "batch-config-006",
+      "type": "reads",
+      "weight": 0.34
+    },
+    {
+      "source": "batch-config-006",
+      "target": "central-tenant-007",
+      "type": "queries",
+      "weight": 0.81
+    },
+    {
+      "source": "central-tenant-007",
+      "target": "staging-notification-008",
+      "type": "calls",
+      "weight": 0.81
+    },
+    {
+      "source": "staging-notification-008",
+      "target": "batch-onboarding-009",
+      "type": "reads",
+      "weight": 0.86
+    },
+    {
+      "source": "batch-onboarding-009",
+      "target": "regional-integrations-010",
+      "type": "queries",
+      "weight": 0.76
+    },
+    {
+      "source": "regional-integrations-010",
+      "target": "shared-analytics-011",
+      "type": "triggers",
+      "weight": 0.53
+    },
+    {
+      "source": "shared-analytics-011",
+      "target": "fast-billing-012",
+      "type": "reads",
+      "weight": 0.99
+    },
+    {
+      "source": "fast-billing-012",
+      "target": "global-notification-013",
+      "type": "writes",
+      "weight": 0.78
+    },
+    {
+      "source": "global-notification-013",
+      "target": "hot-integrations-014",
+      "type": "writes",
+      "weight": 0.82
+    },
+    {
+      "source": "hot-integrations-014",
+      "target": "hot-notification-015",
+      "type": "caches",
+      "weight": 0.52
+    },
+    {
+      "source": "hot-notification-015",
+      "target": "hot-billing-016",
+      "type": "calls",
+      "weight": 0.83
+    },
+    {
+      "source": "hot-billing-016",
+      "target": "backup-audit-017",
+      "type": "caches",
+      "weight": 0.54
+    },
+    {
+      "source": "backup-audit-017",
+      "target": "primary-billing-018",
+      "type": "calls",
+      "weight": 0.34
+    },
+    {
+      "source": "primary-billing-018",
+      "target": "edge-tenant-019",
+      "type": "queries",
+      "weight": 0.33
+    },
+    {
+      "source": "edge-tenant-019",
+      "target": "realtime-workspace-020",
+      "type": "subscribes",
+      "weight": 0.54
+    },
+    {
+      "source": "realtime-workspace-020",
+      "target": "main-analytics-021",
+      "type": "subscribes",
+      "weight": 0.45
+    },
+    {
+      "source": "main-analytics-021",
+      "target": "async-onboarding-022",
+      "type": "calls",
+      "weight": 0.65
+    },
+    {
+      "source": "async-onboarding-022",
+      "target": "core-notification-023",
+      "type": "reads",
+      "weight": 0.85
+    },
+    {
+      "source": "core-notification-023",
+      "target": "private-notification-024",
+      "type": "subscribes",
+      "weight": 0.98
+    },
+    {
+      "source": "private-notification-024",
+      "target": "regional-config-025",
+      "type": "caches",
+      "weight": 0.37
+    },
+    {
+      "source": "regional-config-025",
+      "target": "secondary-billing-026",
+      "type": "reads",
+      "weight": 0.71
+    },
+    {
+      "source": "secondary-billing-026",
+      "target": "realtime-audit-027",
+      "type": "reads",
+      "weight": 0.87
+    },
+    {
+      "source": "realtime-audit-027",
+      "target": "central-billing-028",
+      "type": "triggers",
+      "weight": 0.31
+    },
+    {
+      "source": "central-billing-028",
+      "target": "shared-analytics-029",
+      "type": "caches",
+      "weight": 0.99
+    },
+    {
+      "source": "shared-analytics-029",
+      "target": "realtime-onboarding-030",
+      "type": "reads",
+      "weight": 0.57
+    },
+    {
+      "source": "realtime-onboarding-030",
+      "target": "realtime-audit-031",
+      "type": "subscribes",
+      "weight": 0.58
+    },
+    {
+      "source": "realtime-audit-031",
+      "target": "main-audit-032",
+      "type": "calls",
+      "weight": 0.4
+    },
+    {
+      "source": "main-audit-032",
+      "target": "realtime-billing-033",
+      "type": "calls",
+      "weight": 0.31
+    },
+    {
+      "source": "realtime-billing-033",
+      "target": "fast-integrations-034",
+      "type": "calls",
+      "weight": 0.58
+    },
+    {
+      "source": "fast-integrations-034",
+      "target": "secondary-analytics-035",
+      "type": "triggers",
+      "weight": 0.8
+    },
+    {
+      "source": "secondary-analytics-035",
+      "target": "batch-onboarding-036",
+      "type": "reads",
+      "weight": 0.55
+    },
+    {
+      "source": "batch-onboarding-036",
+      "target": "public-workspace-037",
+      "type": "reads",
+      "weight": 0.48
+    },
+    {
+      "source": "public-workspace-037",
+      "target": "hot-tenant-038",
+      "type": "calls",
+      "weight": 0.48
+    },
+    {
+      "source": "hot-tenant-038",
+      "target": "internal-integrations-039",
+      "type": "writes",
+      "weight": 0.85
+    },
+    {
+      "source": "internal-integrations-039",
+      "target": "batch-auth-040",
+      "type": "subscribes",
+      "weight": 0.83
+    },
+    {
+      "source": "batch-auth-040",
+      "target": "secondary-tenant-041",
+      "type": "subscribes",
+      "weight": 0.6
+    },
+    {
+      "source": "secondary-tenant-041",
+      "target": "realtime-config-042",
+      "type": "triggers",
+      "weight": 0.57
+    },
+    {
+      "source": "realtime-config-042",
+      "target": "global-notification-043",
+      "type": "triggers",
+      "weight": 0.83
+    },
+    {
+      "source": "global-notification-043",
+      "target": "primary-config-044",
+      "type": "caches",
+      "weight": 0.99
+    },
+    {
+      "source": "primary-config-044",
+      "target": "backup-workspace-045",
+      "type": "writes",
+      "weight": 0.54
+    },
+    {
+      "source": "backup-workspace-045",
+      "target": "core-tenant-046",
+      "type": "triggers",
+      "weight": 0.8
+    },
+    {
+      "source": "core-tenant-046",
+      "target": "realtime-config-047",
+      "type": "calls",
+      "weight": 0.44
+    },
+    {
+      "source": "realtime-config-047",
+      "target": "private-integrations-048",
+      "type": "writes",
+      "weight": 0.53
+    },
+    {
+      "source": "secondary-analytics-035",
+      "target": "private-notification-024",
+      "type": "writes",
+      "weight": 0.37
+    },
+    {
+      "source": "batch-auth-040",
+      "target": "private-integrations-048",
+      "type": "calls",
+      "weight": 0.45
+    },
+    {
+      "source": "realtime-config-047",
+      "target": "internal-integrations-039",
+      "type": "reads",
+      "weight": 0.89
+    },
+    {
+      "source": "realtime-billing-033",
+      "target": "primary-config-044",
+      "type": "queries",
+      "weight": 0.27
+    },
+    {
+      "source": "fast-integrations-034",
+      "target": "backup-audit-017",
+      "type": "queries",
+      "weight": 0.2
+    },
+    {
+      "source": "central-tenant-007",
+      "target": "batch-auth-040",
+      "type": "writes",
+      "weight": 0.25
+    },
+    {
+      "source": "fast-billing-012",
+      "target": "secondary-tenant-041",
+      "type": "reads",
+      "weight": 0.51
+    },
+    {
+      "source": "global-notification-013",
+      "target": "hot-notification-015",
+      "type": "caches",
+      "weight": 0.9
+    },
+    {
+      "source": "regional-integrations-010",
+      "target": "onboarding-api-000",
+      "type": "queries",
+      "weight": 0.62
+    },
+    {
+      "source": "shared-analytics-011",
+      "target": "batch-config-006",
+      "type": "reads",
+      "weight": 0.67
+    },
+    {
+      "source": "analytics-aurora-002",
+      "target": "secondary-billing-026",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "hot-billing-016",
+      "target": "workspace-cognito-004",
+      "type": "caches",
+      "weight": 0.39
+    },
+    {
+      "source": "secondary-analytics-035",
+      "target": "hot-notification-015",
+      "type": "writes",
+      "weight": 0.68
+    },
+    {
+      "source": "secondary-billing-026",
+      "target": "private-integrations-048",
+      "type": "queries",
+      "weight": 0.37
+    },
+    {
+      "source": "shared-analytics-011",
+      "target": "analytics-aurora-002",
+      "type": "queries",
+      "weight": 0.26
+    },
+    {
+      "source": "secondary-tenant-041",
+      "target": "realtime-audit-027",
+      "type": "queries",
+      "weight": 0.9
+    },
+    {
+      "source": "secondary-billing-026",
+      "target": "realtime-billing-033",
+      "type": "calls",
+      "weight": 0.2
+    },
+    {
+      "source": "async-onboarding-022",
+      "target": "staging-notification-008",
+      "type": "queries",
+      "weight": 0.64
+    },
+    {
+      "source": "global-notification-043",
+      "target": "central-tenant-007",
+      "type": "reads",
+      "weight": 0.66
+    },
+    {
+      "source": "shared-analytics-029",
+      "target": "regional-integrations-005",
+      "type": "writes",
+      "weight": 0.44
+    },
+    {
+      "source": "realtime-audit-027",
+      "target": "realtime-audit-031",
+      "type": "reads",
+      "weight": 0.32
+    },
+    {
+      "source": "public-workspace-037",
+      "target": "onboarding-api-000",
+      "type": "triggers",
+      "weight": 0.88
+    },
+    {
+      "source": "onboarding-api-000",
+      "target": "shared-analytics-011",
+      "type": "queries",
+      "weight": 0.55
+    },
+    {
+      "source": "realtime-onboarding-030",
+      "target": "hot-tenant-038",
+      "type": "caches",
+      "weight": 0.47
+    },
+    {
+      "source": "private-notification-024",
+      "target": "async-onboarding-022",
+      "type": "calls",
+      "weight": 0.84
+    },
+    {
+      "source": "main-audit-032",
+      "target": "global-notification-043",
+      "type": "subscribes",
+      "weight": 0.28
+    },
+    {
+      "source": "realtime-onboarding-030",
+      "target": "hot-integrations-014",
+      "type": "triggers",
+      "weight": 0.27
+    },
+    {
+      "source": "shared-analytics-011",
+      "target": "edge-tenant-019",
+      "type": "reads",
+      "weight": 0.4
+    },
+    {
+      "source": "realtime-audit-027",
+      "target": "hot-billing-016",
+      "type": "reads",
+      "weight": 0.52
+    },
+    {
+      "source": "staging-notification-008",
+      "target": "backup-workspace-045",
+      "type": "queries",
+      "weight": 0.49
+    },
+    {
+      "source": "global-notification-043",
+      "target": "hot-tenant-038",
+      "type": "reads",
+      "weight": 1.0
+    },
+    {
+      "source": "global-notification-043",
+      "target": "workspace-cognito-004",
+      "type": "reads",
+      "weight": 0.6
+    },
+    {
+      "source": "core-notification-023",
+      "target": "batch-auth-040",
+      "type": "subscribes",
+      "weight": 0.36
+    },
+    {
+      "source": "main-audit-032",
+      "target": "fast-billing-012",
+      "type": "queries",
+      "weight": 0.4
+    },
+    {
+      "source": "regional-integrations-010",
+      "target": "public-workspace-037",
+      "type": "writes",
+      "weight": 0.69
+    },
+    {
+      "source": "batch-config-006",
+      "target": "hot-integrations-014",
+      "type": "subscribes",
+      "weight": 0.12
+    },
+    {
+      "source": "async-onboarding-022",
+      "target": "private-notification-024",
+      "type": "reads",
+      "weight": 0.37
+    },
+    {
+      "source": "main-audit-032",
+      "target": "central-tenant-007",
+      "type": "caches",
+      "weight": 0.74
+    },
+    {
+      "source": "central-tenant-007",
+      "target": "realtime-audit-027",
+      "type": "subscribes",
+      "weight": 0.9
+    },
+    {
+      "source": "secondary-tenant-041",
+      "target": "primary-config-044",
+      "type": "triggers",
+      "weight": 0.88
+    },
+    {
+      "source": "shared-analytics-011",
+      "target": "backup-audit-017",
+      "type": "triggers",
+      "weight": 0.25
+    },
+    {
+      "source": "async-onboarding-022",
+      "target": "secondary-billing-026",
+      "type": "reads",
+      "weight": 0.97
+    },
+    {
+      "source": "batch-onboarding-036",
+      "target": "shared-analytics-011",
+      "type": "calls",
+      "weight": 0.42
+    },
+    {
+      "source": "batch-auth-040",
+      "target": "regional-integrations-010",
+      "type": "reads",
+      "weight": 0.54
+    },
+    {
+      "source": "staging-notification-008",
+      "target": "primary-billing-018",
+      "type": "calls",
+      "weight": 0.61
+    },
+    {
+      "source": "main-audit-032",
+      "target": "core-tenant-046",
+      "type": "calls",
+      "weight": 0.7
+    },
+    {
+      "source": "realtime-config-042",
+      "target": "batch-onboarding-036",
+      "type": "subscribes",
+      "weight": 0.19
+    },
+    {
+      "source": "backup-workspace-045",
+      "target": "realtime-config-042",
+      "type": "writes",
+      "weight": 0.73
+    },
+    {
+      "source": "backup-workspace-045",
+      "target": "shared-analytics-011",
+      "type": "writes",
+      "weight": 0.21
+    },
+    {
+      "source": "hot-notification-015",
+      "target": "backup-audit-017",
+      "type": "calls",
+      "weight": 0.2
+    },
+    {
+      "source": "hot-notification-015",
+      "target": "batch-config-006",
+      "type": "subscribes",
+      "weight": 1.0
+    },
+    {
+      "source": "realtime-audit-027",
+      "target": "regional-integrations-010",
+      "type": "writes",
+      "weight": 0.84
+    },
+    {
+      "source": "batch-onboarding-009",
+      "target": "backup-audit-017",
+      "type": "queries",
+      "weight": 0.2
+    },
+    {
+      "source": "public-workspace-037",
+      "target": "batch-auth-040",
+      "type": "subscribes",
+      "weight": 0.38
+    },
+    {
+      "source": "secondary-billing-026",
+      "target": "shared-analytics-011",
+      "type": "reads",
+      "weight": 0.53
+    },
+    {
+      "source": "private-notification-024",
+      "target": "workspace-cognito-004",
+      "type": "subscribes",
+      "weight": 0.26
+    },
+    {
+      "source": "shared-analytics-029",
+      "target": "workspace-cognito-004",
+      "type": "queries",
+      "weight": 0.88
+    },
+    {
+      "source": "public-workspace-037",
+      "target": "audit-ecs-001",
+      "type": "writes",
+      "weight": 0.7
+    },
+    {
+      "source": "realtime-billing-033",
+      "target": "core-tenant-046",
+      "type": "caches",
+      "weight": 0.56
+    },
+    {
+      "source": "central-tenant-007",
+      "target": "batch-onboarding-036",
+      "type": "queries",
+      "weight": 0.85
+    },
+    {
+      "source": "backup-audit-017",
+      "target": "batch-auth-040",
+      "type": "queries",
+      "weight": 0.79
+    },
+    {
+      "source": "workspace-elasticache-003",
+      "target": "secondary-analytics-035",
+      "type": "writes",
+      "weight": 0.43
+    },
+    {
+      "source": "core-notification-023",
+      "target": "analytics-aurora-002",
+      "type": "subscribes",
+      "weight": 0.92
+    },
+    {
+      "source": "batch-config-006",
+      "target": "shared-analytics-029",
+      "type": "triggers",
+      "weight": 0.23
+    },
+    {
+      "source": "global-notification-043",
+      "target": "backup-audit-017",
+      "type": "calls",
+      "weight": 0.67
+    },
+    {
+      "source": "core-tenant-046",
+      "target": "onboarding-api-000",
+      "type": "subscribes",
+      "weight": 0.87
+    },
+    {
+      "source": "realtime-audit-027",
+      "target": "core-tenant-046",
+      "type": "subscribes",
+      "weight": 0.46
+    },
+    {
+      "source": "staging-notification-008",
+      "target": "secondary-analytics-035",
+      "type": "queries",
+      "weight": 0.8
+    },
+    {
+      "source": "core-notification-023",
+      "target": "secondary-billing-026",
+      "type": "triggers",
+      "weight": 0.5
+    },
+    {
+      "source": "hot-integrations-014",
+      "target": "backup-audit-017",
+      "type": "queries",
+      "weight": 0.68
+    },
+    {
+      "source": "backup-audit-017",
+      "target": "hot-tenant-038",
+      "type": "queries",
+      "weight": 0.72
+    }
+  ]
+}

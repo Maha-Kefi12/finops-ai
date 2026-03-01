@@ -1,0 +1,225 @@
+{
+  "metadata": {
+    "name": "Iot (Growth, us-east-1)",
+    "id": "894d41b3",
+    "pattern": "iot",
+    "complexity": "medium",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 9,
+    "total_dependencies": 10,
+    "total_cost_monthly": 4051.83,
+    "generated_at": "2026-03-01T19:23:58.049132",
+    "variation_seed": 30794
+  },
+  "services": [
+    {
+      "id": "telemetry-iot-000",
+      "name": "telemetry-iot",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 565.63,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "firmware-kinesis-001",
+      "name": "firmware-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 156.53,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fleet-lambda-002",
+      "name": "fleet-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 223.01,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "commands-dynamodb-003",
+      "name": "commands-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1655.27,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "digital-twin-s3-004",
+      "name": "digital-twin-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 330.32,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-device-mgr-005",
+      "name": "central-device-mgr",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 926.5,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-device-mgr-006",
+      "name": "internal-device-mgr",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 58.25,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-shadow-007",
+      "name": "realtime-shadow",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 60.24,
+      "owner": "security",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-firmware-008",
+      "name": "batch-firmware",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 76.08,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "telemetry-iot-000",
+      "target": "firmware-kinesis-001",
+      "type": "writes",
+      "weight": 0.46
+    },
+    {
+      "source": "firmware-kinesis-001",
+      "target": "fleet-lambda-002",
+      "type": "reads",
+      "weight": 0.78
+    },
+    {
+      "source": "fleet-lambda-002",
+      "target": "commands-dynamodb-003",
+      "type": "reads",
+      "weight": 0.44
+    },
+    {
+      "source": "commands-dynamodb-003",
+      "target": "digital-twin-s3-004",
+      "type": "calls",
+      "weight": 0.81
+    },
+    {
+      "source": "digital-twin-s3-004",
+      "target": "central-device-mgr-005",
+      "type": "queries",
+      "weight": 0.69
+    },
+    {
+      "source": "central-device-mgr-005",
+      "target": "internal-device-mgr-006",
+      "type": "queries",
+      "weight": 0.58
+    },
+    {
+      "source": "internal-device-mgr-006",
+      "target": "realtime-shadow-007",
+      "type": "subscribes",
+      "weight": 0.69
+    },
+    {
+      "source": "realtime-shadow-007",
+      "target": "batch-firmware-008",
+      "type": "queries",
+      "weight": 0.31
+    },
+    {
+      "source": "telemetry-iot-000",
+      "target": "commands-dynamodb-003",
+      "type": "triggers",
+      "weight": 0.72
+    },
+    {
+      "source": "internal-device-mgr-006",
+      "target": "firmware-kinesis-001",
+      "type": "writes",
+      "weight": 0.51
+    }
+  ]
+}

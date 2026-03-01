@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Edtech (Growth, eu-west-1)",
+    "id": "9f6078bf",
+    "pattern": "edtech",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 6525.16,
+    "generated_at": "2026-03-01T19:23:58.383940",
+    "variation_seed": 44930
+  },
+  "services": [
+    {
+      "id": "assessments-cloudfront-000",
+      "name": "assessments-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 2711.44,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "courses-ec2-001",
+      "name": "courses-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 837.97,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "forums-rds-002",
+      "name": "forums-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 2975.75,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "assessments-cloudfront-000",
+      "target": "courses-ec2-001",
+      "type": "reads",
+      "weight": 0.52
+    },
+    {
+      "source": "courses-ec2-001",
+      "target": "forums-rds-002",
+      "type": "subscribes",
+      "weight": 0.43
+    },
+    {
+      "source": "forums-rds-002",
+      "target": "courses-ec2-001",
+      "type": "reads",
+      "weight": 0.97
+    }
+  ]
+}

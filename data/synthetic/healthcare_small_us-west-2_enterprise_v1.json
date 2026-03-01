@@ -1,0 +1,115 @@
+{
+  "metadata": {
+    "name": "Healthcare (Enterprise, us-west-2)",
+    "id": "0b686766",
+    "pattern": "healthcare",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 4,
+    "total_dependencies": 5,
+    "total_cost_monthly": 5877.55,
+    "generated_at": "2026-03-01T19:23:58.299865",
+    "variation_seed": 41682
+  },
+  "services": [
+    {
+      "id": "labs-alb-000",
+      "name": "labs-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 148.71,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "prescriptions-ecs-001",
+      "name": "prescriptions-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1242.51,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "telemedicine-aurora-002",
+      "name": "telemedicine-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 3709.75,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "consent-s3-003",
+      "name": "consent-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 776.58,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "labs-alb-000",
+      "target": "prescriptions-ecs-001",
+      "type": "triggers",
+      "weight": 0.43
+    },
+    {
+      "source": "prescriptions-ecs-001",
+      "target": "telemedicine-aurora-002",
+      "type": "caches",
+      "weight": 0.66
+    },
+    {
+      "source": "telemedicine-aurora-002",
+      "target": "consent-s3-003",
+      "type": "triggers",
+      "weight": 0.8
+    },
+    {
+      "source": "prescriptions-ecs-001",
+      "target": "consent-s3-003",
+      "type": "caches",
+      "weight": 0.51
+    },
+    {
+      "source": "consent-s3-003",
+      "target": "telemedicine-aurora-002",
+      "type": "caches",
+      "weight": 0.78
+    }
+  ]
+}

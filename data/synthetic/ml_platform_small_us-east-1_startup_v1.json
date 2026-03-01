@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Ml Platform (Startup, us-east-1)",
+    "id": "c9ece794",
+    "pattern": "ml_platform",
+    "complexity": "small",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 1321.31,
+    "generated_at": "2026-03-01T19:23:57.874179",
+    "variation_seed": 22400
+  },
+  "services": [
+    {
+      "id": "inference-sagemaker-000",
+      "name": "inference-sagemaker",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 516.52,
+      "owner": "security",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "inference-s3-001",
+      "name": "inference-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 504.14,
+      "owner": "mobile-backend",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "labeling-glue-002",
+      "name": "labeling-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 300.65,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "inference-sagemaker-000",
+      "target": "inference-s3-001",
+      "type": "writes",
+      "weight": 0.81
+    },
+    {
+      "source": "inference-s3-001",
+      "target": "labeling-glue-002",
+      "type": "triggers",
+      "weight": 0.88
+    },
+    {
+      "source": "inference-sagemaker-000",
+      "target": "labeling-glue-002",
+      "type": "queries",
+      "weight": 0.46
+    }
+  ]
+}

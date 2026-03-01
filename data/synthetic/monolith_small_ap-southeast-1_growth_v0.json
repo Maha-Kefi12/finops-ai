@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Monolith (Growth, ap-southeast-1)",
+    "id": "d7a5bc8b",
+    "pattern": "monolith",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 6439.19,
+    "generated_at": "2026-03-01T19:23:58.125494",
+    "variation_seed": 33956
+  },
+  "services": [
+    {
+      "id": "app-server-alb-000",
+      "name": "app-server-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 138.3,
+      "owner": "payments",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "app-server-ec2-001",
+      "name": "app-server-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 2289.6,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-jobs-rds-002",
+      "name": "batch-jobs-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 4011.29,
+      "owner": "payments",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "app-server-alb-000",
+      "target": "app-server-ec2-001",
+      "type": "triggers",
+      "weight": 0.64
+    },
+    {
+      "source": "app-server-ec2-001",
+      "target": "batch-jobs-rds-002",
+      "type": "writes",
+      "weight": 0.76
+    },
+    {
+      "source": "batch-jobs-rds-002",
+      "target": "app-server-ec2-001",
+      "type": "subscribes",
+      "weight": 0.45
+    }
+  ]
+}

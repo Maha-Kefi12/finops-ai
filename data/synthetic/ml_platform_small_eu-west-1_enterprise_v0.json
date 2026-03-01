@@ -1,0 +1,175 @@
+{
+  "metadata": {
+    "name": "Ml Platform (Enterprise, eu-west-1)",
+    "id": "26554a4b",
+    "pattern": "ml_platform",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 7,
+    "total_dependencies": 7,
+    "total_cost_monthly": 18611.73,
+    "generated_at": "2026-03-01T19:23:57.876193",
+    "variation_seed": 22672
+  },
+  "services": [
+    {
+      "id": "datasets-sagemaker-000",
+      "name": "datasets-sagemaker",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 8659.27,
+      "owner": "ml-ops",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "serving-s3-001",
+      "name": "serving-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 975.94,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "registry-glue-002",
+      "name": "registry-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 236.74,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "serving-redshift-003",
+      "name": "serving-redshift",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 4560.58,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "pipeline-ec2-004",
+      "name": "pipeline-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1112.27,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-serving-005",
+      "name": "realtime-serving",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 2981.99,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "secondary-monitoring-006",
+      "name": "secondary-monitoring",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 84.94,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "datasets-sagemaker-000",
+      "target": "serving-s3-001",
+      "type": "writes",
+      "weight": 0.88
+    },
+    {
+      "source": "serving-s3-001",
+      "target": "registry-glue-002",
+      "type": "triggers",
+      "weight": 0.65
+    },
+    {
+      "source": "registry-glue-002",
+      "target": "serving-redshift-003",
+      "type": "writes",
+      "weight": 0.51
+    },
+    {
+      "source": "serving-redshift-003",
+      "target": "pipeline-ec2-004",
+      "type": "reads",
+      "weight": 1.0
+    },
+    {
+      "source": "pipeline-ec2-004",
+      "target": "realtime-serving-005",
+      "type": "reads",
+      "weight": 0.83
+    },
+    {
+      "source": "realtime-serving-005",
+      "target": "secondary-monitoring-006",
+      "type": "subscribes",
+      "weight": 0.81
+    },
+    {
+      "source": "serving-s3-001",
+      "target": "datasets-sagemaker-000",
+      "type": "caches",
+      "weight": 0.69
+    }
+  ]
+}

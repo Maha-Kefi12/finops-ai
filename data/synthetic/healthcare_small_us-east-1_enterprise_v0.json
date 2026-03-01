@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Healthcare (Enterprise, us-east-1)",
+    "id": "51bd62f0",
+    "pattern": "healthcare",
+    "complexity": "small",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 5095.98,
+    "generated_at": "2026-03-01T19:23:58.296107",
+    "variation_seed": 41086
+  },
+  "services": [
+    {
+      "id": "patient-portal-alb-000",
+      "name": "patient-portal-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 162.53,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "claims-ecs-001",
+      "name": "claims-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1961.14,
+      "owner": "security",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "imaging-aurora-002",
+      "name": "imaging-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 2972.31,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "patient-portal-alb-000",
+      "target": "claims-ecs-001",
+      "type": "reads",
+      "weight": 0.93
+    },
+    {
+      "source": "claims-ecs-001",
+      "target": "imaging-aurora-002",
+      "type": "triggers",
+      "weight": 0.86
+    },
+    {
+      "source": "claims-ecs-001",
+      "target": "patient-portal-alb-000",
+      "type": "queries",
+      "weight": 0.34
+    }
+  ]
+}

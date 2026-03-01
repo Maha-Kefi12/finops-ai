@@ -1,0 +1,297 @@
+{
+  "metadata": {
+    "name": "Microservices (Enterprise, eu-west-1)",
+    "id": "79b22e44",
+    "pattern": "microservices",
+    "complexity": "medium",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 12,
+    "total_dependencies": 14,
+    "total_cost_monthly": 10599.09,
+    "generated_at": "2026-03-01T19:23:57.715187",
+    "variation_seed": 16162
+  },
+  "services": [
+    {
+      "id": "notification-svc-alb-000",
+      "name": "notification-svc-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 46.45,
+      "owner": "api-gateway-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "report-svc-ecs-001",
+      "name": "report-svc-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 2905.49,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "payment-svc-rds-002",
+      "name": "payment-svc-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 510.52,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "webhook-svc-elasticache-003",
+      "name": "webhook-svc-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1685.19,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "user-svc-sqs-004",
+      "name": "user-svc-sqs",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 8.93,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "global-search-svc-005",
+      "name": "global-search-svc",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 517.75,
+      "owner": "api-gateway-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-webhook-svc-006",
+      "name": "staging-webhook-svc",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 113.27,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "backup-notification-svc-007",
+      "name": "backup-notification-svc",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 219.83,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-user-svc-008",
+      "name": "shared-user-svc",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 1086.28,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-order-svc-009",
+      "name": "secondary-order-svc",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1449.78,
+      "owner": "security",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-payment-svc-010",
+      "name": "global-payment-svc",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 174.56,
+      "owner": "security",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "primary-webhook-svc-011",
+      "name": "primary-webhook-svc",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1881.04,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "notification-svc-alb-000",
+      "target": "report-svc-ecs-001",
+      "type": "subscribes",
+      "weight": 0.46
+    },
+    {
+      "source": "report-svc-ecs-001",
+      "target": "payment-svc-rds-002",
+      "type": "writes",
+      "weight": 0.99
+    },
+    {
+      "source": "payment-svc-rds-002",
+      "target": "webhook-svc-elasticache-003",
+      "type": "reads",
+      "weight": 0.75
+    },
+    {
+      "source": "webhook-svc-elasticache-003",
+      "target": "user-svc-sqs-004",
+      "type": "caches",
+      "weight": 0.62
+    },
+    {
+      "source": "user-svc-sqs-004",
+      "target": "global-search-svc-005",
+      "type": "triggers",
+      "weight": 0.66
+    },
+    {
+      "source": "global-search-svc-005",
+      "target": "staging-webhook-svc-006",
+      "type": "triggers",
+      "weight": 0.55
+    },
+    {
+      "source": "staging-webhook-svc-006",
+      "target": "backup-notification-svc-007",
+      "type": "subscribes",
+      "weight": 0.81
+    },
+    {
+      "source": "backup-notification-svc-007",
+      "target": "shared-user-svc-008",
+      "type": "triggers",
+      "weight": 0.74
+    },
+    {
+      "source": "shared-user-svc-008",
+      "target": "secondary-order-svc-009",
+      "type": "queries",
+      "weight": 0.87
+    },
+    {
+      "source": "secondary-order-svc-009",
+      "target": "global-payment-svc-010",
+      "type": "subscribes",
+      "weight": 0.43
+    },
+    {
+      "source": "global-payment-svc-010",
+      "target": "primary-webhook-svc-011",
+      "type": "calls",
+      "weight": 0.73
+    },
+    {
+      "source": "secondary-order-svc-009",
+      "target": "payment-svc-rds-002",
+      "type": "writes",
+      "weight": 0.51
+    },
+    {
+      "source": "primary-webhook-svc-011",
+      "target": "secondary-order-svc-009",
+      "type": "subscribes",
+      "weight": 0.53
+    },
+    {
+      "source": "notification-svc-alb-000",
+      "target": "global-search-svc-005",
+      "type": "triggers",
+      "weight": 0.97
+    }
+  ]
+}

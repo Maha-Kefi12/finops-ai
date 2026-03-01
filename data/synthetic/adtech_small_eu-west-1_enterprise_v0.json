@@ -1,0 +1,165 @@
+{
+  "metadata": {
+    "name": "Adtech (Enterprise, eu-west-1)",
+    "id": "72c59691",
+    "pattern": "adtech",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 6,
+    "total_dependencies": 8,
+    "total_cost_monthly": 5823.08,
+    "generated_at": "2026-03-01T19:23:58.643092",
+    "variation_seed": 56152
+  },
+  "services": [
+    {
+      "id": "audience-alb-000",
+      "name": "audience-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 59.16,
+      "owner": "content-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "reports-ec2-001",
+      "name": "reports-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 426.85,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audience-dynamodb-002",
+      "name": "audience-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1436.3,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "campaign-mgr-elasticache-003",
+      "name": "campaign-mgr-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 2074.81,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "creative-store-kinesis-004",
+      "name": "creative-store-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 671.22,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "core-targeting-005",
+      "name": "core-targeting",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 1154.74,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "audience-alb-000",
+      "target": "reports-ec2-001",
+      "type": "subscribes",
+      "weight": 0.99
+    },
+    {
+      "source": "reports-ec2-001",
+      "target": "audience-dynamodb-002",
+      "type": "calls",
+      "weight": 0.74
+    },
+    {
+      "source": "audience-dynamodb-002",
+      "target": "campaign-mgr-elasticache-003",
+      "type": "writes",
+      "weight": 0.78
+    },
+    {
+      "source": "campaign-mgr-elasticache-003",
+      "target": "creative-store-kinesis-004",
+      "type": "caches",
+      "weight": 0.7
+    },
+    {
+      "source": "creative-store-kinesis-004",
+      "target": "core-targeting-005",
+      "type": "triggers",
+      "weight": 0.46
+    },
+    {
+      "source": "core-targeting-005",
+      "target": "creative-store-kinesis-004",
+      "type": "caches",
+      "weight": 0.49
+    },
+    {
+      "source": "core-targeting-005",
+      "target": "campaign-mgr-elasticache-003",
+      "type": "writes",
+      "weight": 0.81
+    },
+    {
+      "source": "reports-ec2-001",
+      "target": "core-targeting-005",
+      "type": "subscribes",
+      "weight": 0.43
+    }
+  ]
+}

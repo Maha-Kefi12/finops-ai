@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Monolith (Enterprise, eu-west-1)",
+    "id": "4d546594",
+    "pattern": "monolith",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 5637.67,
+    "generated_at": "2026-03-01T19:23:58.125073",
+    "variation_seed": 33870
+  },
+  "services": [
+    {
+      "id": "web-tier-alb-000",
+      "name": "web-tier-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 62.66,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "reports-ec2-001",
+      "name": "reports-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 4271.67,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "sessions-rds-002",
+      "name": "sessions-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 1303.34,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "web-tier-alb-000",
+      "target": "reports-ec2-001",
+      "type": "caches",
+      "weight": 0.57
+    },
+    {
+      "source": "reports-ec2-001",
+      "target": "sessions-rds-002",
+      "type": "caches",
+      "weight": 0.49
+    },
+    {
+      "source": "reports-ec2-001",
+      "target": "web-tier-alb-000",
+      "type": "reads",
+      "weight": 0.12
+    }
+  ]
+}

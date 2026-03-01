@@ -1,0 +1,221 @@
+{
+  "metadata": {
+    "name": "Healthcare (Startup, us-west-2)",
+    "id": "dfd63113",
+    "pattern": "healthcare",
+    "complexity": "medium",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 8,
+    "total_dependencies": 12,
+    "total_cost_monthly": 990.76,
+    "generated_at": "2026-03-01T19:23:58.308636",
+    "variation_seed": 42450
+  },
+  "services": [
+    {
+      "id": "patient-portal-alb-000",
+      "name": "patient-portal-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 72.59,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "claims-ecs-001",
+      "name": "claims-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 162.49,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "consent-aurora-002",
+      "name": "consent-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 327.87,
+      "owner": "content-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "claims-s3-003",
+      "name": "claims-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 64.42,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "imaging-cognito-004",
+      "name": "imaging-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 173.62,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "internal-patient-portal-005",
+      "name": "internal-patient-portal",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 106.04,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-ehr-006",
+      "name": "core-ehr",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 49.05,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "internal-scheduling-007",
+      "name": "internal-scheduling",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 34.68,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "patient-portal-alb-000",
+      "target": "claims-ecs-001",
+      "type": "subscribes",
+      "weight": 0.86
+    },
+    {
+      "source": "claims-ecs-001",
+      "target": "consent-aurora-002",
+      "type": "writes",
+      "weight": 0.77
+    },
+    {
+      "source": "consent-aurora-002",
+      "target": "claims-s3-003",
+      "type": "caches",
+      "weight": 0.46
+    },
+    {
+      "source": "claims-s3-003",
+      "target": "imaging-cognito-004",
+      "type": "subscribes",
+      "weight": 0.71
+    },
+    {
+      "source": "imaging-cognito-004",
+      "target": "internal-patient-portal-005",
+      "type": "triggers",
+      "weight": 0.68
+    },
+    {
+      "source": "internal-patient-portal-005",
+      "target": "core-ehr-006",
+      "type": "reads",
+      "weight": 0.47
+    },
+    {
+      "source": "core-ehr-006",
+      "target": "internal-scheduling-007",
+      "type": "queries",
+      "weight": 0.58
+    },
+    {
+      "source": "internal-patient-portal-005",
+      "target": "patient-portal-alb-000",
+      "type": "writes",
+      "weight": 0.8
+    },
+    {
+      "source": "internal-patient-portal-005",
+      "target": "claims-ecs-001",
+      "type": "subscribes",
+      "weight": 0.22
+    },
+    {
+      "source": "internal-scheduling-007",
+      "target": "claims-ecs-001",
+      "type": "triggers",
+      "weight": 0.2
+    },
+    {
+      "source": "patient-portal-alb-000",
+      "target": "imaging-cognito-004",
+      "type": "subscribes",
+      "weight": 0.91
+    },
+    {
+      "source": "claims-s3-003",
+      "target": "consent-aurora-002",
+      "type": "triggers",
+      "weight": 0.67
+    }
+  ]
+}

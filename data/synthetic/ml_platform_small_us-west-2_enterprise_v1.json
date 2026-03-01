@@ -1,0 +1,175 @@
+{
+  "metadata": {
+    "name": "Ml Platform (Enterprise, us-west-2)",
+    "id": "6d99321b",
+    "pattern": "ml_platform",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 7,
+    "total_dependencies": 7,
+    "total_cost_monthly": 11581.9,
+    "generated_at": "2026-03-01T19:23:57.879300",
+    "variation_seed": 23082
+  },
+  "services": [
+    {
+      "id": "experiment-sagemaker-000",
+      "name": "experiment-sagemaker",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 3066.67,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "serving-s3-001",
+      "name": "serving-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 934.37,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "registry-glue-002",
+      "name": "registry-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 183.39,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "pipeline-redshift-003",
+      "name": "pipeline-redshift",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 3150.62,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "training-ec2-004",
+      "name": "training-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1108.78,
+      "owner": "notifications",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "internal-registry-005",
+      "name": "internal-registry",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 355.78,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-registry-006",
+      "name": "edge-registry",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 2782.29,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "experiment-sagemaker-000",
+      "target": "serving-s3-001",
+      "type": "triggers",
+      "weight": 0.48
+    },
+    {
+      "source": "serving-s3-001",
+      "target": "registry-glue-002",
+      "type": "subscribes",
+      "weight": 0.43
+    },
+    {
+      "source": "registry-glue-002",
+      "target": "pipeline-redshift-003",
+      "type": "caches",
+      "weight": 0.81
+    },
+    {
+      "source": "pipeline-redshift-003",
+      "target": "training-ec2-004",
+      "type": "caches",
+      "weight": 0.68
+    },
+    {
+      "source": "training-ec2-004",
+      "target": "internal-registry-005",
+      "type": "subscribes",
+      "weight": 0.49
+    },
+    {
+      "source": "internal-registry-005",
+      "target": "edge-registry-006",
+      "type": "subscribes",
+      "weight": 0.95
+    },
+    {
+      "source": "training-ec2-004",
+      "target": "experiment-sagemaker-000",
+      "type": "writes",
+      "weight": 0.64
+    }
+  ]
+}

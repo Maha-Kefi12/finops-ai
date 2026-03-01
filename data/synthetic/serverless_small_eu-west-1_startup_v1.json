@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "name": "Serverless (Startup, eu-west-1)",
+    "id": "d761e0c4",
+    "pattern": "serverless",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 5,
+    "total_dependencies": 5,
+    "total_cost_monthly": 1942.71,
+    "generated_at": "2026-03-01T19:23:57.792555",
+    "variation_seed": 18866
+  },
+  "services": [
+    {
+      "id": "notifier-api-000",
+      "name": "notifier-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 196.74,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "aggregator-lambda-001",
+      "name": "aggregator-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 259.08,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "processor-dynamodb-002",
+      "name": "processor-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 890.48,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "validator-s3-003",
+      "name": "validator-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 543.17,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "router-secrets-004",
+      "name": "router-secrets",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 53.24,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "notifier-api-000",
+      "target": "aggregator-lambda-001",
+      "type": "reads",
+      "weight": 0.98
+    },
+    {
+      "source": "aggregator-lambda-001",
+      "target": "processor-dynamodb-002",
+      "type": "triggers",
+      "weight": 0.61
+    },
+    {
+      "source": "processor-dynamodb-002",
+      "target": "validator-s3-003",
+      "type": "writes",
+      "weight": 0.75
+    },
+    {
+      "source": "validator-s3-003",
+      "target": "router-secrets-004",
+      "type": "caches",
+      "weight": 0.4
+    },
+    {
+      "source": "processor-dynamodb-002",
+      "target": "router-secrets-004",
+      "type": "triggers",
+      "weight": 0.81
+    }
+  ]
+}

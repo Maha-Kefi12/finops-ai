@@ -1,0 +1,181 @@
+{
+  "metadata": {
+    "name": "Saas (Growth, eu-west-1)",
+    "id": "831889d0",
+    "pattern": "saas",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 7,
+    "total_dependencies": 8,
+    "total_cost_monthly": 10957.82,
+    "generated_at": "2026-03-01T19:23:57.449344",
+    "variation_seed": 4048
+  },
+  "services": [
+    {
+      "id": "onboarding-api-000",
+      "name": "onboarding-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 532.69,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "tenant-ecs-001",
+      "name": "tenant-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1348.38,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "analytics-aurora-002",
+      "name": "analytics-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 7443.53,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "auth-elasticache-003",
+      "name": "auth-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 947.76,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "billing-cognito-004",
+      "name": "billing-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 100.55,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-analytics-005",
+      "name": "hot-analytics",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 340.71,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cold-analytics-006",
+      "name": "cold-analytics",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 244.2,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "onboarding-api-000",
+      "target": "tenant-ecs-001",
+      "type": "triggers",
+      "weight": 0.64
+    },
+    {
+      "source": "tenant-ecs-001",
+      "target": "analytics-aurora-002",
+      "type": "subscribes",
+      "weight": 0.51
+    },
+    {
+      "source": "analytics-aurora-002",
+      "target": "auth-elasticache-003",
+      "type": "writes",
+      "weight": 0.97
+    },
+    {
+      "source": "auth-elasticache-003",
+      "target": "billing-cognito-004",
+      "type": "calls",
+      "weight": 0.41
+    },
+    {
+      "source": "billing-cognito-004",
+      "target": "hot-analytics-005",
+      "type": "writes",
+      "weight": 0.62
+    },
+    {
+      "source": "hot-analytics-005",
+      "target": "cold-analytics-006",
+      "type": "queries",
+      "weight": 0.96
+    },
+    {
+      "source": "tenant-ecs-001",
+      "target": "billing-cognito-004",
+      "type": "writes",
+      "weight": 0.2
+    },
+    {
+      "source": "hot-analytics-005",
+      "target": "tenant-ecs-001",
+      "type": "writes",
+      "weight": 0.83
+    }
+  ]
+}

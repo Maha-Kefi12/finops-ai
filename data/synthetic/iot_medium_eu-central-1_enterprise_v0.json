@@ -1,0 +1,209 @@
+{
+  "metadata": {
+    "name": "Iot (Enterprise, eu-central-1)",
+    "id": "b5bb2132",
+    "pattern": "iot",
+    "complexity": "medium",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 8,
+    "total_dependencies": 10,
+    "total_cost_monthly": 4118.69,
+    "generated_at": "2026-03-01T19:23:58.059276",
+    "variation_seed": 31600
+  },
+  "services": [
+    {
+      "id": "device-mgr-iot-000",
+      "name": "device-mgr-iot",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 1040.99,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "commands-kinesis-001",
+      "name": "commands-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 613.88,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "device-mgr-lambda-002",
+      "name": "device-mgr-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 114.18,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "telemetry-dynamodb-003",
+      "name": "telemetry-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1386.18,
+      "owner": "growth-eng",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "commands-s3-004",
+      "name": "commands-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 512.53,
+      "owner": "security",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-rules-engine-005",
+      "name": "backup-rules-engine",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 278.89,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-telemetry-006",
+      "name": "staging-telemetry",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 126.21,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "secondary-shadow-007",
+      "name": "secondary-shadow",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 45.83,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "device-mgr-iot-000",
+      "target": "commands-kinesis-001",
+      "type": "calls",
+      "weight": 0.82
+    },
+    {
+      "source": "commands-kinesis-001",
+      "target": "device-mgr-lambda-002",
+      "type": "caches",
+      "weight": 0.72
+    },
+    {
+      "source": "device-mgr-lambda-002",
+      "target": "telemetry-dynamodb-003",
+      "type": "subscribes",
+      "weight": 0.62
+    },
+    {
+      "source": "telemetry-dynamodb-003",
+      "target": "commands-s3-004",
+      "type": "caches",
+      "weight": 0.74
+    },
+    {
+      "source": "commands-s3-004",
+      "target": "backup-rules-engine-005",
+      "type": "queries",
+      "weight": 0.41
+    },
+    {
+      "source": "backup-rules-engine-005",
+      "target": "staging-telemetry-006",
+      "type": "queries",
+      "weight": 0.42
+    },
+    {
+      "source": "staging-telemetry-006",
+      "target": "secondary-shadow-007",
+      "type": "triggers",
+      "weight": 0.57
+    },
+    {
+      "source": "commands-s3-004",
+      "target": "secondary-shadow-007",
+      "type": "subscribes",
+      "weight": 0.64
+    },
+    {
+      "source": "commands-kinesis-001",
+      "target": "device-mgr-iot-000",
+      "type": "writes",
+      "weight": 0.67
+    },
+    {
+      "source": "staging-telemetry-006",
+      "target": "telemetry-dynamodb-003",
+      "type": "writes",
+      "weight": 0.44
+    }
+  ]
+}

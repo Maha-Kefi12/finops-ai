@@ -1,0 +1,153 @@
+{
+  "metadata": {
+    "name": "Edtech (Growth, us-west-2)",
+    "id": "29986aca",
+    "pattern": "edtech",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 6,
+    "total_dependencies": 6,
+    "total_cost_monthly": 4349.48,
+    "generated_at": "2026-03-01T19:23:58.386726",
+    "variation_seed": 45340
+  },
+  "services": [
+    {
+      "id": "progress-cloudfront-000",
+      "name": "progress-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 525.03,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "gradebook-ec2-001",
+      "name": "gradebook-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 190.14,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "content-mgr-rds-002",
+      "name": "content-mgr-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 1423.78,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "certificates-s3-003",
+      "name": "certificates-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 622.56,
+      "owner": "payments",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "gradebook-elasticache-004",
+      "name": "gradebook-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1204.26,
+      "owner": "api-gateway-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-courses-005",
+      "name": "edge-courses",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 383.71,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "progress-cloudfront-000",
+      "target": "gradebook-ec2-001",
+      "type": "queries",
+      "weight": 0.56
+    },
+    {
+      "source": "gradebook-ec2-001",
+      "target": "content-mgr-rds-002",
+      "type": "queries",
+      "weight": 0.98
+    },
+    {
+      "source": "content-mgr-rds-002",
+      "target": "certificates-s3-003",
+      "type": "writes",
+      "weight": 0.8
+    },
+    {
+      "source": "certificates-s3-003",
+      "target": "gradebook-elasticache-004",
+      "type": "caches",
+      "weight": 0.53
+    },
+    {
+      "source": "gradebook-elasticache-004",
+      "target": "edge-courses-005",
+      "type": "writes",
+      "weight": 0.96
+    },
+    {
+      "source": "gradebook-elasticache-004",
+      "target": "gradebook-ec2-001",
+      "type": "reads",
+      "weight": 0.67
+    }
+  ]
+}

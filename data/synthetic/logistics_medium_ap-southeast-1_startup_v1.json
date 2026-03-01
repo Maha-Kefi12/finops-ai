@@ -1,0 +1,197 @@
+{
+  "metadata": {
+    "name": "Logistics (Startup, ap-southeast-1)",
+    "id": "48368cc5",
+    "pattern": "logistics",
+    "complexity": "medium",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 8,
+    "total_dependencies": 8,
+    "total_cost_monthly": 3839.82,
+    "generated_at": "2026-03-01T19:23:58.480898",
+    "variation_seed": 49742
+  },
+  "services": [
+    {
+      "id": "routing-api-000",
+      "name": "routing-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 213.58,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "dispatch-ecs-001",
+      "name": "dispatch-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 945.06,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "dispatch-rds-002",
+      "name": "dispatch-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 531.96,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "customs-dynamodb-003",
+      "name": "customs-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 289.4,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "dispatch-sqs-004",
+      "name": "dispatch-sqs",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 219.41,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "private-tracking-005",
+      "name": "private-tracking",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 364.62,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-dispatch-006",
+      "name": "primary-dispatch",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1164.24,
+      "owner": "devops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-rates-007",
+      "name": "edge-rates",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 111.55,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "routing-api-000",
+      "target": "dispatch-ecs-001",
+      "type": "subscribes",
+      "weight": 0.96
+    },
+    {
+      "source": "dispatch-ecs-001",
+      "target": "dispatch-rds-002",
+      "type": "calls",
+      "weight": 0.76
+    },
+    {
+      "source": "dispatch-rds-002",
+      "target": "customs-dynamodb-003",
+      "type": "subscribes",
+      "weight": 0.34
+    },
+    {
+      "source": "customs-dynamodb-003",
+      "target": "dispatch-sqs-004",
+      "type": "writes",
+      "weight": 0.88
+    },
+    {
+      "source": "dispatch-sqs-004",
+      "target": "private-tracking-005",
+      "type": "queries",
+      "weight": 0.5
+    },
+    {
+      "source": "private-tracking-005",
+      "target": "primary-dispatch-006",
+      "type": "caches",
+      "weight": 0.69
+    },
+    {
+      "source": "primary-dispatch-006",
+      "target": "edge-rates-007",
+      "type": "writes",
+      "weight": 0.96
+    },
+    {
+      "source": "dispatch-sqs-004",
+      "target": "edge-rates-007",
+      "type": "calls",
+      "weight": 0.6
+    }
+  ]
+}

@@ -1,0 +1,347 @@
+{
+  "metadata": {
+    "name": "Fintech (Enterprise, ap-southeast-1)",
+    "id": "33135f21",
+    "pattern": "fintech",
+    "complexity": "medium",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 14,
+    "total_dependencies": 17,
+    "total_cost_monthly": 12612.67,
+    "generated_at": "2026-03-01T19:23:58.221176",
+    "variation_seed": 38706
+  },
+  "services": [
+    {
+      "id": "settlements-api-000",
+      "name": "settlements-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 346.16,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "accounts-eks-001",
+      "name": "accounts-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 2239.26,
+      "owner": "payments",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "risk-engine-aurora-002",
+      "name": "risk-engine-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 3989.04,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ledger-elasticache-003",
+      "name": "ledger-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 2015.69,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "transactions-dynamodb-004",
+      "name": "transactions-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 839.99,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "backup-settlements-005",
+      "name": "backup-settlements",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 139.35,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-ledger-006",
+      "name": "async-ledger",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 442.48,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-accounts-007",
+      "name": "fast-accounts",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 888.48,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-compliance-008",
+      "name": "primary-compliance",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 300.0,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "backup-accounts-009",
+      "name": "backup-accounts",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1014.21,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "shared-risk-engine-010",
+      "name": "shared-risk-engine",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 40.18,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "private-payments-011",
+      "name": "private-payments",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 179.43,
+      "owner": "platform-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-risk-engine-012",
+      "name": "internal-risk-engine",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 166.18,
+      "owner": "devops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-payments-013",
+      "name": "internal-payments",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 12.22,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "settlements-api-000",
+      "target": "accounts-eks-001",
+      "type": "writes",
+      "weight": 0.63
+    },
+    {
+      "source": "accounts-eks-001",
+      "target": "risk-engine-aurora-002",
+      "type": "writes",
+      "weight": 0.8
+    },
+    {
+      "source": "risk-engine-aurora-002",
+      "target": "ledger-elasticache-003",
+      "type": "reads",
+      "weight": 0.77
+    },
+    {
+      "source": "ledger-elasticache-003",
+      "target": "transactions-dynamodb-004",
+      "type": "triggers",
+      "weight": 0.95
+    },
+    {
+      "source": "transactions-dynamodb-004",
+      "target": "backup-settlements-005",
+      "type": "reads",
+      "weight": 0.98
+    },
+    {
+      "source": "backup-settlements-005",
+      "target": "async-ledger-006",
+      "type": "writes",
+      "weight": 0.78
+    },
+    {
+      "source": "async-ledger-006",
+      "target": "fast-accounts-007",
+      "type": "queries",
+      "weight": 0.65
+    },
+    {
+      "source": "fast-accounts-007",
+      "target": "primary-compliance-008",
+      "type": "writes",
+      "weight": 0.8
+    },
+    {
+      "source": "primary-compliance-008",
+      "target": "backup-accounts-009",
+      "type": "writes",
+      "weight": 0.81
+    },
+    {
+      "source": "backup-accounts-009",
+      "target": "shared-risk-engine-010",
+      "type": "calls",
+      "weight": 0.35
+    },
+    {
+      "source": "shared-risk-engine-010",
+      "target": "private-payments-011",
+      "type": "caches",
+      "weight": 0.6
+    },
+    {
+      "source": "private-payments-011",
+      "target": "internal-risk-engine-012",
+      "type": "writes",
+      "weight": 0.52
+    },
+    {
+      "source": "internal-risk-engine-012",
+      "target": "internal-payments-013",
+      "type": "writes",
+      "weight": 0.81
+    },
+    {
+      "source": "private-payments-011",
+      "target": "ledger-elasticache-003",
+      "type": "writes",
+      "weight": 0.14
+    },
+    {
+      "source": "primary-compliance-008",
+      "target": "settlements-api-000",
+      "type": "writes",
+      "weight": 0.37
+    },
+    {
+      "source": "backup-settlements-005",
+      "target": "private-payments-011",
+      "type": "reads",
+      "weight": 0.5
+    },
+    {
+      "source": "ledger-elasticache-003",
+      "target": "settlements-api-000",
+      "type": "queries",
+      "weight": 0.95
+    }
+  ]
+}

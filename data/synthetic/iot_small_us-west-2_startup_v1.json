@@ -1,0 +1,125 @@
+{
+  "metadata": {
+    "name": "Iot (Startup, us-west-2)",
+    "id": "0ead602f",
+    "pattern": "iot",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 5,
+    "total_dependencies": 4,
+    "total_cost_monthly": 1909.67,
+    "generated_at": "2026-03-01T19:23:58.045909",
+    "variation_seed": 30398
+  },
+  "services": [
+    {
+      "id": "shadow-iot-000",
+      "name": "shadow-iot",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 91.77,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "firmware-kinesis-001",
+      "name": "firmware-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 936.21,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "device-mgr-lambda-002",
+      "name": "device-mgr-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 166.86,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fleet-dynamodb-003",
+      "name": "fleet-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 62.87,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "digital-twin-s3-004",
+      "name": "digital-twin-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 651.96,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "shadow-iot-000",
+      "target": "firmware-kinesis-001",
+      "type": "reads",
+      "weight": 0.65
+    },
+    {
+      "source": "firmware-kinesis-001",
+      "target": "device-mgr-lambda-002",
+      "type": "subscribes",
+      "weight": 0.41
+    },
+    {
+      "source": "device-mgr-lambda-002",
+      "target": "fleet-dynamodb-003",
+      "type": "writes",
+      "weight": 0.6
+    },
+    {
+      "source": "fleet-dynamodb-003",
+      "target": "digital-twin-s3-004",
+      "type": "reads",
+      "weight": 0.76
+    }
+  ]
+}

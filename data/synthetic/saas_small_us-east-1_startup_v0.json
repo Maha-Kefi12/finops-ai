@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "name": "Saas (Startup, us-east-1)",
+    "id": "5aa61eeb",
+    "pattern": "saas",
+    "complexity": "small",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 4,
+    "total_dependencies": 4,
+    "total_cost_monthly": 1295.98,
+    "generated_at": "2026-03-01T19:23:57.447553",
+    "variation_seed": 3762
+  },
+  "services": [
+    {
+      "id": "workspace-api-000",
+      "name": "workspace-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 197.45,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "notification-ecs-001",
+      "name": "notification-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 351.18,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "onboarding-aurora-002",
+      "name": "onboarding-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 407.27,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "analytics-elasticache-003",
+      "name": "analytics-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 340.08,
+      "owner": "growth-eng",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "workspace-api-000",
+      "target": "notification-ecs-001",
+      "type": "writes",
+      "weight": 0.87
+    },
+    {
+      "source": "notification-ecs-001",
+      "target": "onboarding-aurora-002",
+      "type": "triggers",
+      "weight": 0.84
+    },
+    {
+      "source": "onboarding-aurora-002",
+      "target": "analytics-elasticache-003",
+      "type": "reads",
+      "weight": 0.54
+    },
+    {
+      "source": "analytics-elasticache-003",
+      "target": "notification-ecs-001",
+      "type": "queries",
+      "weight": 0.61
+    }
+  ]
+}

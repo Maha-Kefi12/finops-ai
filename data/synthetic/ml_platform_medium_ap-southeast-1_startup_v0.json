@@ -1,0 +1,311 @@
+{
+  "metadata": {
+    "name": "Ml Platform (Startup, ap-southeast-1)",
+    "id": "766016f0",
+    "pattern": "ml_platform",
+    "complexity": "medium",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 11,
+    "total_dependencies": 19,
+    "total_cost_monthly": 1782.32,
+    "generated_at": "2026-03-01T19:23:57.886082",
+    "variation_seed": 23664
+  },
+  "services": [
+    {
+      "id": "registry-sagemaker-000",
+      "name": "registry-sagemaker",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 307.26,
+      "owner": "payments",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "experiment-s3-001",
+      "name": "experiment-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 97.56,
+      "owner": "security",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "inference-glue-002",
+      "name": "inference-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 161.92,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "training-redshift-003",
+      "name": "training-redshift",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 203.24,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "registry-ec2-004",
+      "name": "registry-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 225.33,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "shared-monitoring-005",
+      "name": "shared-monitoring",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 168.13,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "global-inference-006",
+      "name": "global-inference",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 23.76,
+      "owner": "growth-eng",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "public-monitoring-007",
+      "name": "public-monitoring",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 165.82,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-monitoring-008",
+      "name": "central-monitoring",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 146.94,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-labeling-009",
+      "name": "edge-labeling",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 70.26,
+      "owner": "frontend-guild",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-labeling-010",
+      "name": "hot-labeling",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 212.1,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "registry-sagemaker-000",
+      "target": "experiment-s3-001",
+      "type": "subscribes",
+      "weight": 0.45
+    },
+    {
+      "source": "experiment-s3-001",
+      "target": "inference-glue-002",
+      "type": "queries",
+      "weight": 0.9
+    },
+    {
+      "source": "inference-glue-002",
+      "target": "training-redshift-003",
+      "type": "calls",
+      "weight": 0.98
+    },
+    {
+      "source": "training-redshift-003",
+      "target": "registry-ec2-004",
+      "type": "queries",
+      "weight": 0.47
+    },
+    {
+      "source": "registry-ec2-004",
+      "target": "shared-monitoring-005",
+      "type": "reads",
+      "weight": 0.96
+    },
+    {
+      "source": "shared-monitoring-005",
+      "target": "global-inference-006",
+      "type": "caches",
+      "weight": 0.49
+    },
+    {
+      "source": "global-inference-006",
+      "target": "public-monitoring-007",
+      "type": "calls",
+      "weight": 0.69
+    },
+    {
+      "source": "public-monitoring-007",
+      "target": "central-monitoring-008",
+      "type": "queries",
+      "weight": 0.84
+    },
+    {
+      "source": "central-monitoring-008",
+      "target": "edge-labeling-009",
+      "type": "triggers",
+      "weight": 0.66
+    },
+    {
+      "source": "edge-labeling-009",
+      "target": "hot-labeling-010",
+      "type": "subscribes",
+      "weight": 0.71
+    },
+    {
+      "source": "registry-ec2-004",
+      "target": "central-monitoring-008",
+      "type": "writes",
+      "weight": 0.56
+    },
+    {
+      "source": "hot-labeling-010",
+      "target": "registry-sagemaker-000",
+      "type": "queries",
+      "weight": 0.97
+    },
+    {
+      "source": "shared-monitoring-005",
+      "target": "public-monitoring-007",
+      "type": "writes",
+      "weight": 0.33
+    },
+    {
+      "source": "edge-labeling-009",
+      "target": "experiment-s3-001",
+      "type": "writes",
+      "weight": 0.9
+    },
+    {
+      "source": "central-monitoring-008",
+      "target": "experiment-s3-001",
+      "type": "calls",
+      "weight": 0.43
+    },
+    {
+      "source": "inference-glue-002",
+      "target": "experiment-s3-001",
+      "type": "reads",
+      "weight": 0.43
+    },
+    {
+      "source": "inference-glue-002",
+      "target": "edge-labeling-009",
+      "type": "caches",
+      "weight": 0.21
+    },
+    {
+      "source": "registry-sagemaker-000",
+      "target": "public-monitoring-007",
+      "type": "writes",
+      "weight": 0.37
+    },
+    {
+      "source": "edge-labeling-009",
+      "target": "public-monitoring-007",
+      "type": "queries",
+      "weight": 0.99
+    }
+  ]
+}

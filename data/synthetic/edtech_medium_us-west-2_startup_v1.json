@@ -1,0 +1,249 @@
+{
+  "metadata": {
+    "name": "Edtech (Startup, us-west-2)",
+    "id": "84fbdca9",
+    "pattern": "edtech",
+    "complexity": "medium",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 9,
+    "total_dependencies": 14,
+    "total_cost_monthly": 3428.05,
+    "generated_at": "2026-03-01T19:23:58.397818",
+    "variation_seed": 46208
+  },
+  "services": [
+    {
+      "id": "assessments-cloudfront-000",
+      "name": "assessments-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 353.03,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "progress-ec2-001",
+      "name": "progress-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 654.24,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "enrollment-rds-002",
+      "name": "enrollment-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 1012.37,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "forums-s3-003",
+      "name": "forums-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 70.21,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "proctoring-elasticache-004",
+      "name": "proctoring-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 354.28,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-video-lessons-005",
+      "name": "edge-video-lessons",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 732.08,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-assessments-006",
+      "name": "staging-assessments",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 11.7,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "primary-content-mgr-007",
+      "name": "primary-content-mgr",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 6.49,
+      "owner": "security",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-forums-008",
+      "name": "main-forums",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 233.65,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "assessments-cloudfront-000",
+      "target": "progress-ec2-001",
+      "type": "writes",
+      "weight": 0.98
+    },
+    {
+      "source": "progress-ec2-001",
+      "target": "enrollment-rds-002",
+      "type": "writes",
+      "weight": 0.33
+    },
+    {
+      "source": "enrollment-rds-002",
+      "target": "forums-s3-003",
+      "type": "triggers",
+      "weight": 0.82
+    },
+    {
+      "source": "forums-s3-003",
+      "target": "proctoring-elasticache-004",
+      "type": "caches",
+      "weight": 0.63
+    },
+    {
+      "source": "proctoring-elasticache-004",
+      "target": "edge-video-lessons-005",
+      "type": "triggers",
+      "weight": 0.56
+    },
+    {
+      "source": "edge-video-lessons-005",
+      "target": "staging-assessments-006",
+      "type": "queries",
+      "weight": 0.44
+    },
+    {
+      "source": "staging-assessments-006",
+      "target": "primary-content-mgr-007",
+      "type": "subscribes",
+      "weight": 0.84
+    },
+    {
+      "source": "primary-content-mgr-007",
+      "target": "main-forums-008",
+      "type": "subscribes",
+      "weight": 0.88
+    },
+    {
+      "source": "primary-content-mgr-007",
+      "target": "edge-video-lessons-005",
+      "type": "caches",
+      "weight": 0.86
+    },
+    {
+      "source": "main-forums-008",
+      "target": "staging-assessments-006",
+      "type": "writes",
+      "weight": 0.24
+    },
+    {
+      "source": "edge-video-lessons-005",
+      "target": "forums-s3-003",
+      "type": "reads",
+      "weight": 0.53
+    },
+    {
+      "source": "enrollment-rds-002",
+      "target": "proctoring-elasticache-004",
+      "type": "queries",
+      "weight": 0.81
+    },
+    {
+      "source": "forums-s3-003",
+      "target": "assessments-cloudfront-000",
+      "type": "caches",
+      "weight": 0.52
+    },
+    {
+      "source": "proctoring-elasticache-004",
+      "target": "progress-ec2-001",
+      "type": "reads",
+      "weight": 0.74
+    }
+  ]
+}

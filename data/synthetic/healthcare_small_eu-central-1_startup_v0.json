@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Healthcare (Startup, eu-central-1)",
+    "id": "ec12e363",
+    "pattern": "healthcare",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 3130.45,
+    "generated_at": "2026-03-01T19:23:58.300083",
+    "variation_seed": 41706
+  },
+  "services": [
+    {
+      "id": "ehr-alb-000",
+      "name": "ehr-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 133.42,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "imaging-ecs-001",
+      "name": "imaging-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1276.15,
+      "owner": "identity-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "consent-aurora-002",
+      "name": "consent-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 1720.88,
+      "owner": "platform-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "ehr-alb-000",
+      "target": "imaging-ecs-001",
+      "type": "subscribes",
+      "weight": 0.87
+    },
+    {
+      "source": "imaging-ecs-001",
+      "target": "consent-aurora-002",
+      "type": "subscribes",
+      "weight": 0.91
+    }
+  ]
+}

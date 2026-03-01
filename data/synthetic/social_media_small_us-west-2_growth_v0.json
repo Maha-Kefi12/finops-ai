@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "name": "Social Media (Growth, us-west-2)",
+    "id": "36b2607c",
+    "pattern": "social_media",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 5,
+    "total_dependencies": 5,
+    "total_cost_monthly": 9050.04,
+    "generated_at": "2026-03-01T19:23:58.560541",
+    "variation_seed": 52742
+  },
+  "services": [
+    {
+      "id": "search-alb-000",
+      "name": "search-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 126.7,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "media-upload-eks-001",
+      "name": "media-upload-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 2829.73,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "moderation-aurora-002",
+      "name": "moderation-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 2425.3,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "stories-elasticache-003",
+      "name": "stories-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 890.03,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "search-cloudfront-004",
+      "name": "search-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 2778.28,
+      "owner": "data-eng",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "search-alb-000",
+      "target": "media-upload-eks-001",
+      "type": "subscribes",
+      "weight": 0.39
+    },
+    {
+      "source": "media-upload-eks-001",
+      "target": "moderation-aurora-002",
+      "type": "queries",
+      "weight": 0.31
+    },
+    {
+      "source": "moderation-aurora-002",
+      "target": "stories-elasticache-003",
+      "type": "triggers",
+      "weight": 0.65
+    },
+    {
+      "source": "stories-elasticache-003",
+      "target": "search-cloudfront-004",
+      "type": "reads",
+      "weight": 0.92
+    },
+    {
+      "source": "search-cloudfront-004",
+      "target": "stories-elasticache-003",
+      "type": "triggers",
+      "weight": 0.19
+    }
+  ]
+}

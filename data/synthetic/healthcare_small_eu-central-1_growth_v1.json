@@ -1,0 +1,103 @@
+{
+  "metadata": {
+    "name": "Healthcare (Growth, eu-central-1)",
+    "id": "b523fbc5",
+    "pattern": "healthcare",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 4,
+    "total_dependencies": 3,
+    "total_cost_monthly": 7695.13,
+    "generated_at": "2026-03-01T19:23:58.300556",
+    "variation_seed": 41806
+  },
+  "services": [
+    {
+      "id": "labs-alb-000",
+      "name": "labs-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 131.47,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "scheduling-ecs-001",
+      "name": "scheduling-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 300.17,
+      "owner": "security",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "vitals-aurora-002",
+      "name": "vitals-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 6356.05,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "telemedicine-s3-003",
+      "name": "telemedicine-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 907.44,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "labs-alb-000",
+      "target": "scheduling-ecs-001",
+      "type": "triggers",
+      "weight": 0.64
+    },
+    {
+      "source": "scheduling-ecs-001",
+      "target": "vitals-aurora-002",
+      "type": "triggers",
+      "weight": 0.47
+    },
+    {
+      "source": "vitals-aurora-002",
+      "target": "telemedicine-s3-003",
+      "type": "queries",
+      "weight": 0.36
+    }
+  ]
+}

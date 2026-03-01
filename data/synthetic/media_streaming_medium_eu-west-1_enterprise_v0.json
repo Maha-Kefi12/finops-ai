@@ -1,0 +1,281 @@
+{
+  "metadata": {
+    "name": "Media Streaming (Enterprise, eu-west-1)",
+    "id": "d0dc42c0",
+    "pattern": "media_streaming",
+    "complexity": "medium",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 11,
+    "total_dependencies": 14,
+    "total_cost_monthly": 8460.0,
+    "generated_at": "2026-03-01T19:23:57.967899",
+    "variation_seed": 27322
+  },
+  "services": [
+    {
+      "id": "manifest-cloudfront-000",
+      "name": "manifest-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 3094.65,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "thumbnail-s3-001",
+      "name": "thumbnail-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 232.22,
+      "owner": "notifications",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "manifest-mediaconvert-002",
+      "name": "manifest-mediaconvert",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 778.98,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "thumbnail-ec2-003",
+      "name": "thumbnail-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 980.21,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cdn-origin-dynamodb-004",
+      "name": "cdn-origin-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 647.4,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-thumbnail-005",
+      "name": "staging-thumbnail",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 36.34,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-manifest-006",
+      "name": "fast-manifest",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 382.04,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-player-007",
+      "name": "cold-player",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 137.72,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-transcoder-008",
+      "name": "core-transcoder",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 73.19,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-cdn-origin-009",
+      "name": "async-cdn-origin",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1903.63,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-player-010",
+      "name": "global-player",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 193.62,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "manifest-cloudfront-000",
+      "target": "thumbnail-s3-001",
+      "type": "reads",
+      "weight": 0.96
+    },
+    {
+      "source": "thumbnail-s3-001",
+      "target": "manifest-mediaconvert-002",
+      "type": "calls",
+      "weight": 0.98
+    },
+    {
+      "source": "manifest-mediaconvert-002",
+      "target": "thumbnail-ec2-003",
+      "type": "reads",
+      "weight": 0.67
+    },
+    {
+      "source": "thumbnail-ec2-003",
+      "target": "cdn-origin-dynamodb-004",
+      "type": "triggers",
+      "weight": 0.96
+    },
+    {
+      "source": "cdn-origin-dynamodb-004",
+      "target": "staging-thumbnail-005",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "staging-thumbnail-005",
+      "target": "fast-manifest-006",
+      "type": "queries",
+      "weight": 0.95
+    },
+    {
+      "source": "fast-manifest-006",
+      "target": "cold-player-007",
+      "type": "triggers",
+      "weight": 0.43
+    },
+    {
+      "source": "cold-player-007",
+      "target": "core-transcoder-008",
+      "type": "triggers",
+      "weight": 0.44
+    },
+    {
+      "source": "core-transcoder-008",
+      "target": "async-cdn-origin-009",
+      "type": "queries",
+      "weight": 0.34
+    },
+    {
+      "source": "async-cdn-origin-009",
+      "target": "global-player-010",
+      "type": "writes",
+      "weight": 0.68
+    },
+    {
+      "source": "fast-manifest-006",
+      "target": "cdn-origin-dynamodb-004",
+      "type": "caches",
+      "weight": 0.2
+    },
+    {
+      "source": "core-transcoder-008",
+      "target": "thumbnail-ec2-003",
+      "type": "subscribes",
+      "weight": 0.81
+    },
+    {
+      "source": "async-cdn-origin-009",
+      "target": "cold-player-007",
+      "type": "caches",
+      "weight": 0.85
+    },
+    {
+      "source": "staging-thumbnail-005",
+      "target": "thumbnail-ec2-003",
+      "type": "reads",
+      "weight": 0.41
+    }
+  ]
+}

@@ -1,0 +1,159 @@
+{
+  "metadata": {
+    "name": "Edtech (Enterprise, us-west-2)",
+    "id": "6e332fdc",
+    "pattern": "edtech",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 6,
+    "total_dependencies": 7,
+    "total_cost_monthly": 9533.41,
+    "generated_at": "2026-03-01T19:23:58.387097",
+    "variation_seed": 45402
+  },
+  "services": [
+    {
+      "id": "progress-cloudfront-000",
+      "name": "progress-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 1737.73,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "gradebook-ec2-001",
+      "name": "gradebook-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 1263.74,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "progress-rds-002",
+      "name": "progress-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 4682.17,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "progress-s3-003",
+      "name": "progress-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 341.7,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "proctoring-elasticache-004",
+      "name": "proctoring-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1403.03,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-gradebook-005",
+      "name": "regional-gradebook",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 105.04,
+      "owner": "data-eng",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "progress-cloudfront-000",
+      "target": "gradebook-ec2-001",
+      "type": "calls",
+      "weight": 0.84
+    },
+    {
+      "source": "gradebook-ec2-001",
+      "target": "progress-rds-002",
+      "type": "calls",
+      "weight": 0.38
+    },
+    {
+      "source": "progress-rds-002",
+      "target": "progress-s3-003",
+      "type": "writes",
+      "weight": 0.82
+    },
+    {
+      "source": "progress-s3-003",
+      "target": "proctoring-elasticache-004",
+      "type": "triggers",
+      "weight": 0.34
+    },
+    {
+      "source": "proctoring-elasticache-004",
+      "target": "regional-gradebook-005",
+      "type": "reads",
+      "weight": 0.68
+    },
+    {
+      "source": "gradebook-ec2-001",
+      "target": "progress-cloudfront-000",
+      "type": "subscribes",
+      "weight": 0.6
+    },
+    {
+      "source": "progress-s3-003",
+      "target": "progress-rds-002",
+      "type": "reads",
+      "weight": 0.13
+    }
+  ]
+}

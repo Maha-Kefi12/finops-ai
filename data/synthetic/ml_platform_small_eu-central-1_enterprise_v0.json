@@ -1,0 +1,93 @@
+{
+  "metadata": {
+    "name": "Ml Platform (Enterprise, eu-central-1)",
+    "id": "9e852a0d",
+    "pattern": "ml_platform",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 3,
+    "total_dependencies": 4,
+    "total_cost_monthly": 4405.0,
+    "generated_at": "2026-03-01T19:23:57.880283",
+    "variation_seed": 23230
+  },
+  "services": [
+    {
+      "id": "training-sagemaker-000",
+      "name": "training-sagemaker",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 3349.45,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "inference-s3-001",
+      "name": "inference-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 665.92,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "serving-glue-002",
+      "name": "serving-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 389.63,
+      "owner": "security",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "training-sagemaker-000",
+      "target": "inference-s3-001",
+      "type": "subscribes",
+      "weight": 0.4
+    },
+    {
+      "source": "inference-s3-001",
+      "target": "serving-glue-002",
+      "type": "subscribes",
+      "weight": 0.8
+    },
+    {
+      "source": "inference-s3-001",
+      "target": "training-sagemaker-000",
+      "type": "caches",
+      "weight": 0.24
+    },
+    {
+      "source": "serving-glue-002",
+      "target": "training-sagemaker-000",
+      "type": "caches",
+      "weight": 0.59
+    }
+  ]
+}

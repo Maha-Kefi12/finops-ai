@@ -1,0 +1,629 @@
+{
+  "metadata": {
+    "name": "Healthcare (Enterprise, eu-west-1)",
+    "id": "720d03a0",
+    "pattern": "healthcare",
+    "complexity": "large",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 23,
+    "total_dependencies": 40,
+    "total_cost_monthly": 32432.83,
+    "generated_at": "2026-03-01T19:23:58.321376",
+    "variation_seed": 43132
+  },
+  "services": [
+    {
+      "id": "claims-alb-000",
+      "name": "claims-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 177.37,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "imaging-ecs-001",
+      "name": "imaging-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 847.87,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ehr-aurora-002",
+      "name": "ehr-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 1828.08,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "scheduling-s3-003",
+      "name": "scheduling-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 570.86,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "claims-cognito-004",
+      "name": "claims-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 242.98,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-claims-005",
+      "name": "global-claims",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 79.23,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "secondary-labs-006",
+      "name": "secondary-labs",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 103.3,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "realtime-vitals-007",
+      "name": "realtime-vitals",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 84.8,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-scheduling-008",
+      "name": "batch-scheduling",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 487.49,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-consent-009",
+      "name": "backup-consent",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 147.87,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "backup-patient-portal-010",
+      "name": "backup-patient-portal",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1483.94,
+      "owner": "devops",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-labs-011",
+      "name": "secondary-labs",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 534.91,
+      "owner": "mobile-backend",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-claims-012",
+      "name": "realtime-claims",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 90.35,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-telemedicine-013",
+      "name": "edge-telemedicine",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 50.03,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-telemedicine-014",
+      "name": "central-telemedicine",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 3348.33,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-labs-015",
+      "name": "internal-labs",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 4425.81,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "secondary-prescriptions-016",
+      "name": "secondary-prescriptions",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 1882.95,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-patient-portal-017",
+      "name": "secondary-patient-portal",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 129.77,
+      "owner": "platform-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "regional-telemedicine-018",
+      "name": "regional-telemedicine",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 3879.78,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-scheduling-019",
+      "name": "internal-scheduling",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 1246.38,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "batch-imaging-020",
+      "name": "batch-imaging",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 213.4,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-imaging-021",
+      "name": "core-imaging",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 807.36,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-telemedicine-022",
+      "name": "shared-telemedicine",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 9769.97,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "claims-alb-000",
+      "target": "imaging-ecs-001",
+      "type": "calls",
+      "weight": 0.54
+    },
+    {
+      "source": "imaging-ecs-001",
+      "target": "ehr-aurora-002",
+      "type": "writes",
+      "weight": 0.93
+    },
+    {
+      "source": "ehr-aurora-002",
+      "target": "scheduling-s3-003",
+      "type": "reads",
+      "weight": 0.82
+    },
+    {
+      "source": "scheduling-s3-003",
+      "target": "claims-cognito-004",
+      "type": "reads",
+      "weight": 0.59
+    },
+    {
+      "source": "claims-cognito-004",
+      "target": "global-claims-005",
+      "type": "writes",
+      "weight": 0.58
+    },
+    {
+      "source": "global-claims-005",
+      "target": "secondary-labs-006",
+      "type": "writes",
+      "weight": 0.31
+    },
+    {
+      "source": "secondary-labs-006",
+      "target": "realtime-vitals-007",
+      "type": "caches",
+      "weight": 0.31
+    },
+    {
+      "source": "realtime-vitals-007",
+      "target": "batch-scheduling-008",
+      "type": "writes",
+      "weight": 0.77
+    },
+    {
+      "source": "batch-scheduling-008",
+      "target": "backup-consent-009",
+      "type": "caches",
+      "weight": 0.66
+    },
+    {
+      "source": "backup-consent-009",
+      "target": "backup-patient-portal-010",
+      "type": "reads",
+      "weight": 0.55
+    },
+    {
+      "source": "backup-patient-portal-010",
+      "target": "secondary-labs-011",
+      "type": "queries",
+      "weight": 0.51
+    },
+    {
+      "source": "secondary-labs-011",
+      "target": "realtime-claims-012",
+      "type": "calls",
+      "weight": 0.31
+    },
+    {
+      "source": "realtime-claims-012",
+      "target": "edge-telemedicine-013",
+      "type": "writes",
+      "weight": 0.67
+    },
+    {
+      "source": "edge-telemedicine-013",
+      "target": "central-telemedicine-014",
+      "type": "caches",
+      "weight": 0.79
+    },
+    {
+      "source": "central-telemedicine-014",
+      "target": "internal-labs-015",
+      "type": "reads",
+      "weight": 0.35
+    },
+    {
+      "source": "internal-labs-015",
+      "target": "secondary-prescriptions-016",
+      "type": "queries",
+      "weight": 0.44
+    },
+    {
+      "source": "secondary-prescriptions-016",
+      "target": "secondary-patient-portal-017",
+      "type": "calls",
+      "weight": 0.68
+    },
+    {
+      "source": "secondary-patient-portal-017",
+      "target": "regional-telemedicine-018",
+      "type": "triggers",
+      "weight": 0.76
+    },
+    {
+      "source": "regional-telemedicine-018",
+      "target": "internal-scheduling-019",
+      "type": "subscribes",
+      "weight": 0.88
+    },
+    {
+      "source": "internal-scheduling-019",
+      "target": "batch-imaging-020",
+      "type": "queries",
+      "weight": 0.64
+    },
+    {
+      "source": "batch-imaging-020",
+      "target": "core-imaging-021",
+      "type": "triggers",
+      "weight": 0.92
+    },
+    {
+      "source": "core-imaging-021",
+      "target": "shared-telemedicine-022",
+      "type": "reads",
+      "weight": 0.81
+    },
+    {
+      "source": "realtime-vitals-007",
+      "target": "batch-imaging-020",
+      "type": "reads",
+      "weight": 0.18
+    },
+    {
+      "source": "core-imaging-021",
+      "target": "central-telemedicine-014",
+      "type": "triggers",
+      "weight": 0.69
+    },
+    {
+      "source": "ehr-aurora-002",
+      "target": "secondary-labs-011",
+      "type": "calls",
+      "weight": 0.29
+    },
+    {
+      "source": "claims-alb-000",
+      "target": "batch-imaging-020",
+      "type": "calls",
+      "weight": 0.76
+    },
+    {
+      "source": "shared-telemedicine-022",
+      "target": "core-imaging-021",
+      "type": "triggers",
+      "weight": 0.71
+    },
+    {
+      "source": "ehr-aurora-002",
+      "target": "claims-alb-000",
+      "type": "triggers",
+      "weight": 1.0
+    },
+    {
+      "source": "backup-consent-009",
+      "target": "internal-scheduling-019",
+      "type": "caches",
+      "weight": 0.34
+    },
+    {
+      "source": "batch-scheduling-008",
+      "target": "ehr-aurora-002",
+      "type": "writes",
+      "weight": 0.22
+    },
+    {
+      "source": "batch-scheduling-008",
+      "target": "regional-telemedicine-018",
+      "type": "queries",
+      "weight": 0.25
+    },
+    {
+      "source": "global-claims-005",
+      "target": "backup-consent-009",
+      "type": "subscribes",
+      "weight": 0.61
+    },
+    {
+      "source": "central-telemedicine-014",
+      "target": "edge-telemedicine-013",
+      "type": "subscribes",
+      "weight": 0.83
+    },
+    {
+      "source": "backup-patient-portal-010",
+      "target": "realtime-vitals-007",
+      "type": "queries",
+      "weight": 0.33
+    },
+    {
+      "source": "claims-alb-000",
+      "target": "global-claims-005",
+      "type": "writes",
+      "weight": 0.89
+    },
+    {
+      "source": "scheduling-s3-003",
+      "target": "realtime-vitals-007",
+      "type": "writes",
+      "weight": 0.99
+    },
+    {
+      "source": "ehr-aurora-002",
+      "target": "batch-scheduling-008",
+      "type": "reads",
+      "weight": 0.18
+    },
+    {
+      "source": "regional-telemedicine-018",
+      "target": "edge-telemedicine-013",
+      "type": "caches",
+      "weight": 0.54
+    },
+    {
+      "source": "central-telemedicine-014",
+      "target": "secondary-labs-006",
+      "type": "calls",
+      "weight": 0.6
+    },
+    {
+      "source": "backup-consent-009",
+      "target": "realtime-claims-012",
+      "type": "caches",
+      "weight": 0.17
+    }
+  ]
+}

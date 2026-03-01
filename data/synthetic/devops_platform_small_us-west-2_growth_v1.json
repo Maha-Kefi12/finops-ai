@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Devops Platform (Growth, us-west-2)",
+    "id": "06d1c295",
+    "pattern": "devops_platform",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 4740.54,
+    "generated_at": "2026-03-01T19:23:58.727180",
+    "variation_seed": 60220
+  },
+  "services": [
+    {
+      "id": "artifact-store-alb-000",
+      "name": "artifact-store-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 100.77,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "artifact-store-eks-001",
+      "name": "artifact-store-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 1990.47,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secret-vault-rds-002",
+      "name": "secret-vault-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 2649.3,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "artifact-store-alb-000",
+      "target": "artifact-store-eks-001",
+      "type": "subscribes",
+      "weight": 0.56
+    },
+    {
+      "source": "artifact-store-eks-001",
+      "target": "secret-vault-rds-002",
+      "type": "calls",
+      "weight": 0.7
+    }
+  ]
+}

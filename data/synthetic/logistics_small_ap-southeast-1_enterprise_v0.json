@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Logistics (Enterprise, ap-southeast-1)",
+    "id": "4d1ec8e3",
+    "pattern": "logistics",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 7901.56,
+    "generated_at": "2026-03-01T19:23:58.472243",
+    "variation_seed": 48898
+  },
+  "services": [
+    {
+      "id": "tracking-api-000",
+      "name": "tracking-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 221.21,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "routing-ecs-001",
+      "name": "routing-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 2756.53,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "routing-rds-002",
+      "name": "routing-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 4923.82,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "tracking-api-000",
+      "target": "routing-ecs-001",
+      "type": "queries",
+      "weight": 0.34
+    },
+    {
+      "source": "routing-ecs-001",
+      "target": "routing-rds-002",
+      "type": "reads",
+      "weight": 0.74
+    }
+  ]
+}

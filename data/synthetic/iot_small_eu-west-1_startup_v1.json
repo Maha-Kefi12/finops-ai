@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Iot (Startup, eu-west-1)",
+    "id": "98ce212c",
+    "pattern": "iot",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 875.76,
+    "generated_at": "2026-03-01T19:23:58.043127",
+    "variation_seed": 30026
+  },
+  "services": [
+    {
+      "id": "device-mgr-iot-000",
+      "name": "device-mgr-iot",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 259.6,
+      "owner": "payments",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "rules-engine-kinesis-001",
+      "name": "rules-engine-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 351.44,
+      "owner": "growth-eng",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "device-mgr-lambda-002",
+      "name": "device-mgr-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 264.72,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "device-mgr-iot-000",
+      "target": "rules-engine-kinesis-001",
+      "type": "writes",
+      "weight": 0.67
+    },
+    {
+      "source": "rules-engine-kinesis-001",
+      "target": "device-mgr-lambda-002",
+      "type": "queries",
+      "weight": 0.95
+    }
+  ]
+}

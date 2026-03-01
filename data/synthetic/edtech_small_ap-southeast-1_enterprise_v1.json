@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Edtech (Enterprise, ap-southeast-1)",
+    "id": "7a9f81e4",
+    "pattern": "edtech",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 4576.04,
+    "generated_at": "2026-03-01T19:23:58.385832",
+    "variation_seed": 45216
+  },
+  "services": [
+    {
+      "id": "courses-cloudfront-000",
+      "name": "courses-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 1699.13,
+      "owner": "security",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "video-lessons-ec2-001",
+      "name": "video-lessons-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 1741.28,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "certificates-rds-002",
+      "name": "certificates-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 1135.63,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "courses-cloudfront-000",
+      "target": "video-lessons-ec2-001",
+      "type": "writes",
+      "weight": 0.67
+    },
+    {
+      "source": "video-lessons-ec2-001",
+      "target": "certificates-rds-002",
+      "type": "reads",
+      "weight": 0.74
+    }
+  ]
+}

@@ -1,0 +1,159 @@
+{
+  "metadata": {
+    "name": "Serverless (Growth, us-west-2)",
+    "id": "85e03d00",
+    "pattern": "serverless",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 6,
+    "total_dependencies": 7,
+    "total_cost_monthly": 2784.52,
+    "generated_at": "2026-03-01T19:23:57.795698",
+    "variation_seed": 19300
+  },
+  "services": [
+    {
+      "id": "router-api-000",
+      "name": "router-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 419.01,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "processor-lambda-001",
+      "name": "processor-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 342.55,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "validator-dynamodb-002",
+      "name": "validator-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 606.21,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "handler-s3-003",
+      "name": "handler-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 918.67,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "formatter-cloudwatch-004",
+      "name": "formatter-cloudwatch",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 464.58,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-scheduler-005",
+      "name": "edge-scheduler",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 33.5,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "router-api-000",
+      "target": "processor-lambda-001",
+      "type": "writes",
+      "weight": 0.92
+    },
+    {
+      "source": "processor-lambda-001",
+      "target": "validator-dynamodb-002",
+      "type": "reads",
+      "weight": 0.98
+    },
+    {
+      "source": "validator-dynamodb-002",
+      "target": "handler-s3-003",
+      "type": "triggers",
+      "weight": 0.92
+    },
+    {
+      "source": "handler-s3-003",
+      "target": "formatter-cloudwatch-004",
+      "type": "reads",
+      "weight": 1.0
+    },
+    {
+      "source": "formatter-cloudwatch-004",
+      "target": "edge-scheduler-005",
+      "type": "reads",
+      "weight": 0.62
+    },
+    {
+      "source": "router-api-000",
+      "target": "handler-s3-003",
+      "type": "queries",
+      "weight": 0.6
+    },
+    {
+      "source": "formatter-cloudwatch-004",
+      "target": "router-api-000",
+      "type": "queries",
+      "weight": 0.16
+    }
+  ]
+}

@@ -1,0 +1,159 @@
+{
+  "metadata": {
+    "name": "Monolith (Startup, eu-west-1)",
+    "id": "1649d937",
+    "pattern": "monolith",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 6,
+    "total_dependencies": 7,
+    "total_cost_monthly": 3889.72,
+    "generated_at": "2026-03-01T19:23:58.124040",
+    "variation_seed": 33708
+  },
+  "services": [
+    {
+      "id": "file-store-alb-000",
+      "name": "file-store-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 148.57,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "app-server-ec2-001",
+      "name": "app-server-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1234.77,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "file-store-rds-002",
+      "name": "file-store-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 1421.66,
+      "owner": "payments",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "scheduler-s3-003",
+      "name": "scheduler-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 879.45,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "web-tier-elasticache-004",
+      "name": "web-tier-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 195.8,
+      "owner": "data-eng",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-batch-jobs-005",
+      "name": "private-batch-jobs",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 9.47,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "file-store-alb-000",
+      "target": "app-server-ec2-001",
+      "type": "reads",
+      "weight": 0.36
+    },
+    {
+      "source": "app-server-ec2-001",
+      "target": "file-store-rds-002",
+      "type": "reads",
+      "weight": 0.96
+    },
+    {
+      "source": "file-store-rds-002",
+      "target": "scheduler-s3-003",
+      "type": "queries",
+      "weight": 0.38
+    },
+    {
+      "source": "scheduler-s3-003",
+      "target": "web-tier-elasticache-004",
+      "type": "triggers",
+      "weight": 0.58
+    },
+    {
+      "source": "web-tier-elasticache-004",
+      "target": "private-batch-jobs-005",
+      "type": "caches",
+      "weight": 0.73
+    },
+    {
+      "source": "private-batch-jobs-005",
+      "target": "app-server-ec2-001",
+      "type": "subscribes",
+      "weight": 0.31
+    },
+    {
+      "source": "file-store-alb-000",
+      "target": "file-store-rds-002",
+      "type": "writes",
+      "weight": 0.32
+    }
+  ]
+}

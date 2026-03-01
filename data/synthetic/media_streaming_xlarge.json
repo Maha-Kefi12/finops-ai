@@ -1,0 +1,201 @@
+{
+  "metadata": {
+    "name": "Media Streaming Platform",
+    "pattern": "media_streaming",
+    "complexity": "xlarge",
+    "environment": "production",
+    "region": "us-east-1",
+    "generated_at": "2026-03-01T16:13:45.273154",
+    "total_services": 10,
+    "total_cost_monthly": 96501.6
+  },
+  "services": [
+    {
+      "id": "api-001",
+      "name": "content-api",
+      "type": "service",
+      "environment": "production",
+      "owner": "backend-team",
+      "cost_monthly": 2400,
+      "attributes": {
+        "instance_type": "t3.large",
+        "instance_count": 40
+      }
+    },
+    {
+      "id": "cdn_cloudfront-001",
+      "name": "video-cdn",
+      "type": "cdn",
+      "environment": "production",
+      "owner": "media-team",
+      "cost_monthly": 3400.0,
+      "attributes": {
+        "size_gb": 40000,
+        "storage_class": null
+      }
+    },
+    {
+      "id": "s3-001",
+      "name": "video-content",
+      "type": "storage",
+      "environment": "production",
+      "owner": "media-team",
+      "cost_monthly": 4600.0,
+      "attributes": {
+        "size_gb": 200000,
+        "storage_class": "STANDARD"
+      }
+    },
+    {
+      "id": "s3-002",
+      "name": "thumbnails",
+      "type": "storage",
+      "environment": "production",
+      "owner": "media-team",
+      "cost_monthly": 460.0,
+      "attributes": {
+        "size_gb": 20000,
+        "storage_class": "STANDARD"
+      }
+    },
+    {
+      "id": "worker-001",
+      "name": "video-transcoder",
+      "type": "batch",
+      "environment": "production",
+      "owner": "media-team",
+      "cost_monthly": 76800,
+      "attributes": {
+        "instance_type": "c5.2xlarge",
+        "instance_count": 320
+      }
+    },
+    {
+      "id": "database_postgres-001",
+      "name": "content-metadata",
+      "type": "database",
+      "environment": "production",
+      "owner": "backend-team",
+      "cost_monthly": 200,
+      "attributes": {
+        "instance_type": "db.t3.medium",
+        "instance_count": 4
+      }
+    },
+    {
+      "id": "cache_redis-001",
+      "name": "metadata-cache",
+      "type": "cache",
+      "environment": "production",
+      "owner": "backend-team",
+      "cost_monthly": 2400,
+      "attributes": {
+        "instance_type": "cache.m5.xlarge",
+        "instance_count": 12
+      }
+    },
+    {
+      "id": "queue_sqs-001",
+      "name": "transcode-queue",
+      "type": "queue",
+      "environment": "production",
+      "owner": "media-team",
+      "cost_monthly": 1.6,
+      "attributes": {
+        "messages_monthly": 4000000
+      }
+    },
+    {
+      "id": "worker-002",
+      "name": "view-analytics",
+      "type": "batch",
+      "environment": "production",
+      "owner": "analytics-team",
+      "cost_monthly": 2400,
+      "attributes": {
+        "instance_type": "c5.xlarge",
+        "instance_count": 20
+      }
+    },
+    {
+      "id": "database_postgres-002",
+      "name": "analytics-db",
+      "type": "database",
+      "environment": "production",
+      "owner": "analytics-team",
+      "cost_monthly": 3840,
+      "attributes": {
+        "instance_type": "db.m5.2xlarge",
+        "instance_count": 8
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "api-001",
+      "target": "database_postgres-001",
+      "type": "reads_from",
+      "weight": 0.9
+    },
+    {
+      "source": "api-001",
+      "target": "cache_redis-001",
+      "type": "reads_from",
+      "weight": 0.95
+    },
+    {
+      "source": "api-001",
+      "target": "s3-001",
+      "type": "writes_to",
+      "weight": 0.1
+    },
+    {
+      "source": "api-001",
+      "target": "queue_sqs-001",
+      "type": "writes_to",
+      "weight": 0.1
+    },
+    {
+      "source": "cdn_cloudfront-001",
+      "target": "s3-001",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "cdn_cloudfront-001",
+      "target": "s3-002",
+      "type": "reads_from",
+      "weight": 0.8
+    },
+    {
+      "source": "worker-001",
+      "target": "queue_sqs-001",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-001",
+      "target": "s3-001",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-001",
+      "target": "s3-001",
+      "type": "writes_to",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-002",
+      "target": "database_postgres-001",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-002",
+      "target": "database_postgres-002",
+      "type": "writes_to",
+      "weight": 1.0
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "name": "Media Streaming (Enterprise, eu-west-1)",
+    "id": "b0d0196a",
+    "pattern": "media_streaming",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 4,
+    "total_dependencies": 4,
+    "total_cost_monthly": 6649.53,
+    "generated_at": "2026-03-01T19:23:57.959326",
+    "variation_seed": 26392
+  },
+  "services": [
+    {
+      "id": "player-cloudfront-000",
+      "name": "player-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 3077.58,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "ads-s3-001",
+      "name": "ads-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 744.83,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "player-mediaconvert-002",
+      "name": "player-mediaconvert",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 1307.71,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "drm-ec2-003",
+      "name": "drm-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1519.41,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "player-cloudfront-000",
+      "target": "ads-s3-001",
+      "type": "queries",
+      "weight": 0.32
+    },
+    {
+      "source": "ads-s3-001",
+      "target": "player-mediaconvert-002",
+      "type": "caches",
+      "weight": 0.87
+    },
+    {
+      "source": "player-mediaconvert-002",
+      "target": "drm-ec2-003",
+      "type": "triggers",
+      "weight": 0.79
+    },
+    {
+      "source": "drm-ec2-003",
+      "target": "player-cloudfront-000",
+      "type": "caches",
+      "weight": 0.65
+    }
+  ]
+}

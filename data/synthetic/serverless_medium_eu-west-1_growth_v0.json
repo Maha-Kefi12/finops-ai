@@ -1,0 +1,337 @@
+{
+  "metadata": {
+    "name": "Serverless (Growth, eu-west-1)",
+    "id": "88802410",
+    "pattern": "serverless",
+    "complexity": "medium",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 13,
+    "total_dependencies": 18,
+    "total_cost_monthly": 7961.96,
+    "generated_at": "2026-03-01T19:23:57.801136",
+    "variation_seed": 19820
+  },
+  "services": [
+    {
+      "id": "formatter-api-000",
+      "name": "formatter-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 523.8,
+      "owner": "notifications",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "notifier-lambda-001",
+      "name": "notifier-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 389.39,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "formatter-dynamodb-002",
+      "name": "formatter-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 658.48,
+      "owner": "api-gateway-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "validator-s3-003",
+      "name": "validator-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 555.32,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "formatter-step-004",
+      "name": "formatter-step",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 123.68,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-notifier-005",
+      "name": "regional-notifier",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 36.28,
+      "owner": "growth-eng",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-transformer-006",
+      "name": "core-transformer",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 67.79,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "backup-transformer-007",
+      "name": "backup-transformer",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 2515.03,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-scheduler-008",
+      "name": "main-scheduler",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 201.55,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-processor-009",
+      "name": "realtime-processor",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 51.53,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-aggregator-010",
+      "name": "staging-aggregator",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 270.99,
+      "owner": "devops",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-authorizer-011",
+      "name": "batch-authorizer",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 231.03,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-notifier-012",
+      "name": "async-notifier",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 2337.09,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "formatter-api-000",
+      "target": "notifier-lambda-001",
+      "type": "triggers",
+      "weight": 0.98
+    },
+    {
+      "source": "notifier-lambda-001",
+      "target": "formatter-dynamodb-002",
+      "type": "caches",
+      "weight": 0.53
+    },
+    {
+      "source": "formatter-dynamodb-002",
+      "target": "validator-s3-003",
+      "type": "queries",
+      "weight": 0.86
+    },
+    {
+      "source": "validator-s3-003",
+      "target": "formatter-step-004",
+      "type": "queries",
+      "weight": 0.44
+    },
+    {
+      "source": "formatter-step-004",
+      "target": "regional-notifier-005",
+      "type": "reads",
+      "weight": 0.85
+    },
+    {
+      "source": "regional-notifier-005",
+      "target": "core-transformer-006",
+      "type": "triggers",
+      "weight": 0.33
+    },
+    {
+      "source": "core-transformer-006",
+      "target": "backup-transformer-007",
+      "type": "queries",
+      "weight": 0.5
+    },
+    {
+      "source": "backup-transformer-007",
+      "target": "main-scheduler-008",
+      "type": "subscribes",
+      "weight": 0.48
+    },
+    {
+      "source": "main-scheduler-008",
+      "target": "realtime-processor-009",
+      "type": "triggers",
+      "weight": 0.56
+    },
+    {
+      "source": "realtime-processor-009",
+      "target": "staging-aggregator-010",
+      "type": "caches",
+      "weight": 0.65
+    },
+    {
+      "source": "staging-aggregator-010",
+      "target": "batch-authorizer-011",
+      "type": "reads",
+      "weight": 0.41
+    },
+    {
+      "source": "batch-authorizer-011",
+      "target": "async-notifier-012",
+      "type": "triggers",
+      "weight": 0.33
+    },
+    {
+      "source": "staging-aggregator-010",
+      "target": "main-scheduler-008",
+      "type": "reads",
+      "weight": 0.73
+    },
+    {
+      "source": "notifier-lambda-001",
+      "target": "async-notifier-012",
+      "type": "subscribes",
+      "weight": 0.78
+    },
+    {
+      "source": "validator-s3-003",
+      "target": "staging-aggregator-010",
+      "type": "triggers",
+      "weight": 0.9
+    },
+    {
+      "source": "formatter-dynamodb-002",
+      "target": "async-notifier-012",
+      "type": "calls",
+      "weight": 0.3
+    },
+    {
+      "source": "notifier-lambda-001",
+      "target": "validator-s3-003",
+      "type": "calls",
+      "weight": 0.66
+    },
+    {
+      "source": "validator-s3-003",
+      "target": "backup-transformer-007",
+      "type": "writes",
+      "weight": 0.2
+    }
+  ]
+}

@@ -1,0 +1,283 @@
+{
+  "metadata": {
+    "name": "Logistics (Enterprise, eu-central-1)",
+    "id": "affe8d32",
+    "pattern": "logistics",
+    "complexity": "medium",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 10,
+    "total_dependencies": 17,
+    "total_cost_monthly": 9417.88,
+    "generated_at": "2026-03-01T19:23:58.487069",
+    "variation_seed": 50200
+  },
+  "services": [
+    {
+      "id": "fleet-mgmt-api-000",
+      "name": "fleet-mgmt-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 439.27,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "customs-ecs-001",
+      "name": "customs-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 3245.96,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "returns-rds-002",
+      "name": "returns-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 1444.2,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "delivery-dynamodb-003",
+      "name": "delivery-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1751.21,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "returns-sqs-004",
+      "name": "returns-sqs",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 195.1,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-returns-005",
+      "name": "private-returns",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 91.58,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "public-tracking-006",
+      "name": "public-tracking",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 583.5,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-rates-007",
+      "name": "edge-rates",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 77.06,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-manifest-008",
+      "name": "regional-manifest",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 458.49,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-routing-009",
+      "name": "async-routing",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1131.51,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "fleet-mgmt-api-000",
+      "target": "customs-ecs-001",
+      "type": "subscribes",
+      "weight": 0.34
+    },
+    {
+      "source": "customs-ecs-001",
+      "target": "returns-rds-002",
+      "type": "subscribes",
+      "weight": 0.68
+    },
+    {
+      "source": "returns-rds-002",
+      "target": "delivery-dynamodb-003",
+      "type": "reads",
+      "weight": 0.39
+    },
+    {
+      "source": "delivery-dynamodb-003",
+      "target": "returns-sqs-004",
+      "type": "queries",
+      "weight": 0.53
+    },
+    {
+      "source": "returns-sqs-004",
+      "target": "private-returns-005",
+      "type": "queries",
+      "weight": 0.74
+    },
+    {
+      "source": "private-returns-005",
+      "target": "public-tracking-006",
+      "type": "writes",
+      "weight": 0.85
+    },
+    {
+      "source": "public-tracking-006",
+      "target": "edge-rates-007",
+      "type": "subscribes",
+      "weight": 0.78
+    },
+    {
+      "source": "edge-rates-007",
+      "target": "regional-manifest-008",
+      "type": "caches",
+      "weight": 0.76
+    },
+    {
+      "source": "regional-manifest-008",
+      "target": "async-routing-009",
+      "type": "reads",
+      "weight": 0.65
+    },
+    {
+      "source": "customs-ecs-001",
+      "target": "private-returns-005",
+      "type": "triggers",
+      "weight": 0.95
+    },
+    {
+      "source": "fleet-mgmt-api-000",
+      "target": "public-tracking-006",
+      "type": "writes",
+      "weight": 0.23
+    },
+    {
+      "source": "fleet-mgmt-api-000",
+      "target": "returns-sqs-004",
+      "type": "subscribes",
+      "weight": 0.22
+    },
+    {
+      "source": "returns-rds-002",
+      "target": "public-tracking-006",
+      "type": "caches",
+      "weight": 0.35
+    },
+    {
+      "source": "async-routing-009",
+      "target": "edge-rates-007",
+      "type": "triggers",
+      "weight": 0.45
+    },
+    {
+      "source": "edge-rates-007",
+      "target": "fleet-mgmt-api-000",
+      "type": "subscribes",
+      "weight": 0.79
+    },
+    {
+      "source": "public-tracking-006",
+      "target": "private-returns-005",
+      "type": "triggers",
+      "weight": 0.48
+    },
+    {
+      "source": "regional-manifest-008",
+      "target": "customs-ecs-001",
+      "type": "triggers",
+      "weight": 0.55
+    }
+  ]
+}

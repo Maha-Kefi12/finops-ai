@@ -1,0 +1,187 @@
+{
+  "metadata": {
+    "name": "Serverless (Growth, ap-southeast-1)",
+    "id": "c5ea86c2",
+    "pattern": "serverless",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 7,
+    "total_dependencies": 9,
+    "total_cost_monthly": 2213.91,
+    "generated_at": "2026-03-01T19:23:57.794443",
+    "variation_seed": 19114
+  },
+  "services": [
+    {
+      "id": "formatter-api-000",
+      "name": "formatter-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 297.38,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "processor-lambda-001",
+      "name": "processor-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 146.94,
+      "owner": "api-gateway-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "transformer-dynamodb-002",
+      "name": "transformer-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 248.37,
+      "owner": "notifications",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "transformer-s3-003",
+      "name": "transformer-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 371.24,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "transformer-cloudwatch-004",
+      "name": "transformer-cloudwatch",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 521.1,
+      "owner": "security",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-transformer-005",
+      "name": "edge-transformer",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 555.03,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-authorizer-006",
+      "name": "public-authorizer",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 73.85,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "formatter-api-000",
+      "target": "processor-lambda-001",
+      "type": "writes",
+      "weight": 0.94
+    },
+    {
+      "source": "processor-lambda-001",
+      "target": "transformer-dynamodb-002",
+      "type": "triggers",
+      "weight": 0.85
+    },
+    {
+      "source": "transformer-dynamodb-002",
+      "target": "transformer-s3-003",
+      "type": "triggers",
+      "weight": 0.45
+    },
+    {
+      "source": "transformer-s3-003",
+      "target": "transformer-cloudwatch-004",
+      "type": "queries",
+      "weight": 0.71
+    },
+    {
+      "source": "transformer-cloudwatch-004",
+      "target": "edge-transformer-005",
+      "type": "caches",
+      "weight": 0.35
+    },
+    {
+      "source": "edge-transformer-005",
+      "target": "public-authorizer-006",
+      "type": "caches",
+      "weight": 0.37
+    },
+    {
+      "source": "edge-transformer-005",
+      "target": "transformer-dynamodb-002",
+      "type": "subscribes",
+      "weight": 0.24
+    },
+    {
+      "source": "transformer-cloudwatch-004",
+      "target": "processor-lambda-001",
+      "type": "caches",
+      "weight": 0.54
+    },
+    {
+      "source": "transformer-dynamodb-002",
+      "target": "edge-transformer-005",
+      "type": "writes",
+      "weight": 0.78
+    }
+  ]
+}

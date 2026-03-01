@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Saas (Enterprise, eu-central-1)",
+    "id": "ada98b0d",
+    "pattern": "saas",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 9614.48,
+    "generated_at": "2026-03-01T19:23:57.453683",
+    "variation_seed": 4668
+  },
+  "services": [
+    {
+      "id": "auth-api-000",
+      "name": "auth-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 439.58,
+      "owner": "mobile-backend",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audit-ecs-001",
+      "name": "audit-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1262.27,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "tenant-aurora-002",
+      "name": "tenant-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 7912.63,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "auth-api-000",
+      "target": "audit-ecs-001",
+      "type": "triggers",
+      "weight": 0.97
+    },
+    {
+      "source": "audit-ecs-001",
+      "target": "tenant-aurora-002",
+      "type": "calls",
+      "weight": 0.61
+    }
+  ]
+}

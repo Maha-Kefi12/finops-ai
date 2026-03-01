@@ -1,0 +1,333 @@
+{
+  "metadata": {
+    "name": "Gaming (Growth, us-east-1)",
+    "id": "b887c41c",
+    "pattern": "gaming",
+    "complexity": "medium",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 12,
+    "total_dependencies": 20,
+    "total_cost_monthly": 9404.64,
+    "generated_at": "2026-03-01T19:23:57.544115",
+    "variation_seed": 8512
+  },
+  "services": [
+    {
+      "id": "lobby-nlb-000",
+      "name": "lobby-nlb",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 60.42,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "anticheat-ec2-001",
+      "name": "anticheat-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 3130.3,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "sessions-dynamodb-002",
+      "name": "sessions-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 413.42,
+      "owner": "security",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "store-elasticache-003",
+      "name": "store-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1843.31,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "lobby-kinesis-004",
+      "name": "lobby-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 365.44,
+      "owner": "ml-ops",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-chat-005",
+      "name": "cold-chat",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 243.48,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "hot-leaderboard-006",
+      "name": "hot-leaderboard",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 2070.14,
+      "owner": "data-eng",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-sessions-007",
+      "name": "main-sessions",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 112.68,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-sessions-008",
+      "name": "realtime-sessions",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 678.78,
+      "owner": "api-gateway-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-lobby-009",
+      "name": "private-lobby",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 110.76,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-rewards-010",
+      "name": "global-rewards",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 349.54,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "central-matchmaker-011",
+      "name": "central-matchmaker",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 26.37,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "lobby-nlb-000",
+      "target": "anticheat-ec2-001",
+      "type": "triggers",
+      "weight": 0.62
+    },
+    {
+      "source": "anticheat-ec2-001",
+      "target": "sessions-dynamodb-002",
+      "type": "caches",
+      "weight": 0.93
+    },
+    {
+      "source": "sessions-dynamodb-002",
+      "target": "store-elasticache-003",
+      "type": "writes",
+      "weight": 0.33
+    },
+    {
+      "source": "store-elasticache-003",
+      "target": "lobby-kinesis-004",
+      "type": "writes",
+      "weight": 0.44
+    },
+    {
+      "source": "lobby-kinesis-004",
+      "target": "cold-chat-005",
+      "type": "caches",
+      "weight": 0.78
+    },
+    {
+      "source": "cold-chat-005",
+      "target": "hot-leaderboard-006",
+      "type": "calls",
+      "weight": 1.0
+    },
+    {
+      "source": "hot-leaderboard-006",
+      "target": "main-sessions-007",
+      "type": "calls",
+      "weight": 0.35
+    },
+    {
+      "source": "main-sessions-007",
+      "target": "realtime-sessions-008",
+      "type": "reads",
+      "weight": 0.41
+    },
+    {
+      "source": "realtime-sessions-008",
+      "target": "private-lobby-009",
+      "type": "calls",
+      "weight": 0.54
+    },
+    {
+      "source": "private-lobby-009",
+      "target": "global-rewards-010",
+      "type": "caches",
+      "weight": 0.67
+    },
+    {
+      "source": "global-rewards-010",
+      "target": "central-matchmaker-011",
+      "type": "caches",
+      "weight": 0.97
+    },
+    {
+      "source": "store-elasticache-003",
+      "target": "lobby-nlb-000",
+      "type": "reads",
+      "weight": 0.75
+    },
+    {
+      "source": "realtime-sessions-008",
+      "target": "anticheat-ec2-001",
+      "type": "calls",
+      "weight": 0.15
+    },
+    {
+      "source": "private-lobby-009",
+      "target": "cold-chat-005",
+      "type": "triggers",
+      "weight": 0.31
+    },
+    {
+      "source": "global-rewards-010",
+      "target": "private-lobby-009",
+      "type": "subscribes",
+      "weight": 0.87
+    },
+    {
+      "source": "cold-chat-005",
+      "target": "global-rewards-010",
+      "type": "reads",
+      "weight": 0.92
+    },
+    {
+      "source": "cold-chat-005",
+      "target": "private-lobby-009",
+      "type": "reads",
+      "weight": 0.41
+    },
+    {
+      "source": "lobby-nlb-000",
+      "target": "realtime-sessions-008",
+      "type": "caches",
+      "weight": 0.85
+    },
+    {
+      "source": "sessions-dynamodb-002",
+      "target": "anticheat-ec2-001",
+      "type": "reads",
+      "weight": 0.72
+    },
+    {
+      "source": "lobby-kinesis-004",
+      "target": "main-sessions-007",
+      "type": "writes",
+      "weight": 0.86
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "metadata": {
+    "name": "Ecommerce (Growth, ap-southeast-1)",
+    "id": "39dda368",
+    "pattern": "ecommerce",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 5,
+    "total_dependencies": 4,
+    "total_cost_monthly": 9230.64,
+    "generated_at": "2026-03-01T19:23:57.360715",
+    "variation_seed": 514
+  },
+  "services": [
+    {
+      "id": "catalog-alb-000",
+      "name": "catalog-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 88.24,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cart-ec2-001",
+      "name": "cart-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 915.47,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "storefront-ec2-002",
+      "name": "storefront-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 3270.33,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "checkout-rds-003",
+      "name": "checkout-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 2842.04,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shipping-elasticache-004",
+      "name": "shipping-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 2114.56,
+      "owner": "security",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "catalog-alb-000",
+      "target": "cart-ec2-001",
+      "type": "reads",
+      "weight": 0.35
+    },
+    {
+      "source": "cart-ec2-001",
+      "target": "storefront-ec2-002",
+      "type": "queries",
+      "weight": 0.39
+    },
+    {
+      "source": "storefront-ec2-002",
+      "target": "checkout-rds-003",
+      "type": "writes",
+      "weight": 0.36
+    },
+    {
+      "source": "checkout-rds-003",
+      "target": "shipping-elasticache-004",
+      "type": "subscribes",
+      "weight": 0.62
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "name": "Microservices (Growth, ap-southeast-1)",
+    "id": "898ecbf1",
+    "pattern": "microservices",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 4,
+    "total_dependencies": 4,
+    "total_cost_monthly": 9929.33,
+    "generated_at": "2026-03-01T19:23:57.707010",
+    "variation_seed": 15356
+  },
+  "services": [
+    {
+      "id": "order-svc-alb-000",
+      "name": "order-svc-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 79.12,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "report-svc-ecs-001",
+      "name": "report-svc-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 2961.53,
+      "owner": "frontend-guild",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "webhook-svc-rds-002",
+      "name": "webhook-svc-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 5328.49,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "report-svc-elasticache-003",
+      "name": "report-svc-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1560.19,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "order-svc-alb-000",
+      "target": "report-svc-ecs-001",
+      "type": "writes",
+      "weight": 0.75
+    },
+    {
+      "source": "report-svc-ecs-001",
+      "target": "webhook-svc-rds-002",
+      "type": "writes",
+      "weight": 0.65
+    },
+    {
+      "source": "webhook-svc-rds-002",
+      "target": "report-svc-elasticache-003",
+      "type": "reads",
+      "weight": 0.89
+    },
+    {
+      "source": "webhook-svc-rds-002",
+      "target": "report-svc-ecs-001",
+      "type": "reads",
+      "weight": 0.91
+    }
+  ]
+}

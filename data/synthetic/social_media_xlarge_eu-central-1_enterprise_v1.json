@@ -1,0 +1,1037 @@
+{
+  "metadata": {
+    "name": "Social Media (Enterprise, eu-central-1)",
+    "id": "ba39c2b3",
+    "pattern": "social_media",
+    "complexity": "xlarge",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 38,
+    "total_dependencies": 68,
+    "total_cost_monthly": 41641.52,
+    "generated_at": "2026-03-01T19:23:58.640136",
+    "variation_seed": 55818
+  },
+  "services": [
+    {
+      "id": "media-upload-alb-000",
+      "name": "media-upload-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 157.65,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "notifications-eks-001",
+      "name": "notifications-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 3763.61,
+      "owner": "frontend-guild",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "messaging-aurora-002",
+      "name": "messaging-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 3907.27,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "notifications-elasticache-003",
+      "name": "notifications-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 296.17,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "notifications-cloudfront-004",
+      "name": "notifications-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 212.7,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-stories-005",
+      "name": "secondary-stories",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 792.52,
+      "owner": "security",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-messaging-006",
+      "name": "fast-messaging",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1269.75,
+      "owner": "platform-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "async-stories-007",
+      "name": "async-stories",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 125.61,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-stories-008",
+      "name": "async-stories",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 70.85,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-profiles-009",
+      "name": "hot-profiles",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 212.12,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-reactions-010",
+      "name": "edge-reactions",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 106.69,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-reactions-011",
+      "name": "backup-reactions",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1796.46,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-moderation-012",
+      "name": "realtime-moderation",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 126.35,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-profiles-013",
+      "name": "public-profiles",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 68.03,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-notifications-014",
+      "name": "backup-notifications",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 272.07,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-notifications-015",
+      "name": "main-notifications",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 45.72,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-notifications-016",
+      "name": "internal-notifications",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 77.81,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "async-follows-017",
+      "name": "async-follows",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 311.94,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-messaging-018",
+      "name": "internal-messaging",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 2282.8,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-search-019",
+      "name": "internal-search",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 56.66,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-notifications-020",
+      "name": "global-notifications",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 3174.96,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-search-021",
+      "name": "private-search",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 32.11,
+      "owner": "api-gateway-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-search-022",
+      "name": "core-search",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 38.07,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-follows-023",
+      "name": "backup-follows",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 7645.24,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "hot-search-024",
+      "name": "hot-search",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 20.69,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-stories-025",
+      "name": "edge-stories",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 253.08,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-messaging-026",
+      "name": "cold-messaging",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 7863.66,
+      "owner": "api-gateway-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-moderation-027",
+      "name": "private-moderation",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 3571.2,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-messaging-028",
+      "name": "shared-messaging",
+      "type": "storage",
+      "aws_service": "Amazon EFS",
+      "cost_monthly": 42.4,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-follows-029",
+      "name": "edge-follows",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 42.39,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-feed-030",
+      "name": "regional-feed",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 53.04,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-feed-031",
+      "name": "core-feed",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 1055.19,
+      "owner": "api-gateway-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "primary-moderation-032",
+      "name": "primary-moderation",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 391.07,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-moderation-033",
+      "name": "main-moderation",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 431.21,
+      "owner": "payments",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-stories-034",
+      "name": "internal-stories",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 374.17,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-messaging-035",
+      "name": "staging-messaging",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 104.36,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-reactions-036",
+      "name": "backup-reactions",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 520.92,
+      "owner": "content-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-moderation-037",
+      "name": "core-moderation",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 74.98,
+      "owner": "growth-eng",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "media-upload-alb-000",
+      "target": "notifications-eks-001",
+      "type": "triggers",
+      "weight": 0.76
+    },
+    {
+      "source": "notifications-eks-001",
+      "target": "messaging-aurora-002",
+      "type": "queries",
+      "weight": 0.36
+    },
+    {
+      "source": "messaging-aurora-002",
+      "target": "notifications-elasticache-003",
+      "type": "queries",
+      "weight": 0.39
+    },
+    {
+      "source": "notifications-elasticache-003",
+      "target": "notifications-cloudfront-004",
+      "type": "queries",
+      "weight": 0.6
+    },
+    {
+      "source": "notifications-cloudfront-004",
+      "target": "secondary-stories-005",
+      "type": "writes",
+      "weight": 0.55
+    },
+    {
+      "source": "secondary-stories-005",
+      "target": "fast-messaging-006",
+      "type": "reads",
+      "weight": 0.91
+    },
+    {
+      "source": "fast-messaging-006",
+      "target": "async-stories-007",
+      "type": "triggers",
+      "weight": 0.77
+    },
+    {
+      "source": "async-stories-007",
+      "target": "async-stories-008",
+      "type": "triggers",
+      "weight": 0.4
+    },
+    {
+      "source": "async-stories-008",
+      "target": "hot-profiles-009",
+      "type": "writes",
+      "weight": 0.49
+    },
+    {
+      "source": "hot-profiles-009",
+      "target": "edge-reactions-010",
+      "type": "calls",
+      "weight": 0.43
+    },
+    {
+      "source": "edge-reactions-010",
+      "target": "backup-reactions-011",
+      "type": "reads",
+      "weight": 0.82
+    },
+    {
+      "source": "backup-reactions-011",
+      "target": "realtime-moderation-012",
+      "type": "subscribes",
+      "weight": 0.68
+    },
+    {
+      "source": "realtime-moderation-012",
+      "target": "public-profiles-013",
+      "type": "subscribes",
+      "weight": 0.92
+    },
+    {
+      "source": "public-profiles-013",
+      "target": "backup-notifications-014",
+      "type": "triggers",
+      "weight": 0.58
+    },
+    {
+      "source": "backup-notifications-014",
+      "target": "main-notifications-015",
+      "type": "reads",
+      "weight": 0.45
+    },
+    {
+      "source": "main-notifications-015",
+      "target": "internal-notifications-016",
+      "type": "caches",
+      "weight": 0.31
+    },
+    {
+      "source": "internal-notifications-016",
+      "target": "async-follows-017",
+      "type": "writes",
+      "weight": 0.95
+    },
+    {
+      "source": "async-follows-017",
+      "target": "internal-messaging-018",
+      "type": "triggers",
+      "weight": 0.79
+    },
+    {
+      "source": "internal-messaging-018",
+      "target": "internal-search-019",
+      "type": "writes",
+      "weight": 0.58
+    },
+    {
+      "source": "internal-search-019",
+      "target": "global-notifications-020",
+      "type": "reads",
+      "weight": 0.94
+    },
+    {
+      "source": "global-notifications-020",
+      "target": "private-search-021",
+      "type": "calls",
+      "weight": 0.4
+    },
+    {
+      "source": "private-search-021",
+      "target": "core-search-022",
+      "type": "calls",
+      "weight": 0.58
+    },
+    {
+      "source": "core-search-022",
+      "target": "backup-follows-023",
+      "type": "caches",
+      "weight": 0.8
+    },
+    {
+      "source": "backup-follows-023",
+      "target": "hot-search-024",
+      "type": "triggers",
+      "weight": 0.45
+    },
+    {
+      "source": "hot-search-024",
+      "target": "edge-stories-025",
+      "type": "reads",
+      "weight": 0.6
+    },
+    {
+      "source": "edge-stories-025",
+      "target": "cold-messaging-026",
+      "type": "triggers",
+      "weight": 0.71
+    },
+    {
+      "source": "cold-messaging-026",
+      "target": "private-moderation-027",
+      "type": "calls",
+      "weight": 0.89
+    },
+    {
+      "source": "private-moderation-027",
+      "target": "shared-messaging-028",
+      "type": "writes",
+      "weight": 0.78
+    },
+    {
+      "source": "shared-messaging-028",
+      "target": "edge-follows-029",
+      "type": "calls",
+      "weight": 0.66
+    },
+    {
+      "source": "edge-follows-029",
+      "target": "regional-feed-030",
+      "type": "caches",
+      "weight": 0.64
+    },
+    {
+      "source": "regional-feed-030",
+      "target": "core-feed-031",
+      "type": "calls",
+      "weight": 0.85
+    },
+    {
+      "source": "core-feed-031",
+      "target": "primary-moderation-032",
+      "type": "triggers",
+      "weight": 0.37
+    },
+    {
+      "source": "primary-moderation-032",
+      "target": "main-moderation-033",
+      "type": "triggers",
+      "weight": 0.46
+    },
+    {
+      "source": "main-moderation-033",
+      "target": "internal-stories-034",
+      "type": "queries",
+      "weight": 0.69
+    },
+    {
+      "source": "internal-stories-034",
+      "target": "staging-messaging-035",
+      "type": "queries",
+      "weight": 0.82
+    },
+    {
+      "source": "staging-messaging-035",
+      "target": "backup-reactions-036",
+      "type": "reads",
+      "weight": 0.55
+    },
+    {
+      "source": "backup-reactions-036",
+      "target": "core-moderation-037",
+      "type": "queries",
+      "weight": 0.71
+    },
+    {
+      "source": "media-upload-alb-000",
+      "target": "async-stories-007",
+      "type": "triggers",
+      "weight": 0.87
+    },
+    {
+      "source": "private-moderation-027",
+      "target": "edge-follows-029",
+      "type": "triggers",
+      "weight": 0.18
+    },
+    {
+      "source": "core-feed-031",
+      "target": "core-moderation-037",
+      "type": "reads",
+      "weight": 0.35
+    },
+    {
+      "source": "core-feed-031",
+      "target": "internal-stories-034",
+      "type": "calls",
+      "weight": 0.24
+    },
+    {
+      "source": "global-notifications-020",
+      "target": "core-search-022",
+      "type": "reads",
+      "weight": 0.46
+    },
+    {
+      "source": "backup-notifications-014",
+      "target": "realtime-moderation-012",
+      "type": "reads",
+      "weight": 0.12
+    },
+    {
+      "source": "primary-moderation-032",
+      "target": "internal-search-019",
+      "type": "triggers",
+      "weight": 0.32
+    },
+    {
+      "source": "realtime-moderation-012",
+      "target": "async-follows-017",
+      "type": "calls",
+      "weight": 0.6
+    },
+    {
+      "source": "backup-reactions-011",
+      "target": "public-profiles-013",
+      "type": "triggers",
+      "weight": 0.77
+    },
+    {
+      "source": "internal-stories-034",
+      "target": "internal-notifications-016",
+      "type": "calls",
+      "weight": 0.13
+    },
+    {
+      "source": "async-stories-008",
+      "target": "edge-reactions-010",
+      "type": "queries",
+      "weight": 0.47
+    },
+    {
+      "source": "hot-search-024",
+      "target": "regional-feed-030",
+      "type": "subscribes",
+      "weight": 0.45
+    },
+    {
+      "source": "async-follows-017",
+      "target": "edge-reactions-010",
+      "type": "writes",
+      "weight": 0.73
+    },
+    {
+      "source": "notifications-elasticache-003",
+      "target": "main-moderation-033",
+      "type": "subscribes",
+      "weight": 0.4
+    },
+    {
+      "source": "async-follows-017",
+      "target": "edge-follows-029",
+      "type": "caches",
+      "weight": 0.87
+    },
+    {
+      "source": "staging-messaging-035",
+      "target": "private-moderation-027",
+      "type": "writes",
+      "weight": 0.18
+    },
+    {
+      "source": "core-moderation-037",
+      "target": "fast-messaging-006",
+      "type": "triggers",
+      "weight": 0.21
+    },
+    {
+      "source": "internal-messaging-018",
+      "target": "async-follows-017",
+      "type": "reads",
+      "weight": 0.36
+    },
+    {
+      "source": "backup-notifications-014",
+      "target": "backup-reactions-011",
+      "type": "caches",
+      "weight": 0.24
+    },
+    {
+      "source": "main-moderation-033",
+      "target": "async-stories-008",
+      "type": "caches",
+      "weight": 0.92
+    },
+    {
+      "source": "shared-messaging-028",
+      "target": "public-profiles-013",
+      "type": "queries",
+      "weight": 0.56
+    },
+    {
+      "source": "async-stories-007",
+      "target": "public-profiles-013",
+      "type": "caches",
+      "weight": 0.96
+    },
+    {
+      "source": "primary-moderation-032",
+      "target": "regional-feed-030",
+      "type": "caches",
+      "weight": 0.46
+    },
+    {
+      "source": "internal-notifications-016",
+      "target": "fast-messaging-006",
+      "type": "caches",
+      "weight": 0.94
+    },
+    {
+      "source": "backup-reactions-036",
+      "target": "messaging-aurora-002",
+      "type": "writes",
+      "weight": 0.72
+    },
+    {
+      "source": "async-stories-007",
+      "target": "global-notifications-020",
+      "type": "caches",
+      "weight": 0.73
+    },
+    {
+      "source": "backup-follows-023",
+      "target": "fast-messaging-006",
+      "type": "queries",
+      "weight": 1.0
+    },
+    {
+      "source": "core-moderation-037",
+      "target": "realtime-moderation-012",
+      "type": "writes",
+      "weight": 0.92
+    },
+    {
+      "source": "hot-profiles-009",
+      "target": "backup-follows-023",
+      "type": "reads",
+      "weight": 0.13
+    },
+    {
+      "source": "main-notifications-015",
+      "target": "internal-stories-034",
+      "type": "writes",
+      "weight": 0.74
+    },
+    {
+      "source": "internal-search-019",
+      "target": "edge-follows-029",
+      "type": "subscribes",
+      "weight": 0.91
+    }
+  ]
+}

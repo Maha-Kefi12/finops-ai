@@ -1,0 +1,1361 @@
+{
+  "metadata": {
+    "name": "Logistics (Enterprise, eu-west-1)",
+    "id": "df4ce6f3",
+    "pattern": "logistics",
+    "complexity": "xlarge",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 47,
+    "total_dependencies": 98,
+    "total_cost_monthly": 46743.99,
+    "generated_at": "2026-03-01T19:23:58.528500",
+    "variation_seed": 51502
+  },
+  "services": [
+    {
+      "id": "customs-api-000",
+      "name": "customs-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 161.54,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "delivery-ecs-001",
+      "name": "delivery-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 2822.28,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "delivery-rds-002",
+      "name": "delivery-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 3017.49,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "warehouse-dynamodb-003",
+      "name": "warehouse-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1332.99,
+      "owner": "identity-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "customs-sqs-004",
+      "name": "customs-sqs",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 52.51,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-returns-005",
+      "name": "realtime-returns",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 41.23,
+      "owner": "security",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "main-rates-006",
+      "name": "main-rates",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 75.06,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-rates-007",
+      "name": "shared-rates",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 1061.73,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-rates-008",
+      "name": "shared-rates",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 406.26,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-rates-009",
+      "name": "fast-rates",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 72.18,
+      "owner": "platform-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cold-customs-010",
+      "name": "cold-customs",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 386.19,
+      "owner": "mobile-backend",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-fleet-mgmt-011",
+      "name": "global-fleet-mgmt",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 3005.98,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-returns-012",
+      "name": "async-returns",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 95.74,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-dispatch-013",
+      "name": "global-dispatch",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 21.02,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-routing-014",
+      "name": "async-routing",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 2866.7,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "batch-dispatch-015",
+      "name": "batch-dispatch",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 8.07,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-routing-016",
+      "name": "fast-routing",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 48.03,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-manifest-017",
+      "name": "internal-manifest",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 1203.34,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-returns-018",
+      "name": "batch-returns",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 28.41,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-warehouse-019",
+      "name": "shared-warehouse",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 4816.58,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-warehouse-020",
+      "name": "global-warehouse",
+      "type": "storage",
+      "aws_service": "Amazon EFS",
+      "cost_monthly": 333.15,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "shared-fleet-mgmt-021",
+      "name": "shared-fleet-mgmt",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 40.0,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-manifest-022",
+      "name": "secondary-manifest",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 2743.62,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-dispatch-023",
+      "name": "private-dispatch",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 107.39,
+      "owner": "growth-eng",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-rates-024",
+      "name": "private-rates",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 79.52,
+      "owner": "security",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "regional-fleet-mgmt-025",
+      "name": "regional-fleet-mgmt",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 382.74,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-returns-026",
+      "name": "staging-returns",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1255.39,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-warehouse-027",
+      "name": "central-warehouse",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 4228.35,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-fleet-mgmt-028",
+      "name": "private-fleet-mgmt",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 1002.64,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cold-rates-029",
+      "name": "cold-rates",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 1271.15,
+      "owner": "frontend-guild",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "batch-customs-030",
+      "name": "batch-customs",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 623.39,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-customs-031",
+      "name": "private-customs",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 913.75,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "central-fleet-mgmt-032",
+      "name": "central-fleet-mgmt",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 630.82,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-customs-033",
+      "name": "staging-customs",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 884.62,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-warehouse-034",
+      "name": "central-warehouse",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 15.81,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "central-customs-035",
+      "name": "central-customs",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 178.88,
+      "owner": "frontend-guild",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "public-customs-036",
+      "name": "public-customs",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 40.35,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-returns-037",
+      "name": "regional-returns",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 197.88,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-routing-038",
+      "name": "primary-routing",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 261.05,
+      "owner": "growth-eng",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "backup-warehouse-039",
+      "name": "backup-warehouse",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 307.58,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-rates-040",
+      "name": "backup-rates",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 270.82,
+      "owner": "identity-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "main-manifest-041",
+      "name": "main-manifest",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 624.22,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-rates-042",
+      "name": "main-rates",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 169.79,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "core-tracking-043",
+      "name": "core-tracking",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 257.14,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-rates-044",
+      "name": "primary-rates",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 1058.5,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-delivery-045",
+      "name": "secondary-delivery",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 3163.92,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "regional-customs-046",
+      "name": "regional-customs",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 4178.19,
+      "owner": "frontend-guild",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "customs-api-000",
+      "target": "delivery-ecs-001",
+      "type": "writes",
+      "weight": 0.92
+    },
+    {
+      "source": "delivery-ecs-001",
+      "target": "delivery-rds-002",
+      "type": "queries",
+      "weight": 0.68
+    },
+    {
+      "source": "delivery-rds-002",
+      "target": "warehouse-dynamodb-003",
+      "type": "queries",
+      "weight": 0.5
+    },
+    {
+      "source": "warehouse-dynamodb-003",
+      "target": "customs-sqs-004",
+      "type": "triggers",
+      "weight": 0.51
+    },
+    {
+      "source": "customs-sqs-004",
+      "target": "realtime-returns-005",
+      "type": "queries",
+      "weight": 0.4
+    },
+    {
+      "source": "realtime-returns-005",
+      "target": "main-rates-006",
+      "type": "caches",
+      "weight": 0.63
+    },
+    {
+      "source": "main-rates-006",
+      "target": "shared-rates-007",
+      "type": "reads",
+      "weight": 0.49
+    },
+    {
+      "source": "shared-rates-007",
+      "target": "shared-rates-008",
+      "type": "writes",
+      "weight": 0.95
+    },
+    {
+      "source": "shared-rates-008",
+      "target": "fast-rates-009",
+      "type": "writes",
+      "weight": 0.58
+    },
+    {
+      "source": "fast-rates-009",
+      "target": "cold-customs-010",
+      "type": "writes",
+      "weight": 0.81
+    },
+    {
+      "source": "cold-customs-010",
+      "target": "global-fleet-mgmt-011",
+      "type": "triggers",
+      "weight": 0.57
+    },
+    {
+      "source": "global-fleet-mgmt-011",
+      "target": "async-returns-012",
+      "type": "caches",
+      "weight": 0.59
+    },
+    {
+      "source": "async-returns-012",
+      "target": "global-dispatch-013",
+      "type": "subscribes",
+      "weight": 0.31
+    },
+    {
+      "source": "global-dispatch-013",
+      "target": "async-routing-014",
+      "type": "writes",
+      "weight": 0.51
+    },
+    {
+      "source": "async-routing-014",
+      "target": "batch-dispatch-015",
+      "type": "calls",
+      "weight": 0.81
+    },
+    {
+      "source": "batch-dispatch-015",
+      "target": "fast-routing-016",
+      "type": "triggers",
+      "weight": 0.44
+    },
+    {
+      "source": "fast-routing-016",
+      "target": "internal-manifest-017",
+      "type": "caches",
+      "weight": 0.6
+    },
+    {
+      "source": "internal-manifest-017",
+      "target": "batch-returns-018",
+      "type": "triggers",
+      "weight": 0.69
+    },
+    {
+      "source": "batch-returns-018",
+      "target": "shared-warehouse-019",
+      "type": "writes",
+      "weight": 0.94
+    },
+    {
+      "source": "shared-warehouse-019",
+      "target": "global-warehouse-020",
+      "type": "queries",
+      "weight": 0.78
+    },
+    {
+      "source": "global-warehouse-020",
+      "target": "shared-fleet-mgmt-021",
+      "type": "triggers",
+      "weight": 0.76
+    },
+    {
+      "source": "shared-fleet-mgmt-021",
+      "target": "secondary-manifest-022",
+      "type": "calls",
+      "weight": 0.59
+    },
+    {
+      "source": "secondary-manifest-022",
+      "target": "private-dispatch-023",
+      "type": "subscribes",
+      "weight": 0.97
+    },
+    {
+      "source": "private-dispatch-023",
+      "target": "private-rates-024",
+      "type": "calls",
+      "weight": 0.65
+    },
+    {
+      "source": "private-rates-024",
+      "target": "regional-fleet-mgmt-025",
+      "type": "queries",
+      "weight": 0.71
+    },
+    {
+      "source": "regional-fleet-mgmt-025",
+      "target": "staging-returns-026",
+      "type": "queries",
+      "weight": 0.97
+    },
+    {
+      "source": "staging-returns-026",
+      "target": "central-warehouse-027",
+      "type": "reads",
+      "weight": 0.75
+    },
+    {
+      "source": "central-warehouse-027",
+      "target": "private-fleet-mgmt-028",
+      "type": "queries",
+      "weight": 0.87
+    },
+    {
+      "source": "private-fleet-mgmt-028",
+      "target": "cold-rates-029",
+      "type": "queries",
+      "weight": 0.45
+    },
+    {
+      "source": "cold-rates-029",
+      "target": "batch-customs-030",
+      "type": "caches",
+      "weight": 0.74
+    },
+    {
+      "source": "batch-customs-030",
+      "target": "private-customs-031",
+      "type": "caches",
+      "weight": 0.79
+    },
+    {
+      "source": "private-customs-031",
+      "target": "central-fleet-mgmt-032",
+      "type": "calls",
+      "weight": 0.36
+    },
+    {
+      "source": "central-fleet-mgmt-032",
+      "target": "staging-customs-033",
+      "type": "reads",
+      "weight": 0.72
+    },
+    {
+      "source": "staging-customs-033",
+      "target": "central-warehouse-034",
+      "type": "queries",
+      "weight": 0.74
+    },
+    {
+      "source": "central-warehouse-034",
+      "target": "central-customs-035",
+      "type": "queries",
+      "weight": 0.78
+    },
+    {
+      "source": "central-customs-035",
+      "target": "public-customs-036",
+      "type": "subscribes",
+      "weight": 0.97
+    },
+    {
+      "source": "public-customs-036",
+      "target": "regional-returns-037",
+      "type": "writes",
+      "weight": 0.74
+    },
+    {
+      "source": "regional-returns-037",
+      "target": "primary-routing-038",
+      "type": "caches",
+      "weight": 0.37
+    },
+    {
+      "source": "primary-routing-038",
+      "target": "backup-warehouse-039",
+      "type": "triggers",
+      "weight": 0.84
+    },
+    {
+      "source": "backup-warehouse-039",
+      "target": "backup-rates-040",
+      "type": "triggers",
+      "weight": 0.96
+    },
+    {
+      "source": "backup-rates-040",
+      "target": "main-manifest-041",
+      "type": "triggers",
+      "weight": 0.96
+    },
+    {
+      "source": "main-manifest-041",
+      "target": "main-rates-042",
+      "type": "writes",
+      "weight": 0.49
+    },
+    {
+      "source": "main-rates-042",
+      "target": "core-tracking-043",
+      "type": "reads",
+      "weight": 0.31
+    },
+    {
+      "source": "core-tracking-043",
+      "target": "primary-rates-044",
+      "type": "writes",
+      "weight": 0.44
+    },
+    {
+      "source": "primary-rates-044",
+      "target": "secondary-delivery-045",
+      "type": "caches",
+      "weight": 0.67
+    },
+    {
+      "source": "secondary-delivery-045",
+      "target": "regional-customs-046",
+      "type": "subscribes",
+      "weight": 0.78
+    },
+    {
+      "source": "primary-routing-038",
+      "target": "delivery-ecs-001",
+      "type": "queries",
+      "weight": 0.42
+    },
+    {
+      "source": "staging-customs-033",
+      "target": "main-rates-006",
+      "type": "writes",
+      "weight": 0.12
+    },
+    {
+      "source": "global-warehouse-020",
+      "target": "cold-rates-029",
+      "type": "queries",
+      "weight": 0.52
+    },
+    {
+      "source": "global-fleet-mgmt-011",
+      "target": "async-routing-014",
+      "type": "caches",
+      "weight": 0.96
+    },
+    {
+      "source": "delivery-ecs-001",
+      "target": "cold-customs-010",
+      "type": "writes",
+      "weight": 0.35
+    },
+    {
+      "source": "main-rates-042",
+      "target": "customs-api-000",
+      "type": "writes",
+      "weight": 0.22
+    },
+    {
+      "source": "secondary-delivery-045",
+      "target": "secondary-manifest-022",
+      "type": "queries",
+      "weight": 0.85
+    },
+    {
+      "source": "global-fleet-mgmt-011",
+      "target": "batch-dispatch-015",
+      "type": "triggers",
+      "weight": 0.15
+    },
+    {
+      "source": "global-fleet-mgmt-011",
+      "target": "regional-fleet-mgmt-025",
+      "type": "caches",
+      "weight": 0.58
+    },
+    {
+      "source": "realtime-returns-005",
+      "target": "private-rates-024",
+      "type": "writes",
+      "weight": 0.56
+    },
+    {
+      "source": "shared-rates-007",
+      "target": "primary-routing-038",
+      "type": "triggers",
+      "weight": 0.78
+    },
+    {
+      "source": "cold-rates-029",
+      "target": "main-manifest-041",
+      "type": "subscribes",
+      "weight": 0.13
+    },
+    {
+      "source": "regional-customs-046",
+      "target": "customs-sqs-004",
+      "type": "writes",
+      "weight": 0.6
+    },
+    {
+      "source": "staging-returns-026",
+      "target": "warehouse-dynamodb-003",
+      "type": "calls",
+      "weight": 0.65
+    },
+    {
+      "source": "shared-rates-008",
+      "target": "fast-routing-016",
+      "type": "triggers",
+      "weight": 0.82
+    },
+    {
+      "source": "private-rates-024",
+      "target": "shared-fleet-mgmt-021",
+      "type": "caches",
+      "weight": 0.89
+    },
+    {
+      "source": "fast-rates-009",
+      "target": "warehouse-dynamodb-003",
+      "type": "subscribes",
+      "weight": 0.38
+    },
+    {
+      "source": "global-dispatch-013",
+      "target": "central-warehouse-034",
+      "type": "triggers",
+      "weight": 0.31
+    },
+    {
+      "source": "fast-rates-009",
+      "target": "internal-manifest-017",
+      "type": "writes",
+      "weight": 0.71
+    },
+    {
+      "source": "async-returns-012",
+      "target": "shared-fleet-mgmt-021",
+      "type": "queries",
+      "weight": 0.13
+    },
+    {
+      "source": "staging-customs-033",
+      "target": "global-fleet-mgmt-011",
+      "type": "writes",
+      "weight": 0.16
+    },
+    {
+      "source": "primary-rates-044",
+      "target": "cold-rates-029",
+      "type": "caches",
+      "weight": 0.25
+    },
+    {
+      "source": "central-warehouse-027",
+      "target": "batch-dispatch-015",
+      "type": "reads",
+      "weight": 0.31
+    },
+    {
+      "source": "delivery-rds-002",
+      "target": "fast-rates-009",
+      "type": "queries",
+      "weight": 0.46
+    },
+    {
+      "source": "central-warehouse-027",
+      "target": "regional-customs-046",
+      "type": "calls",
+      "weight": 0.23
+    },
+    {
+      "source": "fast-rates-009",
+      "target": "global-warehouse-020",
+      "type": "writes",
+      "weight": 0.31
+    },
+    {
+      "source": "batch-dispatch-015",
+      "target": "delivery-ecs-001",
+      "type": "caches",
+      "weight": 0.79
+    },
+    {
+      "source": "staging-customs-033",
+      "target": "backup-warehouse-039",
+      "type": "writes",
+      "weight": 0.58
+    },
+    {
+      "source": "batch-dispatch-015",
+      "target": "customs-api-000",
+      "type": "subscribes",
+      "weight": 0.29
+    },
+    {
+      "source": "public-customs-036",
+      "target": "primary-routing-038",
+      "type": "triggers",
+      "weight": 0.46
+    },
+    {
+      "source": "private-dispatch-023",
+      "target": "delivery-ecs-001",
+      "type": "queries",
+      "weight": 0.4
+    },
+    {
+      "source": "private-customs-031",
+      "target": "warehouse-dynamodb-003",
+      "type": "writes",
+      "weight": 0.84
+    },
+    {
+      "source": "global-dispatch-013",
+      "target": "private-dispatch-023",
+      "type": "reads",
+      "weight": 0.65
+    },
+    {
+      "source": "staging-customs-033",
+      "target": "fast-rates-009",
+      "type": "reads",
+      "weight": 0.66
+    },
+    {
+      "source": "global-dispatch-013",
+      "target": "cold-rates-029",
+      "type": "calls",
+      "weight": 0.99
+    },
+    {
+      "source": "staging-customs-033",
+      "target": "staging-returns-026",
+      "type": "caches",
+      "weight": 0.6
+    },
+    {
+      "source": "backup-rates-040",
+      "target": "batch-customs-030",
+      "type": "caches",
+      "weight": 0.66
+    },
+    {
+      "source": "central-fleet-mgmt-032",
+      "target": "primary-routing-038",
+      "type": "writes",
+      "weight": 0.4
+    },
+    {
+      "source": "staging-returns-026",
+      "target": "batch-returns-018",
+      "type": "reads",
+      "weight": 0.17
+    },
+    {
+      "source": "private-customs-031",
+      "target": "central-warehouse-027",
+      "type": "caches",
+      "weight": 0.46
+    },
+    {
+      "source": "async-routing-014",
+      "target": "public-customs-036",
+      "type": "queries",
+      "weight": 0.29
+    },
+    {
+      "source": "main-rates-042",
+      "target": "staging-customs-033",
+      "type": "queries",
+      "weight": 0.84
+    },
+    {
+      "source": "fast-routing-016",
+      "target": "realtime-returns-005",
+      "type": "reads",
+      "weight": 0.94
+    },
+    {
+      "source": "private-fleet-mgmt-028",
+      "target": "main-manifest-041",
+      "type": "queries",
+      "weight": 0.76
+    },
+    {
+      "source": "async-routing-014",
+      "target": "customs-api-000",
+      "type": "reads",
+      "weight": 0.67
+    },
+    {
+      "source": "internal-manifest-017",
+      "target": "cold-rates-029",
+      "type": "calls",
+      "weight": 0.49
+    },
+    {
+      "source": "central-customs-035",
+      "target": "staging-customs-033",
+      "type": "subscribes",
+      "weight": 0.62
+    },
+    {
+      "source": "batch-returns-018",
+      "target": "primary-rates-044",
+      "type": "calls",
+      "weight": 0.79
+    },
+    {
+      "source": "global-warehouse-020",
+      "target": "secondary-manifest-022",
+      "type": "calls",
+      "weight": 0.75
+    },
+    {
+      "source": "warehouse-dynamodb-003",
+      "target": "fast-routing-016",
+      "type": "triggers",
+      "weight": 0.19
+    },
+    {
+      "source": "global-dispatch-013",
+      "target": "primary-routing-038",
+      "type": "writes",
+      "weight": 0.22
+    },
+    {
+      "source": "regional-fleet-mgmt-025",
+      "target": "shared-warehouse-019",
+      "type": "caches",
+      "weight": 0.45
+    }
+  ]
+}

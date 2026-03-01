@@ -1,0 +1,137 @@
+{
+  "metadata": {
+    "name": "Gaming (Enterprise, us-west-2)",
+    "id": "9e7ab5a2",
+    "pattern": "gaming",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 5,
+    "total_dependencies": 6,
+    "total_cost_monthly": 3722.9,
+    "generated_at": "2026-03-01T19:23:57.541000",
+    "variation_seed": 8164
+  },
+  "services": [
+    {
+      "id": "rewards-nlb-000",
+      "name": "rewards-nlb",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 95.52,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "lobby-ec2-001",
+      "name": "lobby-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 2056.24,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "telemetry-dynamodb-002",
+      "name": "telemetry-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 532.6,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "matchmaker-elasticache-003",
+      "name": "matchmaker-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 699.99,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "anticheat-kinesis-004",
+      "name": "anticheat-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 338.55,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "rewards-nlb-000",
+      "target": "lobby-ec2-001",
+      "type": "queries",
+      "weight": 0.46
+    },
+    {
+      "source": "lobby-ec2-001",
+      "target": "telemetry-dynamodb-002",
+      "type": "reads",
+      "weight": 0.9
+    },
+    {
+      "source": "telemetry-dynamodb-002",
+      "target": "matchmaker-elasticache-003",
+      "type": "caches",
+      "weight": 0.53
+    },
+    {
+      "source": "matchmaker-elasticache-003",
+      "target": "anticheat-kinesis-004",
+      "type": "writes",
+      "weight": 0.96
+    },
+    {
+      "source": "rewards-nlb-000",
+      "target": "anticheat-kinesis-004",
+      "type": "caches",
+      "weight": 0.12
+    },
+    {
+      "source": "anticheat-kinesis-004",
+      "target": "telemetry-dynamodb-002",
+      "type": "triggers",
+      "weight": 0.99
+    }
+  ]
+}

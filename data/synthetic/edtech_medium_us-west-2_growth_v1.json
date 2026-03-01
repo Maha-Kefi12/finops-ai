@@ -1,0 +1,243 @@
+{
+  "metadata": {
+    "name": "Edtech (Growth, us-west-2)",
+    "id": "ca3cca83",
+    "pattern": "edtech",
+    "complexity": "medium",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 9,
+    "total_dependencies": 13,
+    "total_cost_monthly": 8079.7,
+    "generated_at": "2026-03-01T19:23:58.398542",
+    "variation_seed": 46270
+  },
+  "services": [
+    {
+      "id": "assessments-cloudfront-000",
+      "name": "assessments-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 351.36,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "enrollment-ec2-001",
+      "name": "enrollment-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 1535.92,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "progress-rds-002",
+      "name": "progress-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 4258.21,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "proctoring-s3-003",
+      "name": "proctoring-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 65.53,
+      "owner": "growth-eng",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "courses-elasticache-004",
+      "name": "courses-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1317.03,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-progress-005",
+      "name": "global-progress",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 5.36,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "public-content-mgr-006",
+      "name": "public-content-mgr",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 52.52,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-progress-007",
+      "name": "regional-progress",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 349.77,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-certificates-008",
+      "name": "backup-certificates",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 144.0,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "assessments-cloudfront-000",
+      "target": "enrollment-ec2-001",
+      "type": "calls",
+      "weight": 0.54
+    },
+    {
+      "source": "enrollment-ec2-001",
+      "target": "progress-rds-002",
+      "type": "subscribes",
+      "weight": 0.72
+    },
+    {
+      "source": "progress-rds-002",
+      "target": "proctoring-s3-003",
+      "type": "queries",
+      "weight": 0.69
+    },
+    {
+      "source": "proctoring-s3-003",
+      "target": "courses-elasticache-004",
+      "type": "calls",
+      "weight": 0.54
+    },
+    {
+      "source": "courses-elasticache-004",
+      "target": "global-progress-005",
+      "type": "queries",
+      "weight": 0.96
+    },
+    {
+      "source": "global-progress-005",
+      "target": "public-content-mgr-006",
+      "type": "caches",
+      "weight": 0.47
+    },
+    {
+      "source": "public-content-mgr-006",
+      "target": "regional-progress-007",
+      "type": "writes",
+      "weight": 0.65
+    },
+    {
+      "source": "regional-progress-007",
+      "target": "backup-certificates-008",
+      "type": "writes",
+      "weight": 0.54
+    },
+    {
+      "source": "progress-rds-002",
+      "target": "assessments-cloudfront-000",
+      "type": "subscribes",
+      "weight": 0.12
+    },
+    {
+      "source": "proctoring-s3-003",
+      "target": "backup-certificates-008",
+      "type": "writes",
+      "weight": 0.61
+    },
+    {
+      "source": "backup-certificates-008",
+      "target": "courses-elasticache-004",
+      "type": "queries",
+      "weight": 0.93
+    },
+    {
+      "source": "assessments-cloudfront-000",
+      "target": "courses-elasticache-004",
+      "type": "queries",
+      "weight": 0.77
+    },
+    {
+      "source": "global-progress-005",
+      "target": "courses-elasticache-004",
+      "type": "subscribes",
+      "weight": 0.99
+    }
+  ]
+}

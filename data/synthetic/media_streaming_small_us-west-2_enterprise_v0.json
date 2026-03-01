@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "name": "Media Streaming (Enterprise, us-west-2)",
+    "id": "e6c39e78",
+    "pattern": "media_streaming",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 4,
+    "total_dependencies": 4,
+    "total_cost_monthly": 3049.57,
+    "generated_at": "2026-03-01T19:23:57.961895",
+    "variation_seed": 26764
+  },
+  "services": [
+    {
+      "id": "player-cloudfront-000",
+      "name": "player-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 363.14,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "analytics-s3-001",
+      "name": "analytics-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 592.57,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "transcoder-mediaconvert-002",
+      "name": "transcoder-mediaconvert",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 465.06,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "metadata-ec2-003",
+      "name": "metadata-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1628.8,
+      "owner": "content-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "player-cloudfront-000",
+      "target": "analytics-s3-001",
+      "type": "writes",
+      "weight": 0.5
+    },
+    {
+      "source": "analytics-s3-001",
+      "target": "transcoder-mediaconvert-002",
+      "type": "caches",
+      "weight": 0.62
+    },
+    {
+      "source": "transcoder-mediaconvert-002",
+      "target": "metadata-ec2-003",
+      "type": "caches",
+      "weight": 0.72
+    },
+    {
+      "source": "player-cloudfront-000",
+      "target": "metadata-ec2-003",
+      "type": "caches",
+      "weight": 0.72
+    }
+  ]
+}

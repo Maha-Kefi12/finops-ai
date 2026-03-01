@@ -1,0 +1,215 @@
+{
+  "metadata": {
+    "name": "Saas (Enterprise, eu-west-1)",
+    "id": "e9ce2804",
+    "pattern": "saas",
+    "complexity": "medium",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 8,
+    "total_dependencies": 11,
+    "total_cost_monthly": 10312.45,
+    "generated_at": "2026-03-01T19:23:57.458433",
+    "variation_seed": 5040
+  },
+  "services": [
+    {
+      "id": "tenant-api-000",
+      "name": "tenant-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 213.15,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "analytics-ecs-001",
+      "name": "analytics-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 524.72,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "billing-aurora-002",
+      "name": "billing-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 6759.55,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "config-elasticache-003",
+      "name": "config-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 2159.36,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "config-cognito-004",
+      "name": "config-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 157.84,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-billing-005",
+      "name": "fast-billing",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 306.87,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-integrations-006",
+      "name": "hot-integrations",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 91.05,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-billing-007",
+      "name": "main-billing",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 99.91,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "tenant-api-000",
+      "target": "analytics-ecs-001",
+      "type": "reads",
+      "weight": 0.67
+    },
+    {
+      "source": "analytics-ecs-001",
+      "target": "billing-aurora-002",
+      "type": "caches",
+      "weight": 0.72
+    },
+    {
+      "source": "billing-aurora-002",
+      "target": "config-elasticache-003",
+      "type": "writes",
+      "weight": 0.36
+    },
+    {
+      "source": "config-elasticache-003",
+      "target": "config-cognito-004",
+      "type": "writes",
+      "weight": 0.99
+    },
+    {
+      "source": "config-cognito-004",
+      "target": "fast-billing-005",
+      "type": "caches",
+      "weight": 0.48
+    },
+    {
+      "source": "fast-billing-005",
+      "target": "hot-integrations-006",
+      "type": "triggers",
+      "weight": 0.58
+    },
+    {
+      "source": "hot-integrations-006",
+      "target": "main-billing-007",
+      "type": "subscribes",
+      "weight": 0.99
+    },
+    {
+      "source": "main-billing-007",
+      "target": "hot-integrations-006",
+      "type": "caches",
+      "weight": 0.17
+    },
+    {
+      "source": "analytics-ecs-001",
+      "target": "main-billing-007",
+      "type": "writes",
+      "weight": 0.41
+    },
+    {
+      "source": "billing-aurora-002",
+      "target": "main-billing-007",
+      "type": "caches",
+      "weight": 0.18
+    },
+    {
+      "source": "tenant-api-000",
+      "target": "config-elasticache-003",
+      "type": "caches",
+      "weight": 0.38
+    }
+  ]
+}

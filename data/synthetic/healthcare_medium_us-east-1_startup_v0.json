@@ -1,0 +1,253 @@
+{
+  "metadata": {
+    "name": "Healthcare (Startup, us-east-1)",
+    "id": "e4c06660",
+    "pattern": "healthcare",
+    "complexity": "medium",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 10,
+    "total_dependencies": 12,
+    "total_cost_monthly": 1703.72,
+    "generated_at": "2026-03-01T19:23:58.301257",
+    "variation_seed": 41892
+  },
+  "services": [
+    {
+      "id": "scheduling-alb-000",
+      "name": "scheduling-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 35.75,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "consent-ecs-001",
+      "name": "consent-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 339.47,
+      "owner": "ml-ops",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "labs-aurora-002",
+      "name": "labs-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 378.89,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "ehr-s3-003",
+      "name": "ehr-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 161.31,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "consent-cognito-004",
+      "name": "consent-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 251.51,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-consent-005",
+      "name": "realtime-consent",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 51.31,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "staging-vitals-006",
+      "name": "staging-vitals",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 103.8,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-imaging-007",
+      "name": "private-imaging",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 60.23,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-vitals-008",
+      "name": "primary-vitals",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 16.8,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-labs-009",
+      "name": "regional-labs",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 304.65,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "scheduling-alb-000",
+      "target": "consent-ecs-001",
+      "type": "caches",
+      "weight": 0.9
+    },
+    {
+      "source": "consent-ecs-001",
+      "target": "labs-aurora-002",
+      "type": "writes",
+      "weight": 0.86
+    },
+    {
+      "source": "labs-aurora-002",
+      "target": "ehr-s3-003",
+      "type": "reads",
+      "weight": 0.42
+    },
+    {
+      "source": "ehr-s3-003",
+      "target": "consent-cognito-004",
+      "type": "writes",
+      "weight": 0.67
+    },
+    {
+      "source": "consent-cognito-004",
+      "target": "realtime-consent-005",
+      "type": "writes",
+      "weight": 0.97
+    },
+    {
+      "source": "realtime-consent-005",
+      "target": "staging-vitals-006",
+      "type": "caches",
+      "weight": 0.97
+    },
+    {
+      "source": "staging-vitals-006",
+      "target": "private-imaging-007",
+      "type": "caches",
+      "weight": 0.73
+    },
+    {
+      "source": "private-imaging-007",
+      "target": "primary-vitals-008",
+      "type": "queries",
+      "weight": 0.88
+    },
+    {
+      "source": "primary-vitals-008",
+      "target": "regional-labs-009",
+      "type": "reads",
+      "weight": 0.94
+    },
+    {
+      "source": "consent-ecs-001",
+      "target": "staging-vitals-006",
+      "type": "subscribes",
+      "weight": 0.54
+    },
+    {
+      "source": "scheduling-alb-000",
+      "target": "realtime-consent-005",
+      "type": "caches",
+      "weight": 0.93
+    },
+    {
+      "source": "private-imaging-007",
+      "target": "scheduling-alb-000",
+      "type": "triggers",
+      "weight": 0.43
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "metadata": {
+    "name": "Microservices (Startup, us-west-2)",
+    "id": "3e26b467",
+    "pattern": "microservices",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 7,
+    "total_dependencies": 9,
+    "total_cost_monthly": 2150.74,
+    "generated_at": "2026-03-01T19:23:57.707758",
+    "variation_seed": 15480
+  },
+  "services": [
+    {
+      "id": "webhook-svc-alb-000",
+      "name": "webhook-svc-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 68.51,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "webhook-svc-ecs-001",
+      "name": "webhook-svc-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 561.79,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "gateway-rds-002",
+      "name": "gateway-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 639.22,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audit-svc-elasticache-003",
+      "name": "audit-svc-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 556.99,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "config-svc-sqs-004",
+      "name": "config-svc-sqs",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 51.84,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-notification-svc-005",
+      "name": "public-notification-svc",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 247.81,
+      "owner": "content-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-search-svc-006",
+      "name": "public-search-svc",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 24.58,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "webhook-svc-alb-000",
+      "target": "webhook-svc-ecs-001",
+      "type": "caches",
+      "weight": 0.99
+    },
+    {
+      "source": "webhook-svc-ecs-001",
+      "target": "gateway-rds-002",
+      "type": "triggers",
+      "weight": 0.87
+    },
+    {
+      "source": "gateway-rds-002",
+      "target": "audit-svc-elasticache-003",
+      "type": "writes",
+      "weight": 0.78
+    },
+    {
+      "source": "audit-svc-elasticache-003",
+      "target": "config-svc-sqs-004",
+      "type": "reads",
+      "weight": 0.66
+    },
+    {
+      "source": "config-svc-sqs-004",
+      "target": "public-notification-svc-005",
+      "type": "queries",
+      "weight": 0.7
+    },
+    {
+      "source": "public-notification-svc-005",
+      "target": "public-search-svc-006",
+      "type": "writes",
+      "weight": 0.76
+    },
+    {
+      "source": "gateway-rds-002",
+      "target": "public-notification-svc-005",
+      "type": "triggers",
+      "weight": 0.7
+    },
+    {
+      "source": "config-svc-sqs-004",
+      "target": "webhook-svc-ecs-001",
+      "type": "writes",
+      "weight": 0.58
+    },
+    {
+      "source": "webhook-svc-ecs-001",
+      "target": "public-search-svc-006",
+      "type": "caches",
+      "weight": 0.94
+    }
+  ]
+}

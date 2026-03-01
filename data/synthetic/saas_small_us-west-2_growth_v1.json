@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "name": "Saas (Growth, us-west-2)",
+    "id": "1115deb5",
+    "pattern": "saas",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 5,
+    "total_dependencies": 5,
+    "total_cost_monthly": 6893.31,
+    "generated_at": "2026-03-01T19:23:57.452182",
+    "variation_seed": 4420
+  },
+  "services": [
+    {
+      "id": "notification-api-000",
+      "name": "notification-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 338.3,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audit-ecs-001",
+      "name": "audit-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1605.36,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "config-aurora-002",
+      "name": "config-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 3784.52,
+      "owner": "security",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "integrations-elasticache-003",
+      "name": "integrations-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1032.12,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "auth-cognito-004",
+      "name": "auth-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 133.01,
+      "owner": "mobile-backend",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "notification-api-000",
+      "target": "audit-ecs-001",
+      "type": "triggers",
+      "weight": 0.42
+    },
+    {
+      "source": "audit-ecs-001",
+      "target": "config-aurora-002",
+      "type": "reads",
+      "weight": 0.82
+    },
+    {
+      "source": "config-aurora-002",
+      "target": "integrations-elasticache-003",
+      "type": "caches",
+      "weight": 0.72
+    },
+    {
+      "source": "integrations-elasticache-003",
+      "target": "auth-cognito-004",
+      "type": "queries",
+      "weight": 0.41
+    },
+    {
+      "source": "auth-cognito-004",
+      "target": "config-aurora-002",
+      "type": "writes",
+      "weight": 0.82
+    }
+  ]
+}

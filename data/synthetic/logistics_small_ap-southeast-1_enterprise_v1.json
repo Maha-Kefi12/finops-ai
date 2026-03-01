@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Logistics (Enterprise, ap-southeast-1)",
+    "id": "604a58cd",
+    "pattern": "logistics",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 3321.78,
+    "generated_at": "2026-03-01T19:23:58.472378",
+    "variation_seed": 48936
+  },
+  "services": [
+    {
+      "id": "tracking-api-000",
+      "name": "tracking-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 349.02,
+      "owner": "security",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "delivery-ecs-001",
+      "name": "delivery-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 2193.97,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "warehouse-rds-002",
+      "name": "warehouse-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 778.79,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "tracking-api-000",
+      "target": "delivery-ecs-001",
+      "type": "subscribes",
+      "weight": 0.56
+    },
+    {
+      "source": "delivery-ecs-001",
+      "target": "warehouse-rds-002",
+      "type": "calls",
+      "weight": 0.47
+    }
+  ]
+}

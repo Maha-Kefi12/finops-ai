@@ -1,0 +1,773 @@
+{
+  "metadata": {
+    "name": "Serverless (Enterprise, eu-west-1)",
+    "id": "d7e5aaab",
+    "pattern": "serverless",
+    "complexity": "large",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 29,
+    "total_dependencies": 48,
+    "total_cost_monthly": 23288.38,
+    "generated_at": "2026-03-01T19:23:57.819149",
+    "variation_seed": 20812
+  },
+  "services": [
+    {
+      "id": "transformer-api-000",
+      "name": "transformer-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 236.03,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "aggregator-lambda-001",
+      "name": "aggregator-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 163.11,
+      "owner": "devops",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "aggregator-dynamodb-002",
+      "name": "aggregator-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1068.16,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "authorizer-s3-003",
+      "name": "authorizer-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 321.41,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "scheduler-cognito-004",
+      "name": "scheduler-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 270.59,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-authorizer-005",
+      "name": "fast-authorizer",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 23.09,
+      "owner": "content-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "hot-router-006",
+      "name": "hot-router",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 199.59,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-transformer-007",
+      "name": "private-transformer",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 25.69,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-aggregator-008",
+      "name": "edge-aggregator",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 46.99,
+      "owner": "security",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-router-009",
+      "name": "fast-router",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 61.56,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-authorizer-010",
+      "name": "secondary-authorizer",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 1416.1,
+      "owner": "security",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "core-processor-011",
+      "name": "core-processor",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 54.21,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-aggregator-012",
+      "name": "core-aggregator",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 1941.8,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "secondary-handler-013",
+      "name": "secondary-handler",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 983.18,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-transformer-014",
+      "name": "staging-transformer",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 464.75,
+      "owner": "payments",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-processor-015",
+      "name": "batch-processor",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 56.07,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-handler-016",
+      "name": "core-handler",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 204.08,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-authorizer-017",
+      "name": "async-authorizer",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Memcached",
+      "cost_monthly": 414.75,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-scheduler-018",
+      "name": "edge-scheduler",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 341.56,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-scheduler-019",
+      "name": "fast-scheduler",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 2836.9,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-aggregator-020",
+      "name": "realtime-aggregator",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 17.06,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-router-021",
+      "name": "primary-router",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 89.85,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "batch-router-022",
+      "name": "batch-router",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 5306.28,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-scheduler-023",
+      "name": "public-scheduler",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1987.69,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-transformer-024",
+      "name": "secondary-transformer",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1971.16,
+      "owner": "security",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-formatter-025",
+      "name": "global-formatter",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 107.44,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-scheduler-026",
+      "name": "central-scheduler",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 1051.99,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-scheduler-027",
+      "name": "edge-scheduler",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 199.06,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-scheduler-028",
+      "name": "cold-scheduler",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 1428.23,
+      "owner": "security",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "transformer-api-000",
+      "target": "aggregator-lambda-001",
+      "type": "subscribes",
+      "weight": 0.36
+    },
+    {
+      "source": "aggregator-lambda-001",
+      "target": "aggregator-dynamodb-002",
+      "type": "caches",
+      "weight": 0.74
+    },
+    {
+      "source": "aggregator-dynamodb-002",
+      "target": "authorizer-s3-003",
+      "type": "reads",
+      "weight": 0.62
+    },
+    {
+      "source": "authorizer-s3-003",
+      "target": "scheduler-cognito-004",
+      "type": "reads",
+      "weight": 0.37
+    },
+    {
+      "source": "scheduler-cognito-004",
+      "target": "fast-authorizer-005",
+      "type": "caches",
+      "weight": 0.44
+    },
+    {
+      "source": "fast-authorizer-005",
+      "target": "hot-router-006",
+      "type": "writes",
+      "weight": 0.44
+    },
+    {
+      "source": "hot-router-006",
+      "target": "private-transformer-007",
+      "type": "writes",
+      "weight": 0.59
+    },
+    {
+      "source": "private-transformer-007",
+      "target": "edge-aggregator-008",
+      "type": "calls",
+      "weight": 0.48
+    },
+    {
+      "source": "edge-aggregator-008",
+      "target": "fast-router-009",
+      "type": "queries",
+      "weight": 0.84
+    },
+    {
+      "source": "fast-router-009",
+      "target": "secondary-authorizer-010",
+      "type": "calls",
+      "weight": 0.41
+    },
+    {
+      "source": "secondary-authorizer-010",
+      "target": "core-processor-011",
+      "type": "caches",
+      "weight": 0.82
+    },
+    {
+      "source": "core-processor-011",
+      "target": "core-aggregator-012",
+      "type": "calls",
+      "weight": 0.83
+    },
+    {
+      "source": "core-aggregator-012",
+      "target": "secondary-handler-013",
+      "type": "subscribes",
+      "weight": 0.49
+    },
+    {
+      "source": "secondary-handler-013",
+      "target": "staging-transformer-014",
+      "type": "triggers",
+      "weight": 0.71
+    },
+    {
+      "source": "staging-transformer-014",
+      "target": "batch-processor-015",
+      "type": "caches",
+      "weight": 0.43
+    },
+    {
+      "source": "batch-processor-015",
+      "target": "core-handler-016",
+      "type": "triggers",
+      "weight": 0.45
+    },
+    {
+      "source": "core-handler-016",
+      "target": "async-authorizer-017",
+      "type": "calls",
+      "weight": 0.91
+    },
+    {
+      "source": "async-authorizer-017",
+      "target": "edge-scheduler-018",
+      "type": "calls",
+      "weight": 0.93
+    },
+    {
+      "source": "edge-scheduler-018",
+      "target": "fast-scheduler-019",
+      "type": "triggers",
+      "weight": 0.89
+    },
+    {
+      "source": "fast-scheduler-019",
+      "target": "realtime-aggregator-020",
+      "type": "triggers",
+      "weight": 1.0
+    },
+    {
+      "source": "realtime-aggregator-020",
+      "target": "primary-router-021",
+      "type": "writes",
+      "weight": 0.45
+    },
+    {
+      "source": "primary-router-021",
+      "target": "batch-router-022",
+      "type": "triggers",
+      "weight": 0.9
+    },
+    {
+      "source": "batch-router-022",
+      "target": "public-scheduler-023",
+      "type": "caches",
+      "weight": 0.73
+    },
+    {
+      "source": "public-scheduler-023",
+      "target": "secondary-transformer-024",
+      "type": "writes",
+      "weight": 0.88
+    },
+    {
+      "source": "secondary-transformer-024",
+      "target": "global-formatter-025",
+      "type": "calls",
+      "weight": 0.32
+    },
+    {
+      "source": "global-formatter-025",
+      "target": "central-scheduler-026",
+      "type": "writes",
+      "weight": 0.41
+    },
+    {
+      "source": "central-scheduler-026",
+      "target": "edge-scheduler-027",
+      "type": "subscribes",
+      "weight": 0.76
+    },
+    {
+      "source": "edge-scheduler-027",
+      "target": "cold-scheduler-028",
+      "type": "queries",
+      "weight": 0.67
+    },
+    {
+      "source": "global-formatter-025",
+      "target": "batch-router-022",
+      "type": "calls",
+      "weight": 0.81
+    },
+    {
+      "source": "edge-scheduler-018",
+      "target": "staging-transformer-014",
+      "type": "triggers",
+      "weight": 0.93
+    },
+    {
+      "source": "private-transformer-007",
+      "target": "secondary-authorizer-010",
+      "type": "subscribes",
+      "weight": 0.48
+    },
+    {
+      "source": "scheduler-cognito-004",
+      "target": "aggregator-dynamodb-002",
+      "type": "calls",
+      "weight": 0.49
+    },
+    {
+      "source": "authorizer-s3-003",
+      "target": "secondary-transformer-024",
+      "type": "queries",
+      "weight": 0.92
+    },
+    {
+      "source": "fast-router-009",
+      "target": "batch-router-022",
+      "type": "calls",
+      "weight": 0.15
+    },
+    {
+      "source": "global-formatter-025",
+      "target": "edge-aggregator-008",
+      "type": "queries",
+      "weight": 0.56
+    },
+    {
+      "source": "scheduler-cognito-004",
+      "target": "secondary-handler-013",
+      "type": "caches",
+      "weight": 0.94
+    },
+    {
+      "source": "staging-transformer-014",
+      "target": "edge-aggregator-008",
+      "type": "queries",
+      "weight": 0.44
+    },
+    {
+      "source": "realtime-aggregator-020",
+      "target": "core-processor-011",
+      "type": "triggers",
+      "weight": 0.85
+    },
+    {
+      "source": "aggregator-dynamodb-002",
+      "target": "core-processor-011",
+      "type": "triggers",
+      "weight": 0.67
+    },
+    {
+      "source": "batch-processor-015",
+      "target": "aggregator-dynamodb-002",
+      "type": "triggers",
+      "weight": 0.46
+    },
+    {
+      "source": "core-aggregator-012",
+      "target": "fast-authorizer-005",
+      "type": "reads",
+      "weight": 0.26
+    },
+    {
+      "source": "core-aggregator-012",
+      "target": "global-formatter-025",
+      "type": "subscribes",
+      "weight": 0.89
+    },
+    {
+      "source": "scheduler-cognito-004",
+      "target": "global-formatter-025",
+      "type": "triggers",
+      "weight": 0.24
+    },
+    {
+      "source": "secondary-transformer-024",
+      "target": "fast-authorizer-005",
+      "type": "calls",
+      "weight": 0.89
+    },
+    {
+      "source": "aggregator-lambda-001",
+      "target": "hot-router-006",
+      "type": "reads",
+      "weight": 0.14
+    },
+    {
+      "source": "cold-scheduler-028",
+      "target": "hot-router-006",
+      "type": "reads",
+      "weight": 0.16
+    },
+    {
+      "source": "aggregator-lambda-001",
+      "target": "core-processor-011",
+      "type": "subscribes",
+      "weight": 0.13
+    },
+    {
+      "source": "secondary-authorizer-010",
+      "target": "edge-scheduler-018",
+      "type": "reads",
+      "weight": 0.4
+    }
+  ]
+}

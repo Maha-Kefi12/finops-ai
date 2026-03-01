@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "name": "Media Streaming (Growth, eu-west-1)",
+    "id": "cd27c3c8",
+    "pattern": "media_streaming",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 5,
+    "total_dependencies": 5,
+    "total_cost_monthly": 8178.42,
+    "generated_at": "2026-03-01T19:23:57.958923",
+    "variation_seed": 26330
+  },
+  "services": [
+    {
+      "id": "thumbnail-cloudfront-000",
+      "name": "thumbnail-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 2756.96,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "transcoder-s3-001",
+      "name": "transcoder-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 426.8,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "encoder-mediaconvert-002",
+      "name": "encoder-mediaconvert",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 130.98,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "encoder-ec2-003",
+      "name": "encoder-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 2926.29,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "drm-dynamodb-004",
+      "name": "drm-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1937.39,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "thumbnail-cloudfront-000",
+      "target": "transcoder-s3-001",
+      "type": "writes",
+      "weight": 0.48
+    },
+    {
+      "source": "transcoder-s3-001",
+      "target": "encoder-mediaconvert-002",
+      "type": "reads",
+      "weight": 0.41
+    },
+    {
+      "source": "encoder-mediaconvert-002",
+      "target": "encoder-ec2-003",
+      "type": "subscribes",
+      "weight": 0.71
+    },
+    {
+      "source": "encoder-ec2-003",
+      "target": "drm-dynamodb-004",
+      "type": "triggers",
+      "weight": 0.83
+    },
+    {
+      "source": "drm-dynamodb-004",
+      "target": "encoder-mediaconvert-002",
+      "type": "triggers",
+      "weight": 0.87
+    }
+  ]
+}

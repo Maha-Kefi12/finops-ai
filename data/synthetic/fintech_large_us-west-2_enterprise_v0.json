@@ -1,0 +1,751 @@
+{
+  "metadata": {
+    "name": "Fintech (Enterprise, us-west-2)",
+    "id": "f1b9070e",
+    "pattern": "fintech",
+    "complexity": "large",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 28,
+    "total_dependencies": 47,
+    "total_cost_monthly": 32393.8,
+    "generated_at": "2026-03-01T19:23:58.245207",
+    "variation_seed": 39784
+  },
+  "services": [
+    {
+      "id": "kyc-api-000",
+      "name": "kyc-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 261.46,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "treasury-eks-001",
+      "name": "treasury-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 4132.37,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "payments-aurora-002",
+      "name": "payments-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 5910.78,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "treasury-elasticache-003",
+      "name": "treasury-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1206.45,
+      "owner": "data-eng",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "risk-engine-dynamodb-004",
+      "name": "risk-engine-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1782.4,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "backup-treasury-005",
+      "name": "backup-treasury",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 77.7,
+      "owner": "api-gateway-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "main-transactions-006",
+      "name": "main-transactions",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 8.98,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "realtime-risk-engine-007",
+      "name": "realtime-risk-engine",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 271.45,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-fraud-detection-008",
+      "name": "staging-fraud-detection",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1560.99,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-compliance-009",
+      "name": "regional-compliance",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 219.3,
+      "owner": "identity-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-kyc-010",
+      "name": "edge-kyc",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 53.85,
+      "owner": "ml-ops",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-accounts-011",
+      "name": "batch-accounts",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 277.07,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-fraud-detection-012",
+      "name": "async-fraud-detection",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1349.2,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "private-transactions-013",
+      "name": "private-transactions",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 475.26,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-risk-engine-014",
+      "name": "internal-risk-engine",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 65.47,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-risk-engine-015",
+      "name": "global-risk-engine",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 25.93,
+      "owner": "frontend-guild",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-risk-engine-016",
+      "name": "async-risk-engine",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 11.66,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-compliance-017",
+      "name": "private-compliance",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1311.58,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "hot-transactions-018",
+      "name": "hot-transactions",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 2664.46,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-fraud-detection-019",
+      "name": "core-fraud-detection",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1531.38,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-compliance-020",
+      "name": "primary-compliance",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 39.72,
+      "owner": "growth-eng",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-treasury-021",
+      "name": "central-treasury",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 568.04,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-kyc-022",
+      "name": "private-kyc",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 232.37,
+      "owner": "devops",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "private-risk-engine-023",
+      "name": "private-risk-engine",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 535.04,
+      "owner": "growth-eng",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-compliance-024",
+      "name": "realtime-compliance",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 3848.29,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "shared-compliance-025",
+      "name": "shared-compliance",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 821.06,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-settlements-026",
+      "name": "primary-settlements",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 1910.74,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-risk-engine-027",
+      "name": "internal-risk-engine",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 1240.8,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "kyc-api-000",
+      "target": "treasury-eks-001",
+      "type": "reads",
+      "weight": 0.6
+    },
+    {
+      "source": "treasury-eks-001",
+      "target": "payments-aurora-002",
+      "type": "caches",
+      "weight": 0.33
+    },
+    {
+      "source": "payments-aurora-002",
+      "target": "treasury-elasticache-003",
+      "type": "subscribes",
+      "weight": 0.4
+    },
+    {
+      "source": "treasury-elasticache-003",
+      "target": "risk-engine-dynamodb-004",
+      "type": "caches",
+      "weight": 0.77
+    },
+    {
+      "source": "risk-engine-dynamodb-004",
+      "target": "backup-treasury-005",
+      "type": "subscribes",
+      "weight": 0.72
+    },
+    {
+      "source": "backup-treasury-005",
+      "target": "main-transactions-006",
+      "type": "caches",
+      "weight": 0.86
+    },
+    {
+      "source": "main-transactions-006",
+      "target": "realtime-risk-engine-007",
+      "type": "reads",
+      "weight": 0.34
+    },
+    {
+      "source": "realtime-risk-engine-007",
+      "target": "staging-fraud-detection-008",
+      "type": "reads",
+      "weight": 0.87
+    },
+    {
+      "source": "staging-fraud-detection-008",
+      "target": "regional-compliance-009",
+      "type": "reads",
+      "weight": 0.8
+    },
+    {
+      "source": "regional-compliance-009",
+      "target": "edge-kyc-010",
+      "type": "writes",
+      "weight": 0.54
+    },
+    {
+      "source": "edge-kyc-010",
+      "target": "batch-accounts-011",
+      "type": "caches",
+      "weight": 0.42
+    },
+    {
+      "source": "batch-accounts-011",
+      "target": "async-fraud-detection-012",
+      "type": "reads",
+      "weight": 0.77
+    },
+    {
+      "source": "async-fraud-detection-012",
+      "target": "private-transactions-013",
+      "type": "subscribes",
+      "weight": 0.65
+    },
+    {
+      "source": "private-transactions-013",
+      "target": "internal-risk-engine-014",
+      "type": "reads",
+      "weight": 0.77
+    },
+    {
+      "source": "internal-risk-engine-014",
+      "target": "global-risk-engine-015",
+      "type": "triggers",
+      "weight": 0.89
+    },
+    {
+      "source": "global-risk-engine-015",
+      "target": "async-risk-engine-016",
+      "type": "triggers",
+      "weight": 0.38
+    },
+    {
+      "source": "async-risk-engine-016",
+      "target": "private-compliance-017",
+      "type": "subscribes",
+      "weight": 0.56
+    },
+    {
+      "source": "private-compliance-017",
+      "target": "hot-transactions-018",
+      "type": "reads",
+      "weight": 0.9
+    },
+    {
+      "source": "hot-transactions-018",
+      "target": "core-fraud-detection-019",
+      "type": "triggers",
+      "weight": 0.7
+    },
+    {
+      "source": "core-fraud-detection-019",
+      "target": "primary-compliance-020",
+      "type": "queries",
+      "weight": 0.34
+    },
+    {
+      "source": "primary-compliance-020",
+      "target": "central-treasury-021",
+      "type": "calls",
+      "weight": 0.74
+    },
+    {
+      "source": "central-treasury-021",
+      "target": "private-kyc-022",
+      "type": "triggers",
+      "weight": 0.34
+    },
+    {
+      "source": "private-kyc-022",
+      "target": "private-risk-engine-023",
+      "type": "caches",
+      "weight": 0.6
+    },
+    {
+      "source": "private-risk-engine-023",
+      "target": "realtime-compliance-024",
+      "type": "queries",
+      "weight": 0.69
+    },
+    {
+      "source": "realtime-compliance-024",
+      "target": "shared-compliance-025",
+      "type": "caches",
+      "weight": 0.39
+    },
+    {
+      "source": "shared-compliance-025",
+      "target": "primary-settlements-026",
+      "type": "writes",
+      "weight": 0.58
+    },
+    {
+      "source": "primary-settlements-026",
+      "target": "internal-risk-engine-027",
+      "type": "caches",
+      "weight": 0.63
+    },
+    {
+      "source": "staging-fraud-detection-008",
+      "target": "treasury-eks-001",
+      "type": "caches",
+      "weight": 0.86
+    },
+    {
+      "source": "private-compliance-017",
+      "target": "async-fraud-detection-012",
+      "type": "caches",
+      "weight": 0.52
+    },
+    {
+      "source": "core-fraud-detection-019",
+      "target": "private-kyc-022",
+      "type": "writes",
+      "weight": 0.42
+    },
+    {
+      "source": "payments-aurora-002",
+      "target": "main-transactions-006",
+      "type": "subscribes",
+      "weight": 0.78
+    },
+    {
+      "source": "treasury-elasticache-003",
+      "target": "shared-compliance-025",
+      "type": "reads",
+      "weight": 0.59
+    },
+    {
+      "source": "regional-compliance-009",
+      "target": "core-fraud-detection-019",
+      "type": "writes",
+      "weight": 0.71
+    },
+    {
+      "source": "internal-risk-engine-027",
+      "target": "kyc-api-000",
+      "type": "queries",
+      "weight": 0.92
+    },
+    {
+      "source": "backup-treasury-005",
+      "target": "core-fraud-detection-019",
+      "type": "subscribes",
+      "weight": 0.73
+    },
+    {
+      "source": "async-fraud-detection-012",
+      "target": "hot-transactions-018",
+      "type": "caches",
+      "weight": 0.11
+    },
+    {
+      "source": "backup-treasury-005",
+      "target": "async-risk-engine-016",
+      "type": "subscribes",
+      "weight": 0.74
+    },
+    {
+      "source": "private-compliance-017",
+      "target": "private-kyc-022",
+      "type": "subscribes",
+      "weight": 0.15
+    },
+    {
+      "source": "payments-aurora-002",
+      "target": "batch-accounts-011",
+      "type": "reads",
+      "weight": 0.75
+    },
+    {
+      "source": "private-transactions-013",
+      "target": "payments-aurora-002",
+      "type": "subscribes",
+      "weight": 0.84
+    },
+    {
+      "source": "central-treasury-021",
+      "target": "kyc-api-000",
+      "type": "calls",
+      "weight": 0.76
+    },
+    {
+      "source": "async-risk-engine-016",
+      "target": "regional-compliance-009",
+      "type": "writes",
+      "weight": 0.6
+    },
+    {
+      "source": "async-risk-engine-016",
+      "target": "staging-fraud-detection-008",
+      "type": "writes",
+      "weight": 0.84
+    },
+    {
+      "source": "risk-engine-dynamodb-004",
+      "target": "hot-transactions-018",
+      "type": "caches",
+      "weight": 0.48
+    },
+    {
+      "source": "main-transactions-006",
+      "target": "async-risk-engine-016",
+      "type": "queries",
+      "weight": 0.33
+    },
+    {
+      "source": "central-treasury-021",
+      "target": "primary-settlements-026",
+      "type": "writes",
+      "weight": 0.94
+    },
+    {
+      "source": "batch-accounts-011",
+      "target": "private-risk-engine-023",
+      "type": "triggers",
+      "weight": 0.5
+    }
+  ]
+}

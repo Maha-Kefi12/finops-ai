@@ -1,0 +1,103 @@
+{
+  "metadata": {
+    "name": "Healthcare (Growth, us-west-2)",
+    "id": "0bf881ed",
+    "pattern": "healthcare",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 4,
+    "total_dependencies": 3,
+    "total_cost_monthly": 7469.27,
+    "generated_at": "2026-03-01T19:23:58.299322",
+    "variation_seed": 41582
+  },
+  "services": [
+    {
+      "id": "labs-alb-000",
+      "name": "labs-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 69.53,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "scheduling-ecs-001",
+      "name": "scheduling-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 2676.67,
+      "owner": "growth-eng",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "claims-aurora-002",
+      "name": "claims-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 4430.05,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "consent-s3-003",
+      "name": "consent-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 293.02,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "labs-alb-000",
+      "target": "scheduling-ecs-001",
+      "type": "writes",
+      "weight": 0.34
+    },
+    {
+      "source": "scheduling-ecs-001",
+      "target": "claims-aurora-002",
+      "type": "subscribes",
+      "weight": 0.47
+    },
+    {
+      "source": "claims-aurora-002",
+      "target": "consent-s3-003",
+      "type": "queries",
+      "weight": 0.92
+    }
+  ]
+}

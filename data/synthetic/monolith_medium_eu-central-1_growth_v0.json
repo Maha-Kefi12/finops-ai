@@ -1,0 +1,215 @@
+{
+  "metadata": {
+    "name": "Monolith (Growth, eu-central-1)",
+    "id": "8a70ff10",
+    "pattern": "monolith",
+    "complexity": "medium",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 8,
+    "total_dependencies": 11,
+    "total_cost_monthly": 4351.89,
+    "generated_at": "2026-03-01T19:23:58.140709",
+    "variation_seed": 35258
+  },
+  "services": [
+    {
+      "id": "app-server-alb-000",
+      "name": "app-server-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 200.19,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audit-ec2-001",
+      "name": "audit-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1917.12,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "scheduler-rds-002",
+      "name": "scheduler-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 1613.86,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "reports-s3-003",
+      "name": "reports-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 28.06,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "mailer-cloudwatch-004",
+      "name": "mailer-cloudwatch",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 344.25,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-scheduler-005",
+      "name": "global-scheduler",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 123.46,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-admin-006",
+      "name": "main-admin",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 71.67,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-web-tier-007",
+      "name": "hot-web-tier",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 53.28,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "app-server-alb-000",
+      "target": "audit-ec2-001",
+      "type": "triggers",
+      "weight": 0.34
+    },
+    {
+      "source": "audit-ec2-001",
+      "target": "scheduler-rds-002",
+      "type": "writes",
+      "weight": 0.5
+    },
+    {
+      "source": "scheduler-rds-002",
+      "target": "reports-s3-003",
+      "type": "subscribes",
+      "weight": 0.72
+    },
+    {
+      "source": "reports-s3-003",
+      "target": "mailer-cloudwatch-004",
+      "type": "calls",
+      "weight": 1.0
+    },
+    {
+      "source": "mailer-cloudwatch-004",
+      "target": "global-scheduler-005",
+      "type": "reads",
+      "weight": 0.5
+    },
+    {
+      "source": "global-scheduler-005",
+      "target": "main-admin-006",
+      "type": "writes",
+      "weight": 0.81
+    },
+    {
+      "source": "main-admin-006",
+      "target": "hot-web-tier-007",
+      "type": "caches",
+      "weight": 0.85
+    },
+    {
+      "source": "main-admin-006",
+      "target": "reports-s3-003",
+      "type": "calls",
+      "weight": 0.93
+    },
+    {
+      "source": "audit-ec2-001",
+      "target": "global-scheduler-005",
+      "type": "queries",
+      "weight": 0.95
+    },
+    {
+      "source": "global-scheduler-005",
+      "target": "reports-s3-003",
+      "type": "reads",
+      "weight": 0.64
+    },
+    {
+      "source": "global-scheduler-005",
+      "target": "audit-ec2-001",
+      "type": "writes",
+      "weight": 0.37
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "name": "Data Pipeline (Startup, us-west-2)",
+    "id": "c805aa4b",
+    "pattern": "data_pipeline",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 4,
+    "total_dependencies": 4,
+    "total_cost_monthly": 1512.46,
+    "generated_at": "2026-03-01T19:23:57.621763",
+    "variation_seed": 11798
+  },
+  "services": [
+    {
+      "id": "dedup-kinesis-000",
+      "name": "dedup-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 315.06,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "ingestion-lambda-001",
+      "name": "ingestion-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 85.23,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ingestion-s3-002",
+      "name": "ingestion-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 977.77,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "aggregation-glue-003",
+      "name": "aggregation-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 134.4,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "dedup-kinesis-000",
+      "target": "ingestion-lambda-001",
+      "type": "subscribes",
+      "weight": 0.81
+    },
+    {
+      "source": "ingestion-lambda-001",
+      "target": "ingestion-s3-002",
+      "type": "reads",
+      "weight": 0.35
+    },
+    {
+      "source": "ingestion-s3-002",
+      "target": "aggregation-glue-003",
+      "type": "caches",
+      "weight": 0.49
+    },
+    {
+      "source": "aggregation-glue-003",
+      "target": "ingestion-s3-002",
+      "type": "subscribes",
+      "weight": 0.16
+    }
+  ]
+}

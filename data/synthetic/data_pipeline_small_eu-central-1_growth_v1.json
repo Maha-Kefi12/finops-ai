@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "name": "Data Pipeline (Growth, eu-central-1)",
+    "id": "c8a4feab",
+    "pattern": "data_pipeline",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 4,
+    "total_dependencies": 4,
+    "total_cost_monthly": 1580.67,
+    "generated_at": "2026-03-01T19:23:57.623530",
+    "variation_seed": 12046
+  },
+  "services": [
+    {
+      "id": "dedup-kinesis-000",
+      "name": "dedup-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 741.21,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "routing-lambda-001",
+      "name": "routing-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 400.4,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "dedup-s3-002",
+      "name": "dedup-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 129.54,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "routing-glue-003",
+      "name": "routing-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 309.52,
+      "owner": "ml-ops",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "dedup-kinesis-000",
+      "target": "routing-lambda-001",
+      "type": "subscribes",
+      "weight": 0.43
+    },
+    {
+      "source": "routing-lambda-001",
+      "target": "dedup-s3-002",
+      "type": "calls",
+      "weight": 0.75
+    },
+    {
+      "source": "dedup-s3-002",
+      "target": "routing-glue-003",
+      "type": "queries",
+      "weight": 0.95
+    },
+    {
+      "source": "dedup-s3-002",
+      "target": "dedup-kinesis-000",
+      "type": "writes",
+      "weight": 0.49
+    }
+  ]
+}

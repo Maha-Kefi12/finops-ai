@@ -1,0 +1,277 @@
+{
+  "metadata": {
+    "name": "Fintech (Growth, us-west-2)",
+    "id": "c564332e",
+    "pattern": "fintech",
+    "complexity": "medium",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 10,
+    "total_dependencies": 16,
+    "total_cost_monthly": 4875.55,
+    "generated_at": "2026-03-01T19:23:58.222684",
+    "variation_seed": 38830
+  },
+  "services": [
+    {
+      "id": "risk-engine-api-000",
+      "name": "risk-engine-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 349.23,
+      "owner": "security",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "transactions-eks-001",
+      "name": "transactions-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 882.4,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "treasury-aurora-002",
+      "name": "treasury-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 805.73,
+      "owner": "devops",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ledger-elasticache-003",
+      "name": "ledger-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 385.0,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "accounts-dynamodb-004",
+      "name": "accounts-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 864.19,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-accounts-005",
+      "name": "cold-accounts",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 165.74,
+      "owner": "platform-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-treasury-006",
+      "name": "shared-treasury",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 882.41,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "internal-risk-engine-007",
+      "name": "internal-risk-engine",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 61.32,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-ledger-008",
+      "name": "batch-ledger",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 342.54,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-accounts-009",
+      "name": "staging-accounts",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 136.99,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "risk-engine-api-000",
+      "target": "transactions-eks-001",
+      "type": "calls",
+      "weight": 0.73
+    },
+    {
+      "source": "transactions-eks-001",
+      "target": "treasury-aurora-002",
+      "type": "queries",
+      "weight": 0.34
+    },
+    {
+      "source": "treasury-aurora-002",
+      "target": "ledger-elasticache-003",
+      "type": "caches",
+      "weight": 0.71
+    },
+    {
+      "source": "ledger-elasticache-003",
+      "target": "accounts-dynamodb-004",
+      "type": "subscribes",
+      "weight": 0.57
+    },
+    {
+      "source": "accounts-dynamodb-004",
+      "target": "cold-accounts-005",
+      "type": "caches",
+      "weight": 0.84
+    },
+    {
+      "source": "cold-accounts-005",
+      "target": "shared-treasury-006",
+      "type": "queries",
+      "weight": 0.33
+    },
+    {
+      "source": "shared-treasury-006",
+      "target": "internal-risk-engine-007",
+      "type": "triggers",
+      "weight": 0.94
+    },
+    {
+      "source": "internal-risk-engine-007",
+      "target": "batch-ledger-008",
+      "type": "subscribes",
+      "weight": 0.87
+    },
+    {
+      "source": "batch-ledger-008",
+      "target": "staging-accounts-009",
+      "type": "triggers",
+      "weight": 0.68
+    },
+    {
+      "source": "cold-accounts-005",
+      "target": "ledger-elasticache-003",
+      "type": "queries",
+      "weight": 0.88
+    },
+    {
+      "source": "ledger-elasticache-003",
+      "target": "shared-treasury-006",
+      "type": "reads",
+      "weight": 0.29
+    },
+    {
+      "source": "batch-ledger-008",
+      "target": "risk-engine-api-000",
+      "type": "queries",
+      "weight": 0.52
+    },
+    {
+      "source": "internal-risk-engine-007",
+      "target": "transactions-eks-001",
+      "type": "triggers",
+      "weight": 0.65
+    },
+    {
+      "source": "accounts-dynamodb-004",
+      "target": "internal-risk-engine-007",
+      "type": "calls",
+      "weight": 0.79
+    },
+    {
+      "source": "ledger-elasticache-003",
+      "target": "internal-risk-engine-007",
+      "type": "queries",
+      "weight": 0.25
+    },
+    {
+      "source": "risk-engine-api-000",
+      "target": "cold-accounts-005",
+      "type": "subscribes",
+      "weight": 0.82
+    }
+  ]
+}

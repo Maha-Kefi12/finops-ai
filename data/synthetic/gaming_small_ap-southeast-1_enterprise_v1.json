@@ -1,0 +1,175 @@
+{
+  "metadata": {
+    "name": "Gaming (Enterprise, ap-southeast-1)",
+    "id": "8d421938",
+    "pattern": "gaming",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 7,
+    "total_dependencies": 7,
+    "total_cost_monthly": 6005.84,
+    "generated_at": "2026-03-01T19:23:57.539905",
+    "variation_seed": 8016
+  },
+  "services": [
+    {
+      "id": "store-nlb-000",
+      "name": "store-nlb",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 161.12,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "inventory-ec2-001",
+      "name": "inventory-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 2047.12,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "telemetry-dynamodb-002",
+      "name": "telemetry-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1010.6,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "telemetry-elasticache-003",
+      "name": "telemetry-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 669.51,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "telemetry-kinesis-004",
+      "name": "telemetry-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 226.53,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-rewards-005",
+      "name": "regional-rewards",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 382.06,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-chat-006",
+      "name": "central-chat",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 1508.9,
+      "owner": "security",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "store-nlb-000",
+      "target": "inventory-ec2-001",
+      "type": "queries",
+      "weight": 0.97
+    },
+    {
+      "source": "inventory-ec2-001",
+      "target": "telemetry-dynamodb-002",
+      "type": "subscribes",
+      "weight": 0.66
+    },
+    {
+      "source": "telemetry-dynamodb-002",
+      "target": "telemetry-elasticache-003",
+      "type": "queries",
+      "weight": 0.92
+    },
+    {
+      "source": "telemetry-elasticache-003",
+      "target": "telemetry-kinesis-004",
+      "type": "triggers",
+      "weight": 0.82
+    },
+    {
+      "source": "telemetry-kinesis-004",
+      "target": "regional-rewards-005",
+      "type": "queries",
+      "weight": 0.64
+    },
+    {
+      "source": "regional-rewards-005",
+      "target": "central-chat-006",
+      "type": "reads",
+      "weight": 0.43
+    },
+    {
+      "source": "telemetry-dynamodb-002",
+      "target": "telemetry-kinesis-004",
+      "type": "triggers",
+      "weight": 0.37
+    }
+  ]
+}

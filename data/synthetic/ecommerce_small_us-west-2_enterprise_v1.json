@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "name": "Ecommerce (Enterprise, us-west-2)",
+    "id": "591222d5",
+    "pattern": "ecommerce",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 5,
+    "total_dependencies": 5,
+    "total_cost_monthly": 8400.93,
+    "generated_at": "2026-03-01T19:23:57.362550",
+    "variation_seed": 762
+  },
+  "services": [
+    {
+      "id": "catalog-alb-000",
+      "name": "catalog-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 38.69,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "storefront-ec2-001",
+      "name": "storefront-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 658.06,
+      "owner": "data-eng",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "shipping-ec2-002",
+      "name": "shipping-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 2389.2,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "returns-rds-003",
+      "name": "returns-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 3689.94,
+      "owner": "platform-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "pricing-elasticache-004",
+      "name": "pricing-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1625.04,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "catalog-alb-000",
+      "target": "storefront-ec2-001",
+      "type": "triggers",
+      "weight": 0.67
+    },
+    {
+      "source": "storefront-ec2-001",
+      "target": "shipping-ec2-002",
+      "type": "queries",
+      "weight": 0.86
+    },
+    {
+      "source": "shipping-ec2-002",
+      "target": "returns-rds-003",
+      "type": "triggers",
+      "weight": 0.36
+    },
+    {
+      "source": "returns-rds-003",
+      "target": "pricing-elasticache-004",
+      "type": "queries",
+      "weight": 0.65
+    },
+    {
+      "source": "storefront-ec2-001",
+      "target": "catalog-alb-000",
+      "type": "triggers",
+      "weight": 0.5
+    }
+  ]
+}

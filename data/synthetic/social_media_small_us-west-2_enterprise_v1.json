@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "name": "Social Media (Enterprise, us-west-2)",
+    "id": "b9e52839",
+    "pattern": "social_media",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 4,
+    "total_dependencies": 4,
+    "total_cost_monthly": 10919.84,
+    "generated_at": "2026-03-01T19:23:58.561096",
+    "variation_seed": 52842
+  },
+  "services": [
+    {
+      "id": "media-upload-alb-000",
+      "name": "media-upload-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 97.73,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "moderation-eks-001",
+      "name": "moderation-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 3434.24,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "stories-aurora-002",
+      "name": "stories-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 5897.29,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "messaging-elasticache-003",
+      "name": "messaging-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1490.58,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "media-upload-alb-000",
+      "target": "moderation-eks-001",
+      "type": "reads",
+      "weight": 0.38
+    },
+    {
+      "source": "moderation-eks-001",
+      "target": "stories-aurora-002",
+      "type": "subscribes",
+      "weight": 0.91
+    },
+    {
+      "source": "stories-aurora-002",
+      "target": "messaging-elasticache-003",
+      "type": "writes",
+      "weight": 0.91
+    },
+    {
+      "source": "stories-aurora-002",
+      "target": "moderation-eks-001",
+      "type": "queries",
+      "weight": 0.34
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "name": "Iot (Growth, us-west-2)",
+    "id": "23a1a8b9",
+    "pattern": "iot",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 4,
+    "total_dependencies": 4,
+    "total_cost_monthly": 2311.39,
+    "generated_at": "2026-03-01T19:23:58.046214",
+    "variation_seed": 30460
+  },
+  "services": [
+    {
+      "id": "rules-engine-iot-000",
+      "name": "rules-engine-iot",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 745.71,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fleet-kinesis-001",
+      "name": "fleet-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 427.46,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shadow-lambda-002",
+      "name": "shadow-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 206.09,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "rules-engine-dynamodb-003",
+      "name": "rules-engine-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 932.13,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "rules-engine-iot-000",
+      "target": "fleet-kinesis-001",
+      "type": "queries",
+      "weight": 0.49
+    },
+    {
+      "source": "fleet-kinesis-001",
+      "target": "shadow-lambda-002",
+      "type": "calls",
+      "weight": 0.45
+    },
+    {
+      "source": "shadow-lambda-002",
+      "target": "rules-engine-dynamodb-003",
+      "type": "reads",
+      "weight": 0.47
+    },
+    {
+      "source": "rules-engine-dynamodb-003",
+      "target": "shadow-lambda-002",
+      "type": "reads",
+      "weight": 0.86
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Gaming (Growth, ap-southeast-1)",
+    "id": "a265fb38",
+    "pattern": "gaming",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 3462.36,
+    "generated_at": "2026-03-01T19:23:57.539272",
+    "variation_seed": 7916
+  },
+  "services": [
+    {
+      "id": "matchmaker-nlb-000",
+      "name": "matchmaker-nlb",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 165.65,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "telemetry-ec2-001",
+      "name": "telemetry-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 2799.2,
+      "owner": "security",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "telemetry-dynamodb-002",
+      "name": "telemetry-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 497.51,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "matchmaker-nlb-000",
+      "target": "telemetry-ec2-001",
+      "type": "queries",
+      "weight": 0.49
+    },
+    {
+      "source": "telemetry-ec2-001",
+      "target": "telemetry-dynamodb-002",
+      "type": "caches",
+      "weight": 0.97
+    }
+  ]
+}

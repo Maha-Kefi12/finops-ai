@@ -1,0 +1,159 @@
+{
+  "metadata": {
+    "name": "Gaming (Startup, us-west-2)",
+    "id": "84b658aa",
+    "pattern": "gaming",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 6,
+    "total_dependencies": 7,
+    "total_cost_monthly": 2382.88,
+    "generated_at": "2026-03-01T19:23:57.540131",
+    "variation_seed": 8040
+  },
+  "services": [
+    {
+      "id": "telemetry-nlb-000",
+      "name": "telemetry-nlb",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 94.31,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "telemetry-ec2-001",
+      "name": "telemetry-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 549.09,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "rewards-dynamodb-002",
+      "name": "rewards-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 54.97,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "sessions-elasticache-003",
+      "name": "sessions-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 716.1,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "rewards-kinesis-004",
+      "name": "rewards-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 356.54,
+      "owner": "payments",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "backup-lobby-005",
+      "name": "backup-lobby",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 611.87,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "telemetry-nlb-000",
+      "target": "telemetry-ec2-001",
+      "type": "writes",
+      "weight": 0.74
+    },
+    {
+      "source": "telemetry-ec2-001",
+      "target": "rewards-dynamodb-002",
+      "type": "writes",
+      "weight": 0.33
+    },
+    {
+      "source": "rewards-dynamodb-002",
+      "target": "sessions-elasticache-003",
+      "type": "triggers",
+      "weight": 0.66
+    },
+    {
+      "source": "sessions-elasticache-003",
+      "target": "rewards-kinesis-004",
+      "type": "triggers",
+      "weight": 0.7
+    },
+    {
+      "source": "rewards-kinesis-004",
+      "target": "backup-lobby-005",
+      "type": "queries",
+      "weight": 0.31
+    },
+    {
+      "source": "rewards-dynamodb-002",
+      "target": "backup-lobby-005",
+      "type": "triggers",
+      "weight": 0.23
+    },
+    {
+      "source": "backup-lobby-005",
+      "target": "sessions-elasticache-003",
+      "type": "writes",
+      "weight": 0.46
+    }
+  ]
+}

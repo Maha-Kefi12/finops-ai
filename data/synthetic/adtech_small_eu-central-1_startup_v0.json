@@ -1,0 +1,153 @@
+{
+  "metadata": {
+    "name": "Adtech (Startup, eu-central-1)",
+    "id": "21992e39",
+    "pattern": "adtech",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 6,
+    "total_dependencies": 6,
+    "total_cost_monthly": 5895.63,
+    "generated_at": "2026-03-01T19:23:58.646101",
+    "variation_seed": 56586
+  },
+  "services": [
+    {
+      "id": "audience-alb-000",
+      "name": "audience-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 148.42,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "reports-ec2-001",
+      "name": "reports-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1472.6,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "targeting-dynamodb-002",
+      "name": "targeting-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1059.9,
+      "owner": "frontend-guild",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "attribution-elasticache-003",
+      "name": "attribution-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1537.49,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ad-server-kinesis-004",
+      "name": "ad-server-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 217.96,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-targeting-005",
+      "name": "batch-targeting",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 1459.26,
+      "owner": "notifications",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "audience-alb-000",
+      "target": "reports-ec2-001",
+      "type": "writes",
+      "weight": 0.87
+    },
+    {
+      "source": "reports-ec2-001",
+      "target": "targeting-dynamodb-002",
+      "type": "queries",
+      "weight": 0.36
+    },
+    {
+      "source": "targeting-dynamodb-002",
+      "target": "attribution-elasticache-003",
+      "type": "triggers",
+      "weight": 0.31
+    },
+    {
+      "source": "attribution-elasticache-003",
+      "target": "ad-server-kinesis-004",
+      "type": "reads",
+      "weight": 0.39
+    },
+    {
+      "source": "ad-server-kinesis-004",
+      "target": "batch-targeting-005",
+      "type": "writes",
+      "weight": 0.3
+    },
+    {
+      "source": "audience-alb-000",
+      "target": "batch-targeting-005",
+      "type": "caches",
+      "weight": 0.95
+    }
+  ]
+}

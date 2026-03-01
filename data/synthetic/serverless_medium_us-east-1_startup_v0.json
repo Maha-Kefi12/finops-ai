@@ -1,0 +1,315 @@
+{
+  "metadata": {
+    "name": "Serverless (Startup, us-east-1)",
+    "id": "c5a5d9fe",
+    "pattern": "serverless",
+    "complexity": "medium",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 12,
+    "total_dependencies": 17,
+    "total_cost_monthly": 1211.02,
+    "generated_at": "2026-03-01T19:23:57.797774",
+    "variation_seed": 19572
+  },
+  "services": [
+    {
+      "id": "notifier-api-000",
+      "name": "notifier-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 149.37,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "processor-lambda-001",
+      "name": "processor-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 286.9,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "scheduler-dynamodb-002",
+      "name": "scheduler-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 98.14,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "aggregator-s3-003",
+      "name": "aggregator-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 168.4,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "validator-sqs-004",
+      "name": "validator-sqs",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 5.29,
+      "owner": "notifications",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-validator-005",
+      "name": "internal-validator",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 54.13,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-formatter-006",
+      "name": "shared-formatter",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 134.36,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-authorizer-007",
+      "name": "shared-authorizer",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 72.46,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-formatter-008",
+      "name": "async-formatter",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 7.57,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-aggregator-009",
+      "name": "cold-aggregator",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 133.58,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-validator-010",
+      "name": "shared-validator",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 94.2,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-notifier-011",
+      "name": "primary-notifier",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 6.62,
+      "owner": "security",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "notifier-api-000",
+      "target": "processor-lambda-001",
+      "type": "reads",
+      "weight": 0.6
+    },
+    {
+      "source": "processor-lambda-001",
+      "target": "scheduler-dynamodb-002",
+      "type": "writes",
+      "weight": 0.45
+    },
+    {
+      "source": "scheduler-dynamodb-002",
+      "target": "aggregator-s3-003",
+      "type": "caches",
+      "weight": 0.34
+    },
+    {
+      "source": "aggregator-s3-003",
+      "target": "validator-sqs-004",
+      "type": "caches",
+      "weight": 0.55
+    },
+    {
+      "source": "validator-sqs-004",
+      "target": "internal-validator-005",
+      "type": "writes",
+      "weight": 0.52
+    },
+    {
+      "source": "internal-validator-005",
+      "target": "shared-formatter-006",
+      "type": "triggers",
+      "weight": 0.84
+    },
+    {
+      "source": "shared-formatter-006",
+      "target": "shared-authorizer-007",
+      "type": "caches",
+      "weight": 0.75
+    },
+    {
+      "source": "shared-authorizer-007",
+      "target": "async-formatter-008",
+      "type": "writes",
+      "weight": 0.53
+    },
+    {
+      "source": "async-formatter-008",
+      "target": "cold-aggregator-009",
+      "type": "subscribes",
+      "weight": 0.33
+    },
+    {
+      "source": "cold-aggregator-009",
+      "target": "shared-validator-010",
+      "type": "subscribes",
+      "weight": 0.72
+    },
+    {
+      "source": "shared-validator-010",
+      "target": "primary-notifier-011",
+      "type": "calls",
+      "weight": 0.6
+    },
+    {
+      "source": "async-formatter-008",
+      "target": "notifier-api-000",
+      "type": "calls",
+      "weight": 0.62
+    },
+    {
+      "source": "aggregator-s3-003",
+      "target": "shared-validator-010",
+      "type": "queries",
+      "weight": 0.48
+    },
+    {
+      "source": "internal-validator-005",
+      "target": "async-formatter-008",
+      "type": "caches",
+      "weight": 0.65
+    },
+    {
+      "source": "internal-validator-005",
+      "target": "validator-sqs-004",
+      "type": "writes",
+      "weight": 0.14
+    },
+    {
+      "source": "shared-validator-010",
+      "target": "validator-sqs-004",
+      "type": "caches",
+      "weight": 0.5
+    },
+    {
+      "source": "shared-validator-010",
+      "target": "shared-formatter-006",
+      "type": "calls",
+      "weight": 0.61
+    }
+  ]
+}

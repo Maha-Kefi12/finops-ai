@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "name": "Data Pipeline (Startup, eu-west-1)",
+    "id": "6fa70c6b",
+    "pattern": "data_pipeline",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 4,
+    "total_dependencies": 4,
+    "total_cost_monthly": 1975.81,
+    "generated_at": "2026-03-01T19:23:57.619298",
+    "variation_seed": 11426
+  },
+  "services": [
+    {
+      "id": "enrichment-kinesis-000",
+      "name": "enrichment-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 519.36,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "validation-lambda-001",
+      "name": "validation-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 533.85,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "routing-s3-002",
+      "name": "routing-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 805.85,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "ingestion-glue-003",
+      "name": "ingestion-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 116.75,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "enrichment-kinesis-000",
+      "target": "validation-lambda-001",
+      "type": "writes",
+      "weight": 0.36
+    },
+    {
+      "source": "validation-lambda-001",
+      "target": "routing-s3-002",
+      "type": "reads",
+      "weight": 0.79
+    },
+    {
+      "source": "routing-s3-002",
+      "target": "ingestion-glue-003",
+      "type": "calls",
+      "weight": 0.53
+    },
+    {
+      "source": "enrichment-kinesis-000",
+      "target": "routing-s3-002",
+      "type": "subscribes",
+      "weight": 0.89
+    }
+  ]
+}

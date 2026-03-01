@@ -1,0 +1,175 @@
+{
+  "metadata": {
+    "name": "Adtech (Growth, eu-central-1)",
+    "id": "bc5f9250",
+    "pattern": "adtech",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 7,
+    "total_dependencies": 7,
+    "total_cost_monthly": 5215.82,
+    "generated_at": "2026-03-01T19:23:58.646554",
+    "variation_seed": 56648
+  },
+  "services": [
+    {
+      "id": "frequency-cap-alb-000",
+      "name": "frequency-cap-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 175.96,
+      "owner": "notifications",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ad-server-ec2-001",
+      "name": "ad-server-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1383.25,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audience-dynamodb-002",
+      "name": "audience-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 332.39,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "campaign-mgr-elasticache-003",
+      "name": "campaign-mgr-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 582.26,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ad-server-kinesis-004",
+      "name": "ad-server-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 109.64,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-ad-server-005",
+      "name": "central-ad-server",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 2512.88,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-targeting-006",
+      "name": "batch-targeting",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 119.44,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "frequency-cap-alb-000",
+      "target": "ad-server-ec2-001",
+      "type": "reads",
+      "weight": 0.34
+    },
+    {
+      "source": "ad-server-ec2-001",
+      "target": "audience-dynamodb-002",
+      "type": "reads",
+      "weight": 0.66
+    },
+    {
+      "source": "audience-dynamodb-002",
+      "target": "campaign-mgr-elasticache-003",
+      "type": "writes",
+      "weight": 0.31
+    },
+    {
+      "source": "campaign-mgr-elasticache-003",
+      "target": "ad-server-kinesis-004",
+      "type": "caches",
+      "weight": 0.36
+    },
+    {
+      "source": "ad-server-kinesis-004",
+      "target": "central-ad-server-005",
+      "type": "reads",
+      "weight": 0.49
+    },
+    {
+      "source": "central-ad-server-005",
+      "target": "batch-targeting-006",
+      "type": "queries",
+      "weight": 0.84
+    },
+    {
+      "source": "ad-server-kinesis-004",
+      "target": "frequency-cap-alb-000",
+      "type": "caches",
+      "weight": 0.81
+    }
+  ]
+}

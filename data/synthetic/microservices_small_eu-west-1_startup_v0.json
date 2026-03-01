@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Microservices (Startup, eu-west-1)",
+    "id": "885fc5a8",
+    "pattern": "microservices",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 1151.57,
+    "generated_at": "2026-03-01T19:23:57.705386",
+    "variation_seed": 15108
+  },
+  "services": [
+    {
+      "id": "user-svc-alb-000",
+      "name": "user-svc-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 147.67,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "audit-svc-ecs-001",
+      "name": "audit-svc-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 601.35,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "notification-svc-rds-002",
+      "name": "notification-svc-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 402.55,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "user-svc-alb-000",
+      "target": "audit-svc-ecs-001",
+      "type": "subscribes",
+      "weight": 0.45
+    },
+    {
+      "source": "audit-svc-ecs-001",
+      "target": "notification-svc-rds-002",
+      "type": "subscribes",
+      "weight": 0.59
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "name": "Media Streaming (Startup, us-west-2)",
+    "id": "c92e9b91",
+    "pattern": "media_streaming",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 5,
+    "total_dependencies": 5,
+    "total_cost_monthly": 2216.45,
+    "generated_at": "2026-03-01T19:23:57.961180",
+    "variation_seed": 26640
+  },
+  "services": [
+    {
+      "id": "thumbnail-cloudfront-000",
+      "name": "thumbnail-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 229.62,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "metadata-s3-001",
+      "name": "metadata-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 518.3,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "drm-mediaconvert-002",
+      "name": "drm-mediaconvert",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 249.83,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "encoder-ec2-003",
+      "name": "encoder-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 606.66,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "thumbnail-dynamodb-004",
+      "name": "thumbnail-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 612.04,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "thumbnail-cloudfront-000",
+      "target": "metadata-s3-001",
+      "type": "queries",
+      "weight": 0.92
+    },
+    {
+      "source": "metadata-s3-001",
+      "target": "drm-mediaconvert-002",
+      "type": "subscribes",
+      "weight": 0.34
+    },
+    {
+      "source": "drm-mediaconvert-002",
+      "target": "encoder-ec2-003",
+      "type": "triggers",
+      "weight": 0.51
+    },
+    {
+      "source": "encoder-ec2-003",
+      "target": "thumbnail-dynamodb-004",
+      "type": "subscribes",
+      "weight": 0.44
+    },
+    {
+      "source": "thumbnail-cloudfront-000",
+      "target": "encoder-ec2-003",
+      "type": "caches",
+      "weight": 0.71
+    }
+  ]
+}

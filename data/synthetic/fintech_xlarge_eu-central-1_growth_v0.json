@@ -1,0 +1,1229 @@
+{
+  "metadata": {
+    "name": "Fintech (Growth, eu-central-1)",
+    "id": "18a8eb93",
+    "pattern": "fintech",
+    "complexity": "xlarge",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 38,
+    "total_dependencies": 100,
+    "total_cost_monthly": 24497.78,
+    "generated_at": "2026-03-01T19:23:58.290323",
+    "variation_seed": 40838
+  },
+  "services": [
+    {
+      "id": "kyc-api-000",
+      "name": "kyc-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 261.24,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "transactions-eks-001",
+      "name": "transactions-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 1925.71,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "transactions-aurora-002",
+      "name": "transactions-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 1370.25,
+      "owner": "mobile-backend",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "risk-engine-elasticache-003",
+      "name": "risk-engine-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1147.55,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "transactions-dynamodb-004",
+      "name": "transactions-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 647.96,
+      "owner": "ml-ops",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-ledger-005",
+      "name": "backup-ledger",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 221.88,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-risk-engine-006",
+      "name": "internal-risk-engine",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 71.98,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-accounts-007",
+      "name": "secondary-accounts",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1643.48,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-transactions-008",
+      "name": "primary-transactions",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 43.67,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "fast-risk-engine-009",
+      "name": "fast-risk-engine",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 340.96,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-payments-010",
+      "name": "public-payments",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 109.44,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-settlements-011",
+      "name": "main-settlements",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 422.12,
+      "owner": "frontend-guild",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-ledger-012",
+      "name": "central-ledger",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1996.07,
+      "owner": "mobile-backend",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-transactions-013",
+      "name": "private-transactions",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 95.88,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "central-risk-engine-014",
+      "name": "central-risk-engine",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 99.93,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-settlements-015",
+      "name": "internal-settlements",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 415.33,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-risk-engine-016",
+      "name": "fast-risk-engine",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 80.54,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-treasury-017",
+      "name": "shared-treasury",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 63.31,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "global-compliance-018",
+      "name": "global-compliance",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 12.09,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-accounts-019",
+      "name": "core-accounts",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Memcached",
+      "cost_monthly": 1376.0,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-treasury-020",
+      "name": "fast-treasury",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 32.28,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-accounts-021",
+      "name": "staging-accounts",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 288.76,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-fraud-detection-022",
+      "name": "batch-fraud-detection",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1543.62,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "public-payments-023",
+      "name": "public-payments",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 84.89,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-risk-engine-024",
+      "name": "realtime-risk-engine",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 562.16,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-kyc-025",
+      "name": "cold-kyc",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 1863.51,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-kyc-026",
+      "name": "main-kyc",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 2015.22,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-compliance-027",
+      "name": "private-compliance",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 30.75,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-accounts-028",
+      "name": "async-accounts",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 2062.35,
+      "owner": "frontend-guild",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "realtime-settlements-029",
+      "name": "realtime-settlements",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 552.38,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-kyc-030",
+      "name": "internal-kyc",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 31.1,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-risk-engine-031",
+      "name": "shared-risk-engine",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 340.14,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "central-settlements-032",
+      "name": "central-settlements",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 47.64,
+      "owner": "data-eng",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-compliance-033",
+      "name": "cold-compliance",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 1034.4,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-ledger-034",
+      "name": "primary-ledger",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 544.18,
+      "owner": "security",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-treasury-035",
+      "name": "primary-treasury",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 450.19,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-compliance-036",
+      "name": "global-compliance",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 28.18,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-compliance-037",
+      "name": "internal-compliance",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 640.64,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "kyc-api-000",
+      "target": "transactions-eks-001",
+      "type": "calls",
+      "weight": 0.87
+    },
+    {
+      "source": "transactions-eks-001",
+      "target": "transactions-aurora-002",
+      "type": "subscribes",
+      "weight": 0.38
+    },
+    {
+      "source": "transactions-aurora-002",
+      "target": "risk-engine-elasticache-003",
+      "type": "writes",
+      "weight": 0.72
+    },
+    {
+      "source": "risk-engine-elasticache-003",
+      "target": "transactions-dynamodb-004",
+      "type": "calls",
+      "weight": 0.61
+    },
+    {
+      "source": "transactions-dynamodb-004",
+      "target": "backup-ledger-005",
+      "type": "writes",
+      "weight": 0.81
+    },
+    {
+      "source": "backup-ledger-005",
+      "target": "internal-risk-engine-006",
+      "type": "caches",
+      "weight": 0.98
+    },
+    {
+      "source": "internal-risk-engine-006",
+      "target": "secondary-accounts-007",
+      "type": "subscribes",
+      "weight": 0.48
+    },
+    {
+      "source": "secondary-accounts-007",
+      "target": "primary-transactions-008",
+      "type": "reads",
+      "weight": 0.51
+    },
+    {
+      "source": "primary-transactions-008",
+      "target": "fast-risk-engine-009",
+      "type": "triggers",
+      "weight": 0.92
+    },
+    {
+      "source": "fast-risk-engine-009",
+      "target": "public-payments-010",
+      "type": "reads",
+      "weight": 0.4
+    },
+    {
+      "source": "public-payments-010",
+      "target": "main-settlements-011",
+      "type": "writes",
+      "weight": 0.81
+    },
+    {
+      "source": "main-settlements-011",
+      "target": "central-ledger-012",
+      "type": "triggers",
+      "weight": 0.56
+    },
+    {
+      "source": "central-ledger-012",
+      "target": "private-transactions-013",
+      "type": "calls",
+      "weight": 0.44
+    },
+    {
+      "source": "private-transactions-013",
+      "target": "central-risk-engine-014",
+      "type": "queries",
+      "weight": 0.41
+    },
+    {
+      "source": "central-risk-engine-014",
+      "target": "internal-settlements-015",
+      "type": "calls",
+      "weight": 0.46
+    },
+    {
+      "source": "internal-settlements-015",
+      "target": "fast-risk-engine-016",
+      "type": "writes",
+      "weight": 0.79
+    },
+    {
+      "source": "fast-risk-engine-016",
+      "target": "shared-treasury-017",
+      "type": "writes",
+      "weight": 0.63
+    },
+    {
+      "source": "shared-treasury-017",
+      "target": "global-compliance-018",
+      "type": "calls",
+      "weight": 0.67
+    },
+    {
+      "source": "global-compliance-018",
+      "target": "core-accounts-019",
+      "type": "writes",
+      "weight": 0.89
+    },
+    {
+      "source": "core-accounts-019",
+      "target": "fast-treasury-020",
+      "type": "calls",
+      "weight": 0.82
+    },
+    {
+      "source": "fast-treasury-020",
+      "target": "staging-accounts-021",
+      "type": "reads",
+      "weight": 0.9
+    },
+    {
+      "source": "staging-accounts-021",
+      "target": "batch-fraud-detection-022",
+      "type": "subscribes",
+      "weight": 0.88
+    },
+    {
+      "source": "batch-fraud-detection-022",
+      "target": "public-payments-023",
+      "type": "writes",
+      "weight": 0.49
+    },
+    {
+      "source": "public-payments-023",
+      "target": "realtime-risk-engine-024",
+      "type": "queries",
+      "weight": 0.64
+    },
+    {
+      "source": "realtime-risk-engine-024",
+      "target": "cold-kyc-025",
+      "type": "triggers",
+      "weight": 0.49
+    },
+    {
+      "source": "cold-kyc-025",
+      "target": "main-kyc-026",
+      "type": "calls",
+      "weight": 0.83
+    },
+    {
+      "source": "main-kyc-026",
+      "target": "private-compliance-027",
+      "type": "caches",
+      "weight": 0.77
+    },
+    {
+      "source": "private-compliance-027",
+      "target": "async-accounts-028",
+      "type": "calls",
+      "weight": 0.87
+    },
+    {
+      "source": "async-accounts-028",
+      "target": "realtime-settlements-029",
+      "type": "caches",
+      "weight": 0.34
+    },
+    {
+      "source": "realtime-settlements-029",
+      "target": "internal-kyc-030",
+      "type": "calls",
+      "weight": 0.84
+    },
+    {
+      "source": "internal-kyc-030",
+      "target": "shared-risk-engine-031",
+      "type": "reads",
+      "weight": 0.89
+    },
+    {
+      "source": "shared-risk-engine-031",
+      "target": "central-settlements-032",
+      "type": "reads",
+      "weight": 0.91
+    },
+    {
+      "source": "central-settlements-032",
+      "target": "cold-compliance-033",
+      "type": "triggers",
+      "weight": 0.89
+    },
+    {
+      "source": "cold-compliance-033",
+      "target": "primary-ledger-034",
+      "type": "caches",
+      "weight": 0.59
+    },
+    {
+      "source": "primary-ledger-034",
+      "target": "primary-treasury-035",
+      "type": "calls",
+      "weight": 0.77
+    },
+    {
+      "source": "primary-treasury-035",
+      "target": "global-compliance-036",
+      "type": "subscribes",
+      "weight": 0.34
+    },
+    {
+      "source": "global-compliance-036",
+      "target": "internal-compliance-037",
+      "type": "reads",
+      "weight": 1.0
+    },
+    {
+      "source": "internal-compliance-037",
+      "target": "risk-engine-elasticache-003",
+      "type": "caches",
+      "weight": 0.81
+    },
+    {
+      "source": "public-payments-023",
+      "target": "cold-compliance-033",
+      "type": "queries",
+      "weight": 0.39
+    },
+    {
+      "source": "primary-ledger-034",
+      "target": "central-settlements-032",
+      "type": "reads",
+      "weight": 0.83
+    },
+    {
+      "source": "shared-treasury-017",
+      "target": "public-payments-023",
+      "type": "caches",
+      "weight": 0.19
+    },
+    {
+      "source": "public-payments-023",
+      "target": "backup-ledger-005",
+      "type": "queries",
+      "weight": 0.13
+    },
+    {
+      "source": "secondary-accounts-007",
+      "target": "global-compliance-036",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "public-payments-010",
+      "target": "global-compliance-018",
+      "type": "queries",
+      "weight": 0.78
+    },
+    {
+      "source": "core-accounts-019",
+      "target": "transactions-dynamodb-004",
+      "type": "writes",
+      "weight": 0.52
+    },
+    {
+      "source": "risk-engine-elasticache-003",
+      "target": "public-payments-010",
+      "type": "subscribes",
+      "weight": 0.86
+    },
+    {
+      "source": "secondary-accounts-007",
+      "target": "backup-ledger-005",
+      "type": "caches",
+      "weight": 0.25
+    },
+    {
+      "source": "internal-kyc-030",
+      "target": "fast-treasury-020",
+      "type": "reads",
+      "weight": 0.2
+    },
+    {
+      "source": "core-accounts-019",
+      "target": "central-risk-engine-014",
+      "type": "subscribes",
+      "weight": 0.26
+    },
+    {
+      "source": "core-accounts-019",
+      "target": "fast-risk-engine-009",
+      "type": "writes",
+      "weight": 0.85
+    },
+    {
+      "source": "batch-fraud-detection-022",
+      "target": "global-compliance-018",
+      "type": "queries",
+      "weight": 0.94
+    },
+    {
+      "source": "private-transactions-013",
+      "target": "central-settlements-032",
+      "type": "queries",
+      "weight": 0.12
+    },
+    {
+      "source": "transactions-dynamodb-004",
+      "target": "main-settlements-011",
+      "type": "caches",
+      "weight": 0.88
+    },
+    {
+      "source": "transactions-aurora-002",
+      "target": "kyc-api-000",
+      "type": "writes",
+      "weight": 0.62
+    },
+    {
+      "source": "cold-kyc-025",
+      "target": "staging-accounts-021",
+      "type": "caches",
+      "weight": 0.49
+    },
+    {
+      "source": "shared-treasury-017",
+      "target": "internal-compliance-037",
+      "type": "reads",
+      "weight": 0.87
+    },
+    {
+      "source": "global-compliance-018",
+      "target": "secondary-accounts-007",
+      "type": "calls",
+      "weight": 0.98
+    },
+    {
+      "source": "internal-risk-engine-006",
+      "target": "internal-settlements-015",
+      "type": "calls",
+      "weight": 0.99
+    },
+    {
+      "source": "private-compliance-027",
+      "target": "public-payments-010",
+      "type": "reads",
+      "weight": 0.75
+    },
+    {
+      "source": "staging-accounts-021",
+      "target": "core-accounts-019",
+      "type": "reads",
+      "weight": 0.43
+    },
+    {
+      "source": "secondary-accounts-007",
+      "target": "transactions-eks-001",
+      "type": "caches",
+      "weight": 0.17
+    },
+    {
+      "source": "internal-kyc-030",
+      "target": "cold-compliance-033",
+      "type": "reads",
+      "weight": 0.37
+    },
+    {
+      "source": "transactions-aurora-002",
+      "target": "primary-transactions-008",
+      "type": "queries",
+      "weight": 0.97
+    },
+    {
+      "source": "main-kyc-026",
+      "target": "internal-compliance-037",
+      "type": "subscribes",
+      "weight": 0.13
+    },
+    {
+      "source": "fast-risk-engine-016",
+      "target": "main-settlements-011",
+      "type": "calls",
+      "weight": 0.81
+    },
+    {
+      "source": "fast-risk-engine-016",
+      "target": "internal-risk-engine-006",
+      "type": "triggers",
+      "weight": 0.72
+    },
+    {
+      "source": "realtime-settlements-029",
+      "target": "main-kyc-026",
+      "type": "caches",
+      "weight": 0.44
+    },
+    {
+      "source": "shared-treasury-017",
+      "target": "main-kyc-026",
+      "type": "queries",
+      "weight": 0.48
+    },
+    {
+      "source": "fast-treasury-020",
+      "target": "private-compliance-027",
+      "type": "writes",
+      "weight": 0.32
+    },
+    {
+      "source": "central-settlements-032",
+      "target": "transactions-dynamodb-004",
+      "type": "triggers",
+      "weight": 0.7
+    },
+    {
+      "source": "transactions-dynamodb-004",
+      "target": "cold-kyc-025",
+      "type": "triggers",
+      "weight": 0.88
+    },
+    {
+      "source": "internal-kyc-030",
+      "target": "public-payments-023",
+      "type": "writes",
+      "weight": 0.95
+    },
+    {
+      "source": "transactions-eks-001",
+      "target": "shared-risk-engine-031",
+      "type": "writes",
+      "weight": 0.38
+    },
+    {
+      "source": "central-settlements-032",
+      "target": "public-payments-023",
+      "type": "queries",
+      "weight": 0.51
+    },
+    {
+      "source": "kyc-api-000",
+      "target": "risk-engine-elasticache-003",
+      "type": "triggers",
+      "weight": 0.34
+    },
+    {
+      "source": "secondary-accounts-007",
+      "target": "async-accounts-028",
+      "type": "calls",
+      "weight": 0.98
+    },
+    {
+      "source": "fast-risk-engine-016",
+      "target": "main-kyc-026",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "public-payments-010",
+      "target": "realtime-risk-engine-024",
+      "type": "reads",
+      "weight": 0.74
+    },
+    {
+      "source": "batch-fraud-detection-022",
+      "target": "shared-risk-engine-031",
+      "type": "caches",
+      "weight": 0.6
+    },
+    {
+      "source": "backup-ledger-005",
+      "target": "fast-treasury-020",
+      "type": "caches",
+      "weight": 0.58
+    },
+    {
+      "source": "staging-accounts-021",
+      "target": "fast-risk-engine-009",
+      "type": "writes",
+      "weight": 0.52
+    },
+    {
+      "source": "fast-treasury-020",
+      "target": "fast-risk-engine-016",
+      "type": "triggers",
+      "weight": 0.94
+    },
+    {
+      "source": "global-compliance-018",
+      "target": "cold-kyc-025",
+      "type": "subscribes",
+      "weight": 0.74
+    },
+    {
+      "source": "transactions-dynamodb-004",
+      "target": "realtime-settlements-029",
+      "type": "writes",
+      "weight": 0.63
+    },
+    {
+      "source": "global-compliance-036",
+      "target": "fast-risk-engine-016",
+      "type": "subscribes",
+      "weight": 0.69
+    },
+    {
+      "source": "primary-treasury-035",
+      "target": "core-accounts-019",
+      "type": "queries",
+      "weight": 0.21
+    },
+    {
+      "source": "global-compliance-018",
+      "target": "fast-risk-engine-009",
+      "type": "triggers",
+      "weight": 0.22
+    },
+    {
+      "source": "internal-settlements-015",
+      "target": "main-settlements-011",
+      "type": "calls",
+      "weight": 0.25
+    },
+    {
+      "source": "internal-kyc-030",
+      "target": "core-accounts-019",
+      "type": "reads",
+      "weight": 0.14
+    },
+    {
+      "source": "public-payments-010",
+      "target": "fast-risk-engine-016",
+      "type": "reads",
+      "weight": 0.77
+    },
+    {
+      "source": "shared-risk-engine-031",
+      "target": "transactions-dynamodb-004",
+      "type": "queries",
+      "weight": 0.57
+    },
+    {
+      "source": "shared-risk-engine-031",
+      "target": "transactions-aurora-002",
+      "type": "reads",
+      "weight": 0.11
+    },
+    {
+      "source": "global-compliance-018",
+      "target": "main-settlements-011",
+      "type": "subscribes",
+      "weight": 0.46
+    },
+    {
+      "source": "cold-kyc-025",
+      "target": "primary-ledger-034",
+      "type": "writes",
+      "weight": 1.0
+    },
+    {
+      "source": "primary-treasury-035",
+      "target": "realtime-settlements-029",
+      "type": "queries",
+      "weight": 0.61
+    },
+    {
+      "source": "transactions-eks-001",
+      "target": "central-settlements-032",
+      "type": "calls",
+      "weight": 0.44
+    },
+    {
+      "source": "global-compliance-018",
+      "target": "shared-treasury-017",
+      "type": "caches",
+      "weight": 0.73
+    },
+    {
+      "source": "fast-treasury-020",
+      "target": "central-risk-engine-014",
+      "type": "writes",
+      "weight": 0.49
+    },
+    {
+      "source": "shared-risk-engine-031",
+      "target": "transactions-eks-001",
+      "type": "subscribes",
+      "weight": 0.57
+    },
+    {
+      "source": "public-payments-010",
+      "target": "internal-kyc-030",
+      "type": "reads",
+      "weight": 0.34
+    }
+  ]
+}

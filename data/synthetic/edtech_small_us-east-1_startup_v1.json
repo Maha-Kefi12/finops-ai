@@ -1,0 +1,169 @@
+{
+  "metadata": {
+    "name": "Edtech (Startup, us-east-1)",
+    "id": "ddaa1662",
+    "pattern": "edtech",
+    "complexity": "small",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 7,
+    "total_dependencies": 6,
+    "total_cost_monthly": 1330.3,
+    "generated_at": "2026-03-01T19:23:58.382594",
+    "variation_seed": 44720
+  },
+  "services": [
+    {
+      "id": "proctoring-cloudfront-000",
+      "name": "proctoring-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 238.58,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "video-lessons-ec2-001",
+      "name": "video-lessons-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 223.44,
+      "owner": "growth-eng",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "assessments-rds-002",
+      "name": "assessments-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 256.8,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "progress-s3-003",
+      "name": "progress-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 237.72,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "gradebook-elasticache-004",
+      "name": "gradebook-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 155.12,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "async-assessments-005",
+      "name": "async-assessments",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 9.0,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-gradebook-006",
+      "name": "cold-gradebook",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 209.64,
+      "owner": "notifications",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "proctoring-cloudfront-000",
+      "target": "video-lessons-ec2-001",
+      "type": "caches",
+      "weight": 0.55
+    },
+    {
+      "source": "video-lessons-ec2-001",
+      "target": "assessments-rds-002",
+      "type": "queries",
+      "weight": 0.32
+    },
+    {
+      "source": "assessments-rds-002",
+      "target": "progress-s3-003",
+      "type": "reads",
+      "weight": 0.37
+    },
+    {
+      "source": "progress-s3-003",
+      "target": "gradebook-elasticache-004",
+      "type": "subscribes",
+      "weight": 0.72
+    },
+    {
+      "source": "gradebook-elasticache-004",
+      "target": "async-assessments-005",
+      "type": "triggers",
+      "weight": 0.95
+    },
+    {
+      "source": "async-assessments-005",
+      "target": "cold-gradebook-006",
+      "type": "triggers",
+      "weight": 0.87
+    }
+  ]
+}

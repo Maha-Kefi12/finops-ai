@@ -1,0 +1,259 @@
+{
+  "metadata": {
+    "name": "Media Streaming (Startup, ap-southeast-1)",
+    "id": "3a0e60b2",
+    "pattern": "media_streaming",
+    "complexity": "medium",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 10,
+    "total_dependencies": 13,
+    "total_cost_monthly": 5294.46,
+    "generated_at": "2026-03-01T19:23:57.969195",
+    "variation_seed": 27422
+  },
+  "services": [
+    {
+      "id": "player-cloudfront-000",
+      "name": "player-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 917.95,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "player-s3-001",
+      "name": "player-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 945.84,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "player-mediaconvert-002",
+      "name": "player-mediaconvert",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 560.07,
+      "owner": "content-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "encoder-ec2-003",
+      "name": "encoder-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 802.35,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "thumbnail-dynamodb-004",
+      "name": "thumbnail-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 400.16,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-analytics-005",
+      "name": "private-analytics",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 181.22,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "fast-analytics-006",
+      "name": "fast-analytics",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 66.79,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-thumbnail-007",
+      "name": "internal-thumbnail",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 87.89,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-metadata-008",
+      "name": "private-metadata",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 491.43,
+      "owner": "security",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "fast-metadata-009",
+      "name": "fast-metadata",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 840.76,
+      "owner": "security",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "player-cloudfront-000",
+      "target": "player-s3-001",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "player-s3-001",
+      "target": "player-mediaconvert-002",
+      "type": "writes",
+      "weight": 0.75
+    },
+    {
+      "source": "player-mediaconvert-002",
+      "target": "encoder-ec2-003",
+      "type": "writes",
+      "weight": 0.38
+    },
+    {
+      "source": "encoder-ec2-003",
+      "target": "thumbnail-dynamodb-004",
+      "type": "caches",
+      "weight": 0.77
+    },
+    {
+      "source": "thumbnail-dynamodb-004",
+      "target": "private-analytics-005",
+      "type": "subscribes",
+      "weight": 0.96
+    },
+    {
+      "source": "private-analytics-005",
+      "target": "fast-analytics-006",
+      "type": "triggers",
+      "weight": 0.93
+    },
+    {
+      "source": "fast-analytics-006",
+      "target": "internal-thumbnail-007",
+      "type": "caches",
+      "weight": 0.64
+    },
+    {
+      "source": "internal-thumbnail-007",
+      "target": "private-metadata-008",
+      "type": "caches",
+      "weight": 0.99
+    },
+    {
+      "source": "private-metadata-008",
+      "target": "fast-metadata-009",
+      "type": "queries",
+      "weight": 0.66
+    },
+    {
+      "source": "thumbnail-dynamodb-004",
+      "target": "encoder-ec2-003",
+      "type": "queries",
+      "weight": 0.83
+    },
+    {
+      "source": "player-cloudfront-000",
+      "target": "encoder-ec2-003",
+      "type": "caches",
+      "weight": 0.7
+    },
+    {
+      "source": "player-s3-001",
+      "target": "private-metadata-008",
+      "type": "calls",
+      "weight": 0.92
+    },
+    {
+      "source": "player-cloudfront-000",
+      "target": "private-analytics-005",
+      "type": "triggers",
+      "weight": 0.55
+    }
+  ]
+}

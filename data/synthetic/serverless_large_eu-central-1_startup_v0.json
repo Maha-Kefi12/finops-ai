@@ -1,0 +1,765 @@
+{
+  "metadata": {
+    "name": "Serverless (Startup, eu-central-1)",
+    "id": "27863c34",
+    "pattern": "serverless",
+    "complexity": "large",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 27,
+    "total_dependencies": 52,
+    "total_cost_monthly": 4167.28,
+    "generated_at": "2026-03-01T19:23:57.829790",
+    "variation_seed": 21246
+  },
+  "services": [
+    {
+      "id": "authorizer-api-000",
+      "name": "authorizer-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 110.36,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "processor-lambda-001",
+      "name": "processor-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 246.87,
+      "owner": "growth-eng",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "transformer-dynamodb-002",
+      "name": "transformer-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 108.26,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "router-s3-003",
+      "name": "router-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 286.68,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "validator-cloudfront-004",
+      "name": "validator-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 309.1,
+      "owner": "growth-eng",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "secondary-handler-005",
+      "name": "secondary-handler",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 197.89,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "global-handler-006",
+      "name": "global-handler",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 238.53,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-scheduler-007",
+      "name": "secondary-scheduler",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 22.79,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-aggregator-008",
+      "name": "public-aggregator",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 75.52,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-router-009",
+      "name": "hot-router",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 34.61,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-router-010",
+      "name": "public-router",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 80.35,
+      "owner": "frontend-guild",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-aggregator-011",
+      "name": "batch-aggregator",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 31.17,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-transformer-012",
+      "name": "secondary-transformer",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 36.42,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-aggregator-013",
+      "name": "staging-aggregator",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 57.97,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-transformer-014",
+      "name": "backup-transformer",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 320.04,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "staging-validator-015",
+      "name": "staging-validator",
+      "type": "storage",
+      "aws_service": "Amazon EFS",
+      "cost_monthly": 290.75,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-processor-016",
+      "name": "batch-processor",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 323.82,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-scheduler-017",
+      "name": "realtime-scheduler",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 129.42,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-router-018",
+      "name": "public-router",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 273.37,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cold-authorizer-019",
+      "name": "cold-authorizer",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 123.81,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-notifier-020",
+      "name": "batch-notifier",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 21.36,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "regional-processor-021",
+      "name": "regional-processor",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 166.58,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-processor-022",
+      "name": "fast-processor",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 54.32,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-router-023",
+      "name": "global-router",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 103.16,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-processor-024",
+      "name": "core-processor",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 210.62,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "fast-scheduler-025",
+      "name": "fast-scheduler",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 277.46,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-validator-026",
+      "name": "hot-validator",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 36.05,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "authorizer-api-000",
+      "target": "processor-lambda-001",
+      "type": "triggers",
+      "weight": 0.5
+    },
+    {
+      "source": "processor-lambda-001",
+      "target": "transformer-dynamodb-002",
+      "type": "subscribes",
+      "weight": 0.75
+    },
+    {
+      "source": "transformer-dynamodb-002",
+      "target": "router-s3-003",
+      "type": "subscribes",
+      "weight": 0.46
+    },
+    {
+      "source": "router-s3-003",
+      "target": "validator-cloudfront-004",
+      "type": "caches",
+      "weight": 0.35
+    },
+    {
+      "source": "validator-cloudfront-004",
+      "target": "secondary-handler-005",
+      "type": "caches",
+      "weight": 0.94
+    },
+    {
+      "source": "secondary-handler-005",
+      "target": "global-handler-006",
+      "type": "subscribes",
+      "weight": 0.6
+    },
+    {
+      "source": "global-handler-006",
+      "target": "secondary-scheduler-007",
+      "type": "subscribes",
+      "weight": 0.57
+    },
+    {
+      "source": "secondary-scheduler-007",
+      "target": "public-aggregator-008",
+      "type": "writes",
+      "weight": 0.73
+    },
+    {
+      "source": "public-aggregator-008",
+      "target": "hot-router-009",
+      "type": "calls",
+      "weight": 0.83
+    },
+    {
+      "source": "hot-router-009",
+      "target": "public-router-010",
+      "type": "triggers",
+      "weight": 0.94
+    },
+    {
+      "source": "public-router-010",
+      "target": "batch-aggregator-011",
+      "type": "caches",
+      "weight": 0.89
+    },
+    {
+      "source": "batch-aggregator-011",
+      "target": "secondary-transformer-012",
+      "type": "calls",
+      "weight": 0.75
+    },
+    {
+      "source": "secondary-transformer-012",
+      "target": "staging-aggregator-013",
+      "type": "calls",
+      "weight": 0.88
+    },
+    {
+      "source": "staging-aggregator-013",
+      "target": "backup-transformer-014",
+      "type": "queries",
+      "weight": 0.84
+    },
+    {
+      "source": "backup-transformer-014",
+      "target": "staging-validator-015",
+      "type": "triggers",
+      "weight": 0.92
+    },
+    {
+      "source": "staging-validator-015",
+      "target": "batch-processor-016",
+      "type": "reads",
+      "weight": 0.52
+    },
+    {
+      "source": "batch-processor-016",
+      "target": "realtime-scheduler-017",
+      "type": "calls",
+      "weight": 0.7
+    },
+    {
+      "source": "realtime-scheduler-017",
+      "target": "public-router-018",
+      "type": "calls",
+      "weight": 0.42
+    },
+    {
+      "source": "public-router-018",
+      "target": "cold-authorizer-019",
+      "type": "caches",
+      "weight": 1.0
+    },
+    {
+      "source": "cold-authorizer-019",
+      "target": "batch-notifier-020",
+      "type": "triggers",
+      "weight": 0.46
+    },
+    {
+      "source": "batch-notifier-020",
+      "target": "regional-processor-021",
+      "type": "queries",
+      "weight": 0.33
+    },
+    {
+      "source": "regional-processor-021",
+      "target": "fast-processor-022",
+      "type": "calls",
+      "weight": 0.79
+    },
+    {
+      "source": "fast-processor-022",
+      "target": "global-router-023",
+      "type": "calls",
+      "weight": 0.76
+    },
+    {
+      "source": "global-router-023",
+      "target": "core-processor-024",
+      "type": "calls",
+      "weight": 0.83
+    },
+    {
+      "source": "core-processor-024",
+      "target": "fast-scheduler-025",
+      "type": "queries",
+      "weight": 0.6
+    },
+    {
+      "source": "fast-scheduler-025",
+      "target": "hot-validator-026",
+      "type": "calls",
+      "weight": 0.84
+    },
+    {
+      "source": "router-s3-003",
+      "target": "public-aggregator-008",
+      "type": "reads",
+      "weight": 0.42
+    },
+    {
+      "source": "core-processor-024",
+      "target": "transformer-dynamodb-002",
+      "type": "queries",
+      "weight": 0.45
+    },
+    {
+      "source": "public-router-010",
+      "target": "realtime-scheduler-017",
+      "type": "queries",
+      "weight": 0.99
+    },
+    {
+      "source": "secondary-transformer-012",
+      "target": "core-processor-024",
+      "type": "calls",
+      "weight": 0.25
+    },
+    {
+      "source": "public-router-018",
+      "target": "batch-processor-016",
+      "type": "queries",
+      "weight": 0.3
+    },
+    {
+      "source": "batch-aggregator-011",
+      "target": "hot-router-009",
+      "type": "caches",
+      "weight": 0.61
+    },
+    {
+      "source": "fast-scheduler-025",
+      "target": "validator-cloudfront-004",
+      "type": "writes",
+      "weight": 0.52
+    },
+    {
+      "source": "secondary-scheduler-007",
+      "target": "global-router-023",
+      "type": "writes",
+      "weight": 0.59
+    },
+    {
+      "source": "secondary-handler-005",
+      "target": "global-router-023",
+      "type": "calls",
+      "weight": 0.39
+    },
+    {
+      "source": "processor-lambda-001",
+      "target": "secondary-transformer-012",
+      "type": "queries",
+      "weight": 0.25
+    },
+    {
+      "source": "batch-notifier-020",
+      "target": "public-aggregator-008",
+      "type": "queries",
+      "weight": 0.75
+    },
+    {
+      "source": "global-router-023",
+      "target": "realtime-scheduler-017",
+      "type": "writes",
+      "weight": 0.22
+    },
+    {
+      "source": "validator-cloudfront-004",
+      "target": "public-router-018",
+      "type": "queries",
+      "weight": 0.68
+    },
+    {
+      "source": "validator-cloudfront-004",
+      "target": "batch-notifier-020",
+      "type": "reads",
+      "weight": 0.54
+    },
+    {
+      "source": "hot-router-009",
+      "target": "batch-processor-016",
+      "type": "writes",
+      "weight": 0.15
+    },
+    {
+      "source": "regional-processor-021",
+      "target": "global-handler-006",
+      "type": "caches",
+      "weight": 0.41
+    },
+    {
+      "source": "public-router-010",
+      "target": "router-s3-003",
+      "type": "caches",
+      "weight": 0.3
+    },
+    {
+      "source": "cold-authorizer-019",
+      "target": "public-router-010",
+      "type": "writes",
+      "weight": 0.48
+    },
+    {
+      "source": "backup-transformer-014",
+      "target": "public-router-010",
+      "type": "reads",
+      "weight": 0.74
+    },
+    {
+      "source": "fast-scheduler-025",
+      "target": "batch-processor-016",
+      "type": "triggers",
+      "weight": 0.82
+    },
+    {
+      "source": "realtime-scheduler-017",
+      "target": "global-handler-006",
+      "type": "triggers",
+      "weight": 0.45
+    },
+    {
+      "source": "staging-aggregator-013",
+      "target": "fast-scheduler-025",
+      "type": "calls",
+      "weight": 0.86
+    },
+    {
+      "source": "validator-cloudfront-004",
+      "target": "staging-aggregator-013",
+      "type": "caches",
+      "weight": 0.12
+    },
+    {
+      "source": "realtime-scheduler-017",
+      "target": "validator-cloudfront-004",
+      "type": "calls",
+      "weight": 0.94
+    },
+    {
+      "source": "validator-cloudfront-004",
+      "target": "core-processor-024",
+      "type": "queries",
+      "weight": 0.49
+    },
+    {
+      "source": "processor-lambda-001",
+      "target": "secondary-scheduler-007",
+      "type": "subscribes",
+      "weight": 0.88
+    }
+  ]
+}

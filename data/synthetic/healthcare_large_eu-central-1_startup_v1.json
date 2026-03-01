@@ -1,0 +1,511 @@
+{
+  "metadata": {
+    "name": "Healthcare (Startup, eu-central-1)",
+    "id": "38471e81",
+    "pattern": "healthcare",
+    "complexity": "large",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 19,
+    "total_dependencies": 31,
+    "total_cost_monthly": 3497.45,
+    "generated_at": "2026-03-01T19:23:58.333347",
+    "variation_seed": 43604
+  },
+  "services": [
+    {
+      "id": "scheduling-alb-000",
+      "name": "scheduling-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 88.06,
+      "owner": "frontend-guild",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ehr-ecs-001",
+      "name": "ehr-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 351.37,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "patient-portal-aurora-002",
+      "name": "patient-portal-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 432.61,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "vitals-s3-003",
+      "name": "vitals-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 161.75,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "vitals-cognito-004",
+      "name": "vitals-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 173.91,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-prescriptions-005",
+      "name": "main-prescriptions",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 201.96,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-consent-006",
+      "name": "primary-consent",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 17.7,
+      "owner": "devops",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-vitals-007",
+      "name": "edge-vitals",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 206.09,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-scheduling-008",
+      "name": "secondary-scheduling",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 170.27,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-consent-009",
+      "name": "secondary-consent",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 87.42,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "private-imaging-010",
+      "name": "private-imaging",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 40.36,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-ehr-011",
+      "name": "async-ehr",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 156.52,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "primary-claims-012",
+      "name": "primary-claims",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 25.77,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-imaging-013",
+      "name": "private-imaging",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 182.13,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-imaging-014",
+      "name": "cold-imaging",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 140.42,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-claims-015",
+      "name": "global-claims",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 115.81,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-labs-016",
+      "name": "private-labs",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 286.07,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-patient-portal-017",
+      "name": "staging-patient-portal",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 293.03,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "staging-consent-018",
+      "name": "staging-consent",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 366.2,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "scheduling-alb-000",
+      "target": "ehr-ecs-001",
+      "type": "triggers",
+      "weight": 0.51
+    },
+    {
+      "source": "ehr-ecs-001",
+      "target": "patient-portal-aurora-002",
+      "type": "caches",
+      "weight": 0.89
+    },
+    {
+      "source": "patient-portal-aurora-002",
+      "target": "vitals-s3-003",
+      "type": "reads",
+      "weight": 0.38
+    },
+    {
+      "source": "vitals-s3-003",
+      "target": "vitals-cognito-004",
+      "type": "queries",
+      "weight": 0.89
+    },
+    {
+      "source": "vitals-cognito-004",
+      "target": "main-prescriptions-005",
+      "type": "queries",
+      "weight": 0.44
+    },
+    {
+      "source": "main-prescriptions-005",
+      "target": "primary-consent-006",
+      "type": "triggers",
+      "weight": 0.79
+    },
+    {
+      "source": "primary-consent-006",
+      "target": "edge-vitals-007",
+      "type": "caches",
+      "weight": 0.69
+    },
+    {
+      "source": "edge-vitals-007",
+      "target": "secondary-scheduling-008",
+      "type": "triggers",
+      "weight": 0.31
+    },
+    {
+      "source": "secondary-scheduling-008",
+      "target": "secondary-consent-009",
+      "type": "writes",
+      "weight": 0.54
+    },
+    {
+      "source": "secondary-consent-009",
+      "target": "private-imaging-010",
+      "type": "queries",
+      "weight": 0.63
+    },
+    {
+      "source": "private-imaging-010",
+      "target": "async-ehr-011",
+      "type": "reads",
+      "weight": 0.41
+    },
+    {
+      "source": "async-ehr-011",
+      "target": "primary-claims-012",
+      "type": "caches",
+      "weight": 0.47
+    },
+    {
+      "source": "primary-claims-012",
+      "target": "private-imaging-013",
+      "type": "subscribes",
+      "weight": 0.6
+    },
+    {
+      "source": "private-imaging-013",
+      "target": "cold-imaging-014",
+      "type": "reads",
+      "weight": 0.76
+    },
+    {
+      "source": "cold-imaging-014",
+      "target": "global-claims-015",
+      "type": "caches",
+      "weight": 0.33
+    },
+    {
+      "source": "global-claims-015",
+      "target": "private-labs-016",
+      "type": "calls",
+      "weight": 0.44
+    },
+    {
+      "source": "private-labs-016",
+      "target": "staging-patient-portal-017",
+      "type": "writes",
+      "weight": 0.78
+    },
+    {
+      "source": "staging-patient-portal-017",
+      "target": "staging-consent-018",
+      "type": "subscribes",
+      "weight": 0.71
+    },
+    {
+      "source": "private-labs-016",
+      "target": "vitals-s3-003",
+      "type": "queries",
+      "weight": 0.15
+    },
+    {
+      "source": "edge-vitals-007",
+      "target": "primary-consent-006",
+      "type": "reads",
+      "weight": 0.86
+    },
+    {
+      "source": "vitals-cognito-004",
+      "target": "primary-claims-012",
+      "type": "subscribes",
+      "weight": 0.18
+    },
+    {
+      "source": "private-labs-016",
+      "target": "vitals-cognito-004",
+      "type": "caches",
+      "weight": 0.16
+    },
+    {
+      "source": "private-imaging-010",
+      "target": "private-imaging-013",
+      "type": "calls",
+      "weight": 0.88
+    },
+    {
+      "source": "vitals-cognito-004",
+      "target": "private-imaging-010",
+      "type": "queries",
+      "weight": 0.1
+    },
+    {
+      "source": "private-labs-016",
+      "target": "private-imaging-013",
+      "type": "calls",
+      "weight": 0.68
+    },
+    {
+      "source": "secondary-scheduling-008",
+      "target": "global-claims-015",
+      "type": "triggers",
+      "weight": 0.3
+    },
+    {
+      "source": "primary-claims-012",
+      "target": "edge-vitals-007",
+      "type": "reads",
+      "weight": 0.92
+    },
+    {
+      "source": "main-prescriptions-005",
+      "target": "scheduling-alb-000",
+      "type": "writes",
+      "weight": 0.68
+    },
+    {
+      "source": "ehr-ecs-001",
+      "target": "vitals-cognito-004",
+      "type": "writes",
+      "weight": 0.24
+    },
+    {
+      "source": "private-imaging-013",
+      "target": "global-claims-015",
+      "type": "reads",
+      "weight": 0.32
+    },
+    {
+      "source": "vitals-cognito-004",
+      "target": "global-claims-015",
+      "type": "writes",
+      "weight": 0.29
+    }
+  ]
+}

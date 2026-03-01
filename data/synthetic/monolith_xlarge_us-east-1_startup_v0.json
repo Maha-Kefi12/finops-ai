@@ -1,0 +1,1571 @@
+{
+  "metadata": {
+    "name": "Monolith (Startup, us-east-1)",
+    "id": "06c938c3",
+    "pattern": "monolith",
+    "complexity": "xlarge",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 47,
+    "total_dependencies": 133,
+    "total_cost_monthly": 3936.16,
+    "generated_at": "2026-03-01T19:23:58.168165",
+    "variation_seed": 36312
+  },
+  "services": [
+    {
+      "id": "sessions-alb-000",
+      "name": "sessions-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 68.35,
+      "owner": "data-eng",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "file-store-ec2-001",
+      "name": "file-store-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 163.98,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "admin-rds-002",
+      "name": "admin-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 173.48,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "admin-s3-003",
+      "name": "admin-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 20.95,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "sessions-cloudfront-004",
+      "name": "sessions-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 58.18,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-audit-005",
+      "name": "public-audit",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 97.78,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cold-audit-006",
+      "name": "cold-audit",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 27.7,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-mailer-007",
+      "name": "batch-mailer",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 44.0,
+      "owner": "notifications",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-web-tier-008",
+      "name": "internal-web-tier",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 85.25,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-app-server-009",
+      "name": "private-app-server",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 58.89,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-mailer-010",
+      "name": "global-mailer",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 64.79,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-sessions-011",
+      "name": "global-sessions",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 53.57,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-admin-012",
+      "name": "regional-admin",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 99.05,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-web-tier-013",
+      "name": "cold-web-tier",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 82.4,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-sessions-014",
+      "name": "realtime-sessions",
+      "type": "storage",
+      "aws_service": "Amazon EFS",
+      "cost_monthly": 54.15,
+      "owner": "growth-eng",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-admin-015",
+      "name": "public-admin",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 93.95,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-file-store-016",
+      "name": "backup-file-store",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 78.36,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-scheduler-017",
+      "name": "staging-scheduler",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 64.95,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-app-server-018",
+      "name": "edge-app-server",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 42.43,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "regional-sessions-019",
+      "name": "regional-sessions",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 86.55,
+      "owner": "frontend-guild",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-file-store-020",
+      "name": "staging-file-store",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 201.15,
+      "owner": "api-gateway-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-audit-021",
+      "name": "edge-audit",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 67.88,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-sessions-022",
+      "name": "staging-sessions",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 72.29,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-web-tier-023",
+      "name": "central-web-tier",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 52.34,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-sessions-024",
+      "name": "batch-sessions",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 195.02,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-app-server-025",
+      "name": "cold-app-server",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 131.67,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-reports-026",
+      "name": "batch-reports",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 57.42,
+      "owner": "identity-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "central-file-store-027",
+      "name": "central-file-store",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 154.15,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "secondary-app-server-028",
+      "name": "secondary-app-server",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 126.44,
+      "owner": "ml-ops",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-sessions-029",
+      "name": "backup-sessions",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 139.81,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-admin-030",
+      "name": "public-admin",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 27.74,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-reports-031",
+      "name": "edge-reports",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 72.6,
+      "owner": "security",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cold-batch-jobs-032",
+      "name": "cold-batch-jobs",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 195.01,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "regional-sessions-033",
+      "name": "regional-sessions",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 74.32,
+      "owner": "platform-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-file-store-034",
+      "name": "main-file-store",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 84.3,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-app-server-035",
+      "name": "batch-app-server",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 47.0,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-scheduler-036",
+      "name": "fast-scheduler",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 59.8,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-scheduler-037",
+      "name": "fast-scheduler",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 9.86,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-sessions-038",
+      "name": "fast-sessions",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 131.75,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-audit-039",
+      "name": "core-audit",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 69.29,
+      "owner": "frontend-guild",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "public-app-server-040",
+      "name": "public-app-server",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 50.56,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "backup-batch-jobs-041",
+      "name": "backup-batch-jobs",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 166.03,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-app-server-042",
+      "name": "core-app-server",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 32.93,
+      "owner": "security",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-batch-jobs-043",
+      "name": "main-batch-jobs",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 24.27,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-scheduler-044",
+      "name": "backup-scheduler",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 77.28,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "fast-web-tier-045",
+      "name": "fast-web-tier",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 32.2,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-file-store-046",
+      "name": "regional-file-store",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 64.29,
+      "owner": "security",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "sessions-alb-000",
+      "target": "file-store-ec2-001",
+      "type": "calls",
+      "weight": 0.94
+    },
+    {
+      "source": "file-store-ec2-001",
+      "target": "admin-rds-002",
+      "type": "queries",
+      "weight": 0.73
+    },
+    {
+      "source": "admin-rds-002",
+      "target": "admin-s3-003",
+      "type": "reads",
+      "weight": 0.69
+    },
+    {
+      "source": "admin-s3-003",
+      "target": "sessions-cloudfront-004",
+      "type": "subscribes",
+      "weight": 0.86
+    },
+    {
+      "source": "sessions-cloudfront-004",
+      "target": "public-audit-005",
+      "type": "calls",
+      "weight": 0.35
+    },
+    {
+      "source": "public-audit-005",
+      "target": "cold-audit-006",
+      "type": "reads",
+      "weight": 0.71
+    },
+    {
+      "source": "cold-audit-006",
+      "target": "batch-mailer-007",
+      "type": "calls",
+      "weight": 0.92
+    },
+    {
+      "source": "batch-mailer-007",
+      "target": "internal-web-tier-008",
+      "type": "queries",
+      "weight": 0.78
+    },
+    {
+      "source": "internal-web-tier-008",
+      "target": "private-app-server-009",
+      "type": "calls",
+      "weight": 0.49
+    },
+    {
+      "source": "private-app-server-009",
+      "target": "global-mailer-010",
+      "type": "writes",
+      "weight": 0.98
+    },
+    {
+      "source": "global-mailer-010",
+      "target": "global-sessions-011",
+      "type": "reads",
+      "weight": 0.33
+    },
+    {
+      "source": "global-sessions-011",
+      "target": "regional-admin-012",
+      "type": "writes",
+      "weight": 0.67
+    },
+    {
+      "source": "regional-admin-012",
+      "target": "cold-web-tier-013",
+      "type": "queries",
+      "weight": 0.87
+    },
+    {
+      "source": "cold-web-tier-013",
+      "target": "realtime-sessions-014",
+      "type": "triggers",
+      "weight": 0.49
+    },
+    {
+      "source": "realtime-sessions-014",
+      "target": "public-admin-015",
+      "type": "reads",
+      "weight": 0.89
+    },
+    {
+      "source": "public-admin-015",
+      "target": "backup-file-store-016",
+      "type": "queries",
+      "weight": 0.97
+    },
+    {
+      "source": "backup-file-store-016",
+      "target": "staging-scheduler-017",
+      "type": "subscribes",
+      "weight": 0.52
+    },
+    {
+      "source": "staging-scheduler-017",
+      "target": "edge-app-server-018",
+      "type": "writes",
+      "weight": 0.6
+    },
+    {
+      "source": "edge-app-server-018",
+      "target": "regional-sessions-019",
+      "type": "triggers",
+      "weight": 0.3
+    },
+    {
+      "source": "regional-sessions-019",
+      "target": "staging-file-store-020",
+      "type": "writes",
+      "weight": 0.71
+    },
+    {
+      "source": "staging-file-store-020",
+      "target": "edge-audit-021",
+      "type": "queries",
+      "weight": 0.38
+    },
+    {
+      "source": "edge-audit-021",
+      "target": "staging-sessions-022",
+      "type": "triggers",
+      "weight": 0.86
+    },
+    {
+      "source": "staging-sessions-022",
+      "target": "central-web-tier-023",
+      "type": "subscribes",
+      "weight": 0.49
+    },
+    {
+      "source": "central-web-tier-023",
+      "target": "batch-sessions-024",
+      "type": "calls",
+      "weight": 0.56
+    },
+    {
+      "source": "batch-sessions-024",
+      "target": "cold-app-server-025",
+      "type": "caches",
+      "weight": 0.54
+    },
+    {
+      "source": "cold-app-server-025",
+      "target": "batch-reports-026",
+      "type": "caches",
+      "weight": 0.76
+    },
+    {
+      "source": "batch-reports-026",
+      "target": "central-file-store-027",
+      "type": "subscribes",
+      "weight": 0.59
+    },
+    {
+      "source": "central-file-store-027",
+      "target": "secondary-app-server-028",
+      "type": "calls",
+      "weight": 0.9
+    },
+    {
+      "source": "secondary-app-server-028",
+      "target": "backup-sessions-029",
+      "type": "queries",
+      "weight": 0.39
+    },
+    {
+      "source": "backup-sessions-029",
+      "target": "public-admin-030",
+      "type": "subscribes",
+      "weight": 0.49
+    },
+    {
+      "source": "public-admin-030",
+      "target": "edge-reports-031",
+      "type": "queries",
+      "weight": 0.71
+    },
+    {
+      "source": "edge-reports-031",
+      "target": "cold-batch-jobs-032",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "cold-batch-jobs-032",
+      "target": "regional-sessions-033",
+      "type": "caches",
+      "weight": 0.31
+    },
+    {
+      "source": "regional-sessions-033",
+      "target": "main-file-store-034",
+      "type": "calls",
+      "weight": 0.76
+    },
+    {
+      "source": "main-file-store-034",
+      "target": "batch-app-server-035",
+      "type": "subscribes",
+      "weight": 0.73
+    },
+    {
+      "source": "batch-app-server-035",
+      "target": "fast-scheduler-036",
+      "type": "reads",
+      "weight": 0.32
+    },
+    {
+      "source": "fast-scheduler-036",
+      "target": "fast-scheduler-037",
+      "type": "triggers",
+      "weight": 0.33
+    },
+    {
+      "source": "fast-scheduler-037",
+      "target": "fast-sessions-038",
+      "type": "caches",
+      "weight": 0.34
+    },
+    {
+      "source": "fast-sessions-038",
+      "target": "core-audit-039",
+      "type": "reads",
+      "weight": 0.52
+    },
+    {
+      "source": "core-audit-039",
+      "target": "public-app-server-040",
+      "type": "queries",
+      "weight": 0.49
+    },
+    {
+      "source": "public-app-server-040",
+      "target": "backup-batch-jobs-041",
+      "type": "writes",
+      "weight": 0.36
+    },
+    {
+      "source": "backup-batch-jobs-041",
+      "target": "core-app-server-042",
+      "type": "writes",
+      "weight": 0.43
+    },
+    {
+      "source": "core-app-server-042",
+      "target": "main-batch-jobs-043",
+      "type": "writes",
+      "weight": 0.77
+    },
+    {
+      "source": "main-batch-jobs-043",
+      "target": "backup-scheduler-044",
+      "type": "calls",
+      "weight": 0.4
+    },
+    {
+      "source": "backup-scheduler-044",
+      "target": "fast-web-tier-045",
+      "type": "triggers",
+      "weight": 0.98
+    },
+    {
+      "source": "fast-web-tier-045",
+      "target": "regional-file-store-046",
+      "type": "queries",
+      "weight": 0.43
+    },
+    {
+      "source": "cold-app-server-025",
+      "target": "staging-file-store-020",
+      "type": "triggers",
+      "weight": 0.69
+    },
+    {
+      "source": "fast-web-tier-045",
+      "target": "edge-audit-021",
+      "type": "calls",
+      "weight": 0.68
+    },
+    {
+      "source": "global-sessions-011",
+      "target": "admin-s3-003",
+      "type": "triggers",
+      "weight": 0.8
+    },
+    {
+      "source": "cold-batch-jobs-032",
+      "target": "main-file-store-034",
+      "type": "subscribes",
+      "weight": 0.57
+    },
+    {
+      "source": "cold-batch-jobs-032",
+      "target": "core-app-server-042",
+      "type": "queries",
+      "weight": 0.45
+    },
+    {
+      "source": "admin-rds-002",
+      "target": "fast-scheduler-037",
+      "type": "reads",
+      "weight": 0.35
+    },
+    {
+      "source": "cold-web-tier-013",
+      "target": "staging-file-store-020",
+      "type": "caches",
+      "weight": 0.72
+    },
+    {
+      "source": "main-batch-jobs-043",
+      "target": "secondary-app-server-028",
+      "type": "reads",
+      "weight": 0.59
+    },
+    {
+      "source": "cold-web-tier-013",
+      "target": "fast-scheduler-037",
+      "type": "subscribes",
+      "weight": 0.12
+    },
+    {
+      "source": "fast-web-tier-045",
+      "target": "batch-app-server-035",
+      "type": "reads",
+      "weight": 0.24
+    },
+    {
+      "source": "cold-audit-006",
+      "target": "edge-audit-021",
+      "type": "calls",
+      "weight": 0.89
+    },
+    {
+      "source": "batch-sessions-024",
+      "target": "edge-reports-031",
+      "type": "caches",
+      "weight": 0.16
+    },
+    {
+      "source": "staging-scheduler-017",
+      "target": "file-store-ec2-001",
+      "type": "writes",
+      "weight": 0.92
+    },
+    {
+      "source": "public-admin-015",
+      "target": "fast-sessions-038",
+      "type": "calls",
+      "weight": 0.46
+    },
+    {
+      "source": "regional-sessions-019",
+      "target": "public-app-server-040",
+      "type": "caches",
+      "weight": 0.67
+    },
+    {
+      "source": "fast-sessions-038",
+      "target": "edge-reports-031",
+      "type": "queries",
+      "weight": 0.42
+    },
+    {
+      "source": "realtime-sessions-014",
+      "target": "batch-reports-026",
+      "type": "queries",
+      "weight": 0.35
+    },
+    {
+      "source": "public-app-server-040",
+      "target": "file-store-ec2-001",
+      "type": "calls",
+      "weight": 0.99
+    },
+    {
+      "source": "cold-app-server-025",
+      "target": "secondary-app-server-028",
+      "type": "subscribes",
+      "weight": 0.18
+    },
+    {
+      "source": "global-sessions-011",
+      "target": "core-audit-039",
+      "type": "calls",
+      "weight": 0.14
+    },
+    {
+      "source": "edge-reports-031",
+      "target": "core-audit-039",
+      "type": "triggers",
+      "weight": 0.23
+    },
+    {
+      "source": "public-app-server-040",
+      "target": "main-batch-jobs-043",
+      "type": "caches",
+      "weight": 0.2
+    },
+    {
+      "source": "staging-file-store-020",
+      "target": "batch-app-server-035",
+      "type": "triggers",
+      "weight": 0.45
+    },
+    {
+      "source": "fast-scheduler-037",
+      "target": "edge-app-server-018",
+      "type": "writes",
+      "weight": 0.11
+    },
+    {
+      "source": "private-app-server-009",
+      "target": "admin-rds-002",
+      "type": "queries",
+      "weight": 0.7
+    },
+    {
+      "source": "main-file-store-034",
+      "target": "public-app-server-040",
+      "type": "triggers",
+      "weight": 0.63
+    },
+    {
+      "source": "public-admin-015",
+      "target": "central-web-tier-023",
+      "type": "reads",
+      "weight": 0.41
+    },
+    {
+      "source": "private-app-server-009",
+      "target": "staging-file-store-020",
+      "type": "queries",
+      "weight": 0.97
+    },
+    {
+      "source": "main-batch-jobs-043",
+      "target": "regional-sessions-019",
+      "type": "reads",
+      "weight": 0.57
+    },
+    {
+      "source": "fast-scheduler-036",
+      "target": "edge-reports-031",
+      "type": "queries",
+      "weight": 0.71
+    },
+    {
+      "source": "sessions-cloudfront-004",
+      "target": "internal-web-tier-008",
+      "type": "caches",
+      "weight": 0.73
+    },
+    {
+      "source": "global-mailer-010",
+      "target": "regional-sessions-033",
+      "type": "caches",
+      "weight": 0.5
+    },
+    {
+      "source": "fast-scheduler-037",
+      "target": "core-app-server-042",
+      "type": "triggers",
+      "weight": 0.49
+    },
+    {
+      "source": "edge-reports-031",
+      "target": "batch-sessions-024",
+      "type": "reads",
+      "weight": 0.75
+    },
+    {
+      "source": "regional-file-store-046",
+      "target": "public-app-server-040",
+      "type": "writes",
+      "weight": 0.89
+    },
+    {
+      "source": "regional-file-store-046",
+      "target": "cold-web-tier-013",
+      "type": "subscribes",
+      "weight": 0.45
+    },
+    {
+      "source": "edge-reports-031",
+      "target": "sessions-alb-000",
+      "type": "writes",
+      "weight": 0.93
+    },
+    {
+      "source": "cold-app-server-025",
+      "target": "main-file-store-034",
+      "type": "reads",
+      "weight": 0.58
+    },
+    {
+      "source": "fast-scheduler-037",
+      "target": "regional-sessions-019",
+      "type": "caches",
+      "weight": 0.32
+    },
+    {
+      "source": "edge-reports-031",
+      "target": "file-store-ec2-001",
+      "type": "caches",
+      "weight": 0.23
+    },
+    {
+      "source": "batch-reports-026",
+      "target": "cold-batch-jobs-032",
+      "type": "triggers",
+      "weight": 0.3
+    },
+    {
+      "source": "fast-web-tier-045",
+      "target": "fast-scheduler-036",
+      "type": "queries",
+      "weight": 0.92
+    },
+    {
+      "source": "fast-web-tier-045",
+      "target": "private-app-server-009",
+      "type": "calls",
+      "weight": 0.43
+    },
+    {
+      "source": "cold-batch-jobs-032",
+      "target": "regional-sessions-019",
+      "type": "subscribes",
+      "weight": 0.94
+    },
+    {
+      "source": "staging-scheduler-017",
+      "target": "batch-mailer-007",
+      "type": "queries",
+      "weight": 0.31
+    },
+    {
+      "source": "backup-scheduler-044",
+      "target": "global-mailer-010",
+      "type": "triggers",
+      "weight": 0.31
+    },
+    {
+      "source": "fast-scheduler-036",
+      "target": "batch-mailer-007",
+      "type": "calls",
+      "weight": 0.63
+    },
+    {
+      "source": "staging-file-store-020",
+      "target": "global-sessions-011",
+      "type": "subscribes",
+      "weight": 0.5
+    },
+    {
+      "source": "backup-scheduler-044",
+      "target": "public-audit-005",
+      "type": "caches",
+      "weight": 0.39
+    },
+    {
+      "source": "file-store-ec2-001",
+      "target": "central-web-tier-023",
+      "type": "calls",
+      "weight": 0.26
+    },
+    {
+      "source": "admin-rds-002",
+      "target": "regional-file-store-046",
+      "type": "calls",
+      "weight": 0.15
+    },
+    {
+      "source": "admin-s3-003",
+      "target": "fast-scheduler-037",
+      "type": "writes",
+      "weight": 0.25
+    },
+    {
+      "source": "admin-s3-003",
+      "target": "main-batch-jobs-043",
+      "type": "reads",
+      "weight": 0.79
+    },
+    {
+      "source": "cold-audit-006",
+      "target": "global-sessions-011",
+      "type": "caches",
+      "weight": 0.99
+    },
+    {
+      "source": "global-sessions-011",
+      "target": "batch-reports-026",
+      "type": "queries",
+      "weight": 0.69
+    },
+    {
+      "source": "edge-audit-021",
+      "target": "staging-scheduler-017",
+      "type": "triggers",
+      "weight": 0.3
+    },
+    {
+      "source": "sessions-cloudfront-004",
+      "target": "staging-file-store-020",
+      "type": "caches",
+      "weight": 0.49
+    },
+    {
+      "source": "batch-app-server-035",
+      "target": "main-file-store-034",
+      "type": "caches",
+      "weight": 0.63
+    },
+    {
+      "source": "public-app-server-040",
+      "target": "regional-sessions-033",
+      "type": "calls",
+      "weight": 0.37
+    },
+    {
+      "source": "sessions-alb-000",
+      "target": "batch-app-server-035",
+      "type": "calls",
+      "weight": 0.25
+    },
+    {
+      "source": "global-mailer-010",
+      "target": "core-app-server-042",
+      "type": "caches",
+      "weight": 0.87
+    },
+    {
+      "source": "main-file-store-034",
+      "target": "public-admin-015",
+      "type": "subscribes",
+      "weight": 0.16
+    },
+    {
+      "source": "global-mailer-010",
+      "target": "regional-file-store-046",
+      "type": "queries",
+      "weight": 0.69
+    },
+    {
+      "source": "staging-file-store-020",
+      "target": "admin-s3-003",
+      "type": "subscribes",
+      "weight": 0.19
+    },
+    {
+      "source": "secondary-app-server-028",
+      "target": "fast-scheduler-036",
+      "type": "caches",
+      "weight": 0.89
+    },
+    {
+      "source": "central-web-tier-023",
+      "target": "cold-web-tier-013",
+      "type": "triggers",
+      "weight": 0.15
+    },
+    {
+      "source": "staging-file-store-020",
+      "target": "regional-file-store-046",
+      "type": "writes",
+      "weight": 0.74
+    },
+    {
+      "source": "sessions-cloudfront-004",
+      "target": "secondary-app-server-028",
+      "type": "queries",
+      "weight": 0.14
+    },
+    {
+      "source": "batch-reports-026",
+      "target": "file-store-ec2-001",
+      "type": "triggers",
+      "weight": 0.15
+    },
+    {
+      "source": "sessions-cloudfront-004",
+      "target": "core-audit-039",
+      "type": "reads",
+      "weight": 0.11
+    },
+    {
+      "source": "fast-web-tier-045",
+      "target": "core-audit-039",
+      "type": "triggers",
+      "weight": 0.54
+    },
+    {
+      "source": "admin-rds-002",
+      "target": "staging-scheduler-017",
+      "type": "reads",
+      "weight": 0.71
+    },
+    {
+      "source": "file-store-ec2-001",
+      "target": "batch-mailer-007",
+      "type": "triggers",
+      "weight": 0.73
+    },
+    {
+      "source": "edge-reports-031",
+      "target": "backup-batch-jobs-041",
+      "type": "writes",
+      "weight": 0.74
+    },
+    {
+      "source": "batch-sessions-024",
+      "target": "batch-reports-026",
+      "type": "caches",
+      "weight": 0.93
+    },
+    {
+      "source": "fast-sessions-038",
+      "target": "main-file-store-034",
+      "type": "queries",
+      "weight": 0.23
+    },
+    {
+      "source": "staging-sessions-022",
+      "target": "batch-sessions-024",
+      "type": "writes",
+      "weight": 0.31
+    },
+    {
+      "source": "cold-web-tier-013",
+      "target": "admin-rds-002",
+      "type": "caches",
+      "weight": 0.16
+    },
+    {
+      "source": "batch-mailer-007",
+      "target": "realtime-sessions-014",
+      "type": "calls",
+      "weight": 0.5
+    },
+    {
+      "source": "file-store-ec2-001",
+      "target": "private-app-server-009",
+      "type": "writes",
+      "weight": 0.22
+    },
+    {
+      "source": "regional-sessions-019",
+      "target": "central-web-tier-023",
+      "type": "caches",
+      "weight": 0.37
+    },
+    {
+      "source": "edge-app-server-018",
+      "target": "edge-audit-021",
+      "type": "reads",
+      "weight": 0.83
+    },
+    {
+      "source": "public-admin-030",
+      "target": "staging-scheduler-017",
+      "type": "reads",
+      "weight": 0.16
+    },
+    {
+      "source": "cold-audit-006",
+      "target": "secondary-app-server-028",
+      "type": "queries",
+      "weight": 0.75
+    },
+    {
+      "source": "regional-admin-012",
+      "target": "batch-sessions-024",
+      "type": "reads",
+      "weight": 0.2
+    },
+    {
+      "source": "public-audit-005",
+      "target": "file-store-ec2-001",
+      "type": "writes",
+      "weight": 0.87
+    },
+    {
+      "source": "backup-batch-jobs-041",
+      "target": "staging-sessions-022",
+      "type": "reads",
+      "weight": 0.32
+    }
+  ]
+}

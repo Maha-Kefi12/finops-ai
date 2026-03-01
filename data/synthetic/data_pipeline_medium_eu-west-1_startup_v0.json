@@ -1,0 +1,197 @@
+{
+  "metadata": {
+    "name": "Data Pipeline (Startup, eu-west-1)",
+    "id": "33f7dbe6",
+    "pattern": "data_pipeline",
+    "complexity": "medium",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 8,
+    "total_dependencies": 8,
+    "total_cost_monthly": 2963.68,
+    "generated_at": "2026-03-01T19:23:57.626472",
+    "variation_seed": 12318
+  },
+  "services": [
+    {
+      "id": "ingestion-kinesis-000",
+      "name": "ingestion-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 808.16,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "schema-lambda-001",
+      "name": "schema-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 524.57,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "validation-s3-002",
+      "name": "validation-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 679.25,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "routing-glue-003",
+      "name": "routing-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 86.65,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "archive-redshift-004",
+      "name": "archive-redshift",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 606.04,
+      "owner": "frontend-guild",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-routing-005",
+      "name": "public-routing",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 164.86,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-dedup-006",
+      "name": "core-dedup",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 25.25,
+      "owner": "frontend-guild",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "fast-ingestion-007",
+      "name": "fast-ingestion",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 68.9,
+      "owner": "payments",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "ingestion-kinesis-000",
+      "target": "schema-lambda-001",
+      "type": "writes",
+      "weight": 0.44
+    },
+    {
+      "source": "schema-lambda-001",
+      "target": "validation-s3-002",
+      "type": "queries",
+      "weight": 0.52
+    },
+    {
+      "source": "validation-s3-002",
+      "target": "routing-glue-003",
+      "type": "queries",
+      "weight": 0.79
+    },
+    {
+      "source": "routing-glue-003",
+      "target": "archive-redshift-004",
+      "type": "caches",
+      "weight": 0.57
+    },
+    {
+      "source": "archive-redshift-004",
+      "target": "public-routing-005",
+      "type": "triggers",
+      "weight": 0.68
+    },
+    {
+      "source": "public-routing-005",
+      "target": "core-dedup-006",
+      "type": "caches",
+      "weight": 0.73
+    },
+    {
+      "source": "core-dedup-006",
+      "target": "fast-ingestion-007",
+      "type": "caches",
+      "weight": 0.91
+    },
+    {
+      "source": "fast-ingestion-007",
+      "target": "schema-lambda-001",
+      "type": "calls",
+      "weight": 0.79
+    }
+  ]
+}

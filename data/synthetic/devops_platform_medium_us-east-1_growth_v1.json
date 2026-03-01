@@ -1,0 +1,383 @@
+{
+  "metadata": {
+    "name": "Devops Platform (Growth, us-east-1)",
+    "id": "359b5553",
+    "pattern": "devops_platform",
+    "complexity": "medium",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 14,
+    "total_dependencies": 23,
+    "total_cost_monthly": 11131.42,
+    "generated_at": "2026-03-01T19:23:58.730411",
+    "variation_seed": 60592
+  },
+  "services": [
+    {
+      "id": "registry-alb-000",
+      "name": "registry-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 102.93,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "orchestrator-eks-001",
+      "name": "orchestrator-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 2946.02,
+      "owner": "notifications",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "scanner-rds-002",
+      "name": "scanner-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 2928.48,
+      "owner": "data-eng",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "monitoring-s3-003",
+      "name": "monitoring-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 801.65,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "ci-runner-elasticache-004",
+      "name": "ci-runner-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 345.32,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-orchestrator-005",
+      "name": "regional-orchestrator",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 145.05,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-dashboard-006",
+      "name": "batch-dashboard",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 73.36,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-artifact-store-007",
+      "name": "secondary-artifact-store",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 35.69,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-ci-runner-008",
+      "name": "backup-ci-runner",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 39.95,
+      "owner": "api-gateway-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-deploy-agent-009",
+      "name": "primary-deploy-agent",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 69.2,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-registry-010",
+      "name": "secondary-registry",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1501.12,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-artifact-store-011",
+      "name": "internal-artifact-store",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 193.31,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-deploy-agent-012",
+      "name": "realtime-deploy-agent",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1542.13,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-registry-013",
+      "name": "main-registry",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 407.21,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "registry-alb-000",
+      "target": "orchestrator-eks-001",
+      "type": "queries",
+      "weight": 0.3
+    },
+    {
+      "source": "orchestrator-eks-001",
+      "target": "scanner-rds-002",
+      "type": "subscribes",
+      "weight": 0.41
+    },
+    {
+      "source": "scanner-rds-002",
+      "target": "monitoring-s3-003",
+      "type": "writes",
+      "weight": 0.75
+    },
+    {
+      "source": "monitoring-s3-003",
+      "target": "ci-runner-elasticache-004",
+      "type": "queries",
+      "weight": 0.99
+    },
+    {
+      "source": "ci-runner-elasticache-004",
+      "target": "regional-orchestrator-005",
+      "type": "triggers",
+      "weight": 0.38
+    },
+    {
+      "source": "regional-orchestrator-005",
+      "target": "batch-dashboard-006",
+      "type": "calls",
+      "weight": 0.89
+    },
+    {
+      "source": "batch-dashboard-006",
+      "target": "secondary-artifact-store-007",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "secondary-artifact-store-007",
+      "target": "backup-ci-runner-008",
+      "type": "writes",
+      "weight": 0.69
+    },
+    {
+      "source": "backup-ci-runner-008",
+      "target": "primary-deploy-agent-009",
+      "type": "queries",
+      "weight": 0.99
+    },
+    {
+      "source": "primary-deploy-agent-009",
+      "target": "secondary-registry-010",
+      "type": "reads",
+      "weight": 0.42
+    },
+    {
+      "source": "secondary-registry-010",
+      "target": "internal-artifact-store-011",
+      "type": "subscribes",
+      "weight": 0.76
+    },
+    {
+      "source": "internal-artifact-store-011",
+      "target": "realtime-deploy-agent-012",
+      "type": "reads",
+      "weight": 0.85
+    },
+    {
+      "source": "realtime-deploy-agent-012",
+      "target": "main-registry-013",
+      "type": "calls",
+      "weight": 0.73
+    },
+    {
+      "source": "internal-artifact-store-011",
+      "target": "scanner-rds-002",
+      "type": "writes",
+      "weight": 0.85
+    },
+    {
+      "source": "registry-alb-000",
+      "target": "internal-artifact-store-011",
+      "type": "subscribes",
+      "weight": 0.57
+    },
+    {
+      "source": "orchestrator-eks-001",
+      "target": "secondary-artifact-store-007",
+      "type": "calls",
+      "weight": 0.31
+    },
+    {
+      "source": "backup-ci-runner-008",
+      "target": "scanner-rds-002",
+      "type": "caches",
+      "weight": 0.97
+    },
+    {
+      "source": "orchestrator-eks-001",
+      "target": "monitoring-s3-003",
+      "type": "triggers",
+      "weight": 0.22
+    },
+    {
+      "source": "realtime-deploy-agent-012",
+      "target": "monitoring-s3-003",
+      "type": "caches",
+      "weight": 0.56
+    },
+    {
+      "source": "secondary-artifact-store-007",
+      "target": "regional-orchestrator-005",
+      "type": "reads",
+      "weight": 0.48
+    },
+    {
+      "source": "monitoring-s3-003",
+      "target": "secondary-artifact-store-007",
+      "type": "queries",
+      "weight": 0.43
+    },
+    {
+      "source": "main-registry-013",
+      "target": "primary-deploy-agent-009",
+      "type": "writes",
+      "weight": 0.38
+    },
+    {
+      "source": "backup-ci-runner-008",
+      "target": "ci-runner-elasticache-004",
+      "type": "reads",
+      "weight": 0.65
+    }
+  ]
+}

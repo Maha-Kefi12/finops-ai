@@ -1,0 +1,643 @@
+{
+  "metadata": {
+    "name": "Microservices (Growth, eu-west-1)",
+    "id": "07c61164",
+    "pattern": "microservices",
+    "complexity": "large",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 22,
+    "total_dependencies": 45,
+    "total_cost_monthly": 10810.92,
+    "generated_at": "2026-03-01T19:23:57.731140",
+    "variation_seed": 17068
+  },
+  "services": [
+    {
+      "id": "search-svc-alb-000",
+      "name": "search-svc-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 93.4,
+      "owner": "ml-ops",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "gateway-ecs-001",
+      "name": "gateway-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 898.55,
+      "owner": "security",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "gateway-rds-002",
+      "name": "gateway-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 1545.1,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audit-svc-elasticache-003",
+      "name": "audit-svc-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 953.0,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "payment-svc-sqs-004",
+      "name": "payment-svc-sqs",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 147.91,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-payment-svc-005",
+      "name": "async-payment-svc",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 117.65,
+      "owner": "devops",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-payment-svc-006",
+      "name": "global-payment-svc",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 122.72,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-report-svc-007",
+      "name": "backup-report-svc",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 1683.18,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-report-svc-008",
+      "name": "shared-report-svc",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 291.44,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-order-svc-009",
+      "name": "staging-order-svc",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 661.88,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-gateway-010",
+      "name": "backup-gateway",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 497.42,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-search-svc-011",
+      "name": "main-search-svc",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 70.22,
+      "owner": "security",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-payment-svc-012",
+      "name": "cold-payment-svc",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 576.21,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "regional-user-svc-013",
+      "name": "regional-user-svc",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 481.74,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-audit-svc-014",
+      "name": "edge-audit-svc",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 753.4,
+      "owner": "growth-eng",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-config-svc-015",
+      "name": "main-config-svc",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 809.42,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-webhook-svc-016",
+      "name": "public-webhook-svc",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 199.06,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-webhook-svc-017",
+      "name": "main-webhook-svc",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 329.83,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-audit-svc-018",
+      "name": "regional-audit-svc",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 66.15,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-report-svc-019",
+      "name": "cold-report-svc",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 104.34,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-user-svc-020",
+      "name": "hot-user-svc",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 368.37,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-payment-svc-021",
+      "name": "internal-payment-svc",
+      "type": "storage",
+      "aws_service": "Amazon EFS",
+      "cost_monthly": 39.93,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "search-svc-alb-000",
+      "target": "gateway-ecs-001",
+      "type": "subscribes",
+      "weight": 0.41
+    },
+    {
+      "source": "gateway-ecs-001",
+      "target": "gateway-rds-002",
+      "type": "caches",
+      "weight": 0.48
+    },
+    {
+      "source": "gateway-rds-002",
+      "target": "audit-svc-elasticache-003",
+      "type": "queries",
+      "weight": 0.7
+    },
+    {
+      "source": "audit-svc-elasticache-003",
+      "target": "payment-svc-sqs-004",
+      "type": "triggers",
+      "weight": 0.73
+    },
+    {
+      "source": "payment-svc-sqs-004",
+      "target": "async-payment-svc-005",
+      "type": "triggers",
+      "weight": 0.75
+    },
+    {
+      "source": "async-payment-svc-005",
+      "target": "global-payment-svc-006",
+      "type": "writes",
+      "weight": 0.91
+    },
+    {
+      "source": "global-payment-svc-006",
+      "target": "backup-report-svc-007",
+      "type": "caches",
+      "weight": 0.97
+    },
+    {
+      "source": "backup-report-svc-007",
+      "target": "shared-report-svc-008",
+      "type": "subscribes",
+      "weight": 0.51
+    },
+    {
+      "source": "shared-report-svc-008",
+      "target": "staging-order-svc-009",
+      "type": "writes",
+      "weight": 0.65
+    },
+    {
+      "source": "staging-order-svc-009",
+      "target": "backup-gateway-010",
+      "type": "reads",
+      "weight": 0.64
+    },
+    {
+      "source": "backup-gateway-010",
+      "target": "main-search-svc-011",
+      "type": "reads",
+      "weight": 0.49
+    },
+    {
+      "source": "main-search-svc-011",
+      "target": "cold-payment-svc-012",
+      "type": "subscribes",
+      "weight": 0.43
+    },
+    {
+      "source": "cold-payment-svc-012",
+      "target": "regional-user-svc-013",
+      "type": "triggers",
+      "weight": 0.98
+    },
+    {
+      "source": "regional-user-svc-013",
+      "target": "edge-audit-svc-014",
+      "type": "queries",
+      "weight": 0.52
+    },
+    {
+      "source": "edge-audit-svc-014",
+      "target": "main-config-svc-015",
+      "type": "calls",
+      "weight": 0.48
+    },
+    {
+      "source": "main-config-svc-015",
+      "target": "public-webhook-svc-016",
+      "type": "reads",
+      "weight": 0.4
+    },
+    {
+      "source": "public-webhook-svc-016",
+      "target": "main-webhook-svc-017",
+      "type": "queries",
+      "weight": 0.89
+    },
+    {
+      "source": "main-webhook-svc-017",
+      "target": "regional-audit-svc-018",
+      "type": "triggers",
+      "weight": 0.58
+    },
+    {
+      "source": "regional-audit-svc-018",
+      "target": "cold-report-svc-019",
+      "type": "queries",
+      "weight": 0.67
+    },
+    {
+      "source": "cold-report-svc-019",
+      "target": "hot-user-svc-020",
+      "type": "reads",
+      "weight": 1.0
+    },
+    {
+      "source": "hot-user-svc-020",
+      "target": "internal-payment-svc-021",
+      "type": "subscribes",
+      "weight": 0.93
+    },
+    {
+      "source": "cold-payment-svc-012",
+      "target": "cold-report-svc-019",
+      "type": "reads",
+      "weight": 0.81
+    },
+    {
+      "source": "edge-audit-svc-014",
+      "target": "cold-payment-svc-012",
+      "type": "writes",
+      "weight": 0.24
+    },
+    {
+      "source": "shared-report-svc-008",
+      "target": "main-webhook-svc-017",
+      "type": "reads",
+      "weight": 0.36
+    },
+    {
+      "source": "backup-gateway-010",
+      "target": "main-config-svc-015",
+      "type": "writes",
+      "weight": 0.32
+    },
+    {
+      "source": "regional-user-svc-013",
+      "target": "cold-report-svc-019",
+      "type": "calls",
+      "weight": 0.61
+    },
+    {
+      "source": "regional-audit-svc-018",
+      "target": "payment-svc-sqs-004",
+      "type": "triggers",
+      "weight": 0.13
+    },
+    {
+      "source": "search-svc-alb-000",
+      "target": "main-search-svc-011",
+      "type": "caches",
+      "weight": 0.16
+    },
+    {
+      "source": "payment-svc-sqs-004",
+      "target": "gateway-ecs-001",
+      "type": "writes",
+      "weight": 0.27
+    },
+    {
+      "source": "global-payment-svc-006",
+      "target": "regional-user-svc-013",
+      "type": "reads",
+      "weight": 0.38
+    },
+    {
+      "source": "regional-user-svc-013",
+      "target": "internal-payment-svc-021",
+      "type": "caches",
+      "weight": 0.84
+    },
+    {
+      "source": "search-svc-alb-000",
+      "target": "main-webhook-svc-017",
+      "type": "queries",
+      "weight": 0.16
+    },
+    {
+      "source": "payment-svc-sqs-004",
+      "target": "backup-report-svc-007",
+      "type": "subscribes",
+      "weight": 0.26
+    },
+    {
+      "source": "main-webhook-svc-017",
+      "target": "gateway-rds-002",
+      "type": "subscribes",
+      "weight": 0.5
+    },
+    {
+      "source": "hot-user-svc-020",
+      "target": "shared-report-svc-008",
+      "type": "subscribes",
+      "weight": 0.49
+    },
+    {
+      "source": "hot-user-svc-020",
+      "target": "regional-user-svc-013",
+      "type": "queries",
+      "weight": 0.62
+    },
+    {
+      "source": "async-payment-svc-005",
+      "target": "shared-report-svc-008",
+      "type": "queries",
+      "weight": 0.93
+    },
+    {
+      "source": "shared-report-svc-008",
+      "target": "search-svc-alb-000",
+      "type": "caches",
+      "weight": 0.16
+    },
+    {
+      "source": "staging-order-svc-009",
+      "target": "edge-audit-svc-014",
+      "type": "subscribes",
+      "weight": 0.26
+    },
+    {
+      "source": "edge-audit-svc-014",
+      "target": "payment-svc-sqs-004",
+      "type": "subscribes",
+      "weight": 0.13
+    },
+    {
+      "source": "edge-audit-svc-014",
+      "target": "staging-order-svc-009",
+      "type": "calls",
+      "weight": 0.9
+    },
+    {
+      "source": "gateway-rds-002",
+      "target": "staging-order-svc-009",
+      "type": "writes",
+      "weight": 0.22
+    },
+    {
+      "source": "cold-payment-svc-012",
+      "target": "internal-payment-svc-021",
+      "type": "caches",
+      "weight": 0.71
+    },
+    {
+      "source": "internal-payment-svc-021",
+      "target": "edge-audit-svc-014",
+      "type": "calls",
+      "weight": 0.37
+    },
+    {
+      "source": "main-search-svc-011",
+      "target": "edge-audit-svc-014",
+      "type": "queries",
+      "weight": 0.62
+    }
+  ]
+}

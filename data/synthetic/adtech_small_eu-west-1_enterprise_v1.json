@@ -1,0 +1,153 @@
+{
+  "metadata": {
+    "name": "Adtech (Enterprise, eu-west-1)",
+    "id": "ab7fcce4",
+    "pattern": "adtech",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 6,
+    "total_dependencies": 6,
+    "total_cost_monthly": 9996.12,
+    "generated_at": "2026-03-01T19:23:58.643298",
+    "variation_seed": 56190
+  },
+  "services": [
+    {
+      "id": "reports-alb-000",
+      "name": "reports-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 80.19,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "attribution-ec2-001",
+      "name": "attribution-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 3378.18,
+      "owner": "identity-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "pacing-dynamodb-002",
+      "name": "pacing-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 978.48,
+      "owner": "notifications",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audience-elasticache-003",
+      "name": "audience-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 802.62,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "frequency-cap-kinesis-004",
+      "name": "frequency-cap-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 807.59,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-frequency-cap-005",
+      "name": "batch-frequency-cap",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 3949.06,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "reports-alb-000",
+      "target": "attribution-ec2-001",
+      "type": "reads",
+      "weight": 0.47
+    },
+    {
+      "source": "attribution-ec2-001",
+      "target": "pacing-dynamodb-002",
+      "type": "reads",
+      "weight": 0.7
+    },
+    {
+      "source": "pacing-dynamodb-002",
+      "target": "audience-elasticache-003",
+      "type": "caches",
+      "weight": 0.42
+    },
+    {
+      "source": "audience-elasticache-003",
+      "target": "frequency-cap-kinesis-004",
+      "type": "subscribes",
+      "weight": 0.42
+    },
+    {
+      "source": "frequency-cap-kinesis-004",
+      "target": "batch-frequency-cap-005",
+      "type": "triggers",
+      "weight": 0.88
+    },
+    {
+      "source": "attribution-ec2-001",
+      "target": "audience-elasticache-003",
+      "type": "subscribes",
+      "weight": 0.59
+    }
+  ]
+}

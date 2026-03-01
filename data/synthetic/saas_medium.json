@@ -1,0 +1,201 @@
+{
+  "metadata": {
+    "name": "SaaS Platform",
+    "pattern": "saas",
+    "complexity": "medium",
+    "environment": "production",
+    "region": "us-east-1",
+    "generated_at": "2026-03-01T16:13:45.268594",
+    "total_services": 10,
+    "total_cost_monthly": 6995.4
+  },
+  "services": [
+    {
+      "id": "api-001",
+      "name": "tenant-api",
+      "type": "service",
+      "environment": "production",
+      "owner": "platform-team",
+      "cost_monthly": 150,
+      "attributes": {
+        "instance_type": "t3.medium",
+        "instance_count": 5
+      }
+    },
+    {
+      "id": "api-002",
+      "name": "auth-service",
+      "type": "service",
+      "environment": "production",
+      "owner": "platform-team",
+      "cost_monthly": 2400,
+      "attributes": {
+        "instance_type": "t3.xlarge",
+        "instance_count": 20
+      }
+    },
+    {
+      "id": "database_postgres-001",
+      "name": "tenant-db",
+      "type": "database",
+      "environment": "production",
+      "owner": "platform-team",
+      "cost_monthly": 480,
+      "attributes": {
+        "instance_type": "db.m5.xlarge",
+        "instance_count": 2
+      }
+    },
+    {
+      "id": "database_postgres-002",
+      "name": "analytics-db",
+      "type": "database",
+      "environment": "production",
+      "owner": "data-team",
+      "cost_monthly": 480,
+      "attributes": {
+        "instance_type": "db.m5.xlarge",
+        "instance_count": 2
+      }
+    },
+    {
+      "id": "cache_redis-001",
+      "name": "session-cache",
+      "type": "cache",
+      "environment": "production",
+      "owner": "platform-team",
+      "cost_monthly": 25,
+      "attributes": {
+        "instance_type": "cache.t3.small",
+        "instance_count": 1
+      }
+    },
+    {
+      "id": "worker-001",
+      "name": "report-generator",
+      "type": "batch",
+      "environment": "production",
+      "owner": "data-team",
+      "cost_monthly": 2400,
+      "attributes": {
+        "instance_type": "c5.2xlarge",
+        "instance_count": 10
+      }
+    },
+    {
+      "id": "worker-002",
+      "name": "notification-service",
+      "type": "batch",
+      "environment": "production",
+      "owner": "platform-team",
+      "cost_monthly": 600,
+      "attributes": {
+        "instance_type": "c5.xlarge",
+        "instance_count": 5
+      }
+    },
+    {
+      "id": "queue_sqs-001",
+      "name": "job-queue",
+      "type": "queue",
+      "environment": "production",
+      "owner": "platform-team",
+      "cost_monthly": 0.4,
+      "attributes": {
+        "messages_monthly": 1000000
+      }
+    },
+    {
+      "id": "s3-001",
+      "name": "tenant-data",
+      "type": "storage",
+      "environment": "production",
+      "owner": "platform-team",
+      "cost_monthly": 230.0,
+      "attributes": {
+        "size_gb": 10000,
+        "storage_class": "STANDARD"
+      }
+    },
+    {
+      "id": "s3-002",
+      "name": "generated-reports",
+      "type": "storage",
+      "environment": "production",
+      "owner": "data-team",
+      "cost_monthly": 230.0,
+      "attributes": {
+        "size_gb": 10000,
+        "storage_class": "STANDARD"
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "api-001",
+      "target": "api-002",
+      "type": "calls",
+      "weight": 1.0
+    },
+    {
+      "source": "api-001",
+      "target": "database_postgres-001",
+      "type": "reads_from",
+      "weight": 0.9
+    },
+    {
+      "source": "api-001",
+      "target": "cache_redis-001",
+      "type": "reads_from",
+      "weight": 0.95
+    },
+    {
+      "source": "api-001",
+      "target": "s3-001",
+      "type": "writes_to",
+      "weight": 0.4
+    },
+    {
+      "source": "api-001",
+      "target": "queue_sqs-001",
+      "type": "writes_to",
+      "weight": 0.3
+    },
+    {
+      "source": "api-002",
+      "target": "database_postgres-001",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "api-002",
+      "target": "cache_redis-001",
+      "type": "writes_to",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-001",
+      "target": "queue_sqs-001",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-001",
+      "target": "database_postgres-002",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-001",
+      "target": "s3-002",
+      "type": "writes_to",
+      "weight": 1.0
+    },
+    {
+      "source": "worker-002",
+      "target": "queue_sqs-001",
+      "type": "reads_from",
+      "weight": 0.5
+    }
+  ]
+}

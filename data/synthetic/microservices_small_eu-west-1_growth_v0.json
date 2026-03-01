@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Microservices (Growth, eu-west-1)",
+    "id": "61e83228",
+    "pattern": "microservices",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 2534.32,
+    "generated_at": "2026-03-01T19:23:57.705740",
+    "variation_seed": 15170
+  },
+  "services": [
+    {
+      "id": "user-svc-alb-000",
+      "name": "user-svc-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 34.12,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "search-svc-ecs-001",
+      "name": "search-svc-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 633.82,
+      "owner": "data-eng",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "report-svc-rds-002",
+      "name": "report-svc-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 1866.38,
+      "owner": "payments",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "user-svc-alb-000",
+      "target": "search-svc-ecs-001",
+      "type": "queries",
+      "weight": 0.67
+    },
+    {
+      "source": "search-svc-ecs-001",
+      "target": "report-svc-rds-002",
+      "type": "writes",
+      "weight": 0.85
+    }
+  ]
+}

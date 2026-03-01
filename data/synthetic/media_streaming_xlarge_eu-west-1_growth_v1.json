@@ -1,0 +1,1237 @@
+{
+  "metadata": {
+    "name": "Media Streaming (Growth, eu-west-1)",
+    "id": "a6f48a73",
+    "pattern": "media_streaming",
+    "complexity": "xlarge",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 40,
+    "total_dependencies": 96,
+    "total_cost_monthly": 26983.73,
+    "generated_at": "2026-03-01T19:23:58.011785",
+    "variation_seed": 29158
+  },
+  "services": [
+    {
+      "id": "drm-cloudfront-000",
+      "name": "drm-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 1978.16,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "analytics-s3-001",
+      "name": "analytics-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 428.53,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ads-mediaconvert-002",
+      "name": "ads-mediaconvert",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 990.54,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "player-ec2-003",
+      "name": "player-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1440.27,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "metadata-dynamodb-004",
+      "name": "metadata-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 651.61,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-manifest-005",
+      "name": "global-manifest",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 128.01,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-cdn-origin-006",
+      "name": "private-cdn-origin",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 107.94,
+      "owner": "payments",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-encoder-007",
+      "name": "regional-encoder",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 2120.55,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-metadata-008",
+      "name": "private-metadata",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 265.57,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "batch-manifest-009",
+      "name": "batch-manifest",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 207.21,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-thumbnail-010",
+      "name": "realtime-thumbnail",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 190.42,
+      "owner": "payments",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-player-011",
+      "name": "main-player",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 153.13,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-encoder-012",
+      "name": "backup-encoder",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 683.17,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-cdn-origin-013",
+      "name": "shared-cdn-origin",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 40.71,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-thumbnail-014",
+      "name": "staging-thumbnail",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 23.81,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-metadata-015",
+      "name": "primary-metadata",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 1840.99,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-analytics-016",
+      "name": "realtime-analytics",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 1457.05,
+      "owner": "security",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-encoder-017",
+      "name": "fast-encoder",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 2061.17,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "primary-encoder-018",
+      "name": "primary-encoder",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 63.29,
+      "owner": "payments",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "staging-cdn-origin-019",
+      "name": "staging-cdn-origin",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 1901.0,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-manifest-020",
+      "name": "edge-manifest",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 102.05,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "primary-transcoder-021",
+      "name": "primary-transcoder",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 170.29,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-transcoder-022",
+      "name": "staging-transcoder",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 339.07,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "regional-ads-023",
+      "name": "regional-ads",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 530.38,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "regional-encoder-024",
+      "name": "regional-encoder",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 45.17,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-drm-025",
+      "name": "private-drm",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 125.75,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "global-thumbnail-026",
+      "name": "global-thumbnail",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 17.25,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-metadata-027",
+      "name": "secondary-metadata",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 82.98,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-ads-028",
+      "name": "staging-ads",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 80.12,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-ads-029",
+      "name": "central-ads",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 1301.31,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "public-manifest-030",
+      "name": "public-manifest",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 37.05,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-metadata-031",
+      "name": "hot-metadata",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Memcached",
+      "cost_monthly": 281.5,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-encoder-032",
+      "name": "hot-encoder",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1337.89,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-analytics-033",
+      "name": "cold-analytics",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 1277.29,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-transcoder-034",
+      "name": "central-transcoder",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 412.93,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-analytics-035",
+      "name": "secondary-analytics",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 1119.68,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-transcoder-036",
+      "name": "fast-transcoder",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 1043.78,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "fast-encoder-037",
+      "name": "fast-encoder",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 536.78,
+      "owner": "security",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "shared-ads-038",
+      "name": "shared-ads",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 152.57,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-drm-039",
+      "name": "batch-drm",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 1256.76,
+      "owner": "growth-eng",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "drm-cloudfront-000",
+      "target": "analytics-s3-001",
+      "type": "subscribes",
+      "weight": 0.73
+    },
+    {
+      "source": "analytics-s3-001",
+      "target": "ads-mediaconvert-002",
+      "type": "reads",
+      "weight": 0.3
+    },
+    {
+      "source": "ads-mediaconvert-002",
+      "target": "player-ec2-003",
+      "type": "triggers",
+      "weight": 0.4
+    },
+    {
+      "source": "player-ec2-003",
+      "target": "metadata-dynamodb-004",
+      "type": "queries",
+      "weight": 0.54
+    },
+    {
+      "source": "metadata-dynamodb-004",
+      "target": "global-manifest-005",
+      "type": "triggers",
+      "weight": 0.66
+    },
+    {
+      "source": "global-manifest-005",
+      "target": "private-cdn-origin-006",
+      "type": "reads",
+      "weight": 0.64
+    },
+    {
+      "source": "private-cdn-origin-006",
+      "target": "regional-encoder-007",
+      "type": "calls",
+      "weight": 0.71
+    },
+    {
+      "source": "regional-encoder-007",
+      "target": "private-metadata-008",
+      "type": "writes",
+      "weight": 0.35
+    },
+    {
+      "source": "private-metadata-008",
+      "target": "batch-manifest-009",
+      "type": "caches",
+      "weight": 1.0
+    },
+    {
+      "source": "batch-manifest-009",
+      "target": "realtime-thumbnail-010",
+      "type": "triggers",
+      "weight": 0.74
+    },
+    {
+      "source": "realtime-thumbnail-010",
+      "target": "main-player-011",
+      "type": "subscribes",
+      "weight": 0.98
+    },
+    {
+      "source": "main-player-011",
+      "target": "backup-encoder-012",
+      "type": "reads",
+      "weight": 0.7
+    },
+    {
+      "source": "backup-encoder-012",
+      "target": "shared-cdn-origin-013",
+      "type": "writes",
+      "weight": 0.6
+    },
+    {
+      "source": "shared-cdn-origin-013",
+      "target": "staging-thumbnail-014",
+      "type": "caches",
+      "weight": 0.94
+    },
+    {
+      "source": "staging-thumbnail-014",
+      "target": "primary-metadata-015",
+      "type": "triggers",
+      "weight": 0.54
+    },
+    {
+      "source": "primary-metadata-015",
+      "target": "realtime-analytics-016",
+      "type": "subscribes",
+      "weight": 0.5
+    },
+    {
+      "source": "realtime-analytics-016",
+      "target": "fast-encoder-017",
+      "type": "writes",
+      "weight": 0.66
+    },
+    {
+      "source": "fast-encoder-017",
+      "target": "primary-encoder-018",
+      "type": "subscribes",
+      "weight": 0.65
+    },
+    {
+      "source": "primary-encoder-018",
+      "target": "staging-cdn-origin-019",
+      "type": "calls",
+      "weight": 0.95
+    },
+    {
+      "source": "staging-cdn-origin-019",
+      "target": "edge-manifest-020",
+      "type": "reads",
+      "weight": 0.41
+    },
+    {
+      "source": "edge-manifest-020",
+      "target": "primary-transcoder-021",
+      "type": "reads",
+      "weight": 0.65
+    },
+    {
+      "source": "primary-transcoder-021",
+      "target": "staging-transcoder-022",
+      "type": "reads",
+      "weight": 0.81
+    },
+    {
+      "source": "staging-transcoder-022",
+      "target": "regional-ads-023",
+      "type": "subscribes",
+      "weight": 0.93
+    },
+    {
+      "source": "regional-ads-023",
+      "target": "regional-encoder-024",
+      "type": "subscribes",
+      "weight": 0.98
+    },
+    {
+      "source": "regional-encoder-024",
+      "target": "private-drm-025",
+      "type": "subscribes",
+      "weight": 0.96
+    },
+    {
+      "source": "private-drm-025",
+      "target": "global-thumbnail-026",
+      "type": "caches",
+      "weight": 0.71
+    },
+    {
+      "source": "global-thumbnail-026",
+      "target": "secondary-metadata-027",
+      "type": "queries",
+      "weight": 0.73
+    },
+    {
+      "source": "secondary-metadata-027",
+      "target": "staging-ads-028",
+      "type": "caches",
+      "weight": 0.88
+    },
+    {
+      "source": "staging-ads-028",
+      "target": "central-ads-029",
+      "type": "caches",
+      "weight": 0.63
+    },
+    {
+      "source": "central-ads-029",
+      "target": "public-manifest-030",
+      "type": "calls",
+      "weight": 0.68
+    },
+    {
+      "source": "public-manifest-030",
+      "target": "hot-metadata-031",
+      "type": "queries",
+      "weight": 0.97
+    },
+    {
+      "source": "hot-metadata-031",
+      "target": "hot-encoder-032",
+      "type": "caches",
+      "weight": 0.77
+    },
+    {
+      "source": "hot-encoder-032",
+      "target": "cold-analytics-033",
+      "type": "subscribes",
+      "weight": 0.8
+    },
+    {
+      "source": "cold-analytics-033",
+      "target": "central-transcoder-034",
+      "type": "triggers",
+      "weight": 0.47
+    },
+    {
+      "source": "central-transcoder-034",
+      "target": "secondary-analytics-035",
+      "type": "subscribes",
+      "weight": 0.75
+    },
+    {
+      "source": "secondary-analytics-035",
+      "target": "fast-transcoder-036",
+      "type": "calls",
+      "weight": 0.34
+    },
+    {
+      "source": "fast-transcoder-036",
+      "target": "fast-encoder-037",
+      "type": "calls",
+      "weight": 0.94
+    },
+    {
+      "source": "fast-encoder-037",
+      "target": "shared-ads-038",
+      "type": "subscribes",
+      "weight": 0.35
+    },
+    {
+      "source": "shared-ads-038",
+      "target": "batch-drm-039",
+      "type": "subscribes",
+      "weight": 0.5
+    },
+    {
+      "source": "fast-encoder-037",
+      "target": "public-manifest-030",
+      "type": "calls",
+      "weight": 0.68
+    },
+    {
+      "source": "analytics-s3-001",
+      "target": "staging-cdn-origin-019",
+      "type": "queries",
+      "weight": 0.79
+    },
+    {
+      "source": "global-manifest-005",
+      "target": "batch-drm-039",
+      "type": "subscribes",
+      "weight": 0.21
+    },
+    {
+      "source": "public-manifest-030",
+      "target": "global-manifest-005",
+      "type": "caches",
+      "weight": 0.55
+    },
+    {
+      "source": "batch-manifest-009",
+      "target": "fast-encoder-017",
+      "type": "reads",
+      "weight": 0.48
+    },
+    {
+      "source": "private-cdn-origin-006",
+      "target": "primary-metadata-015",
+      "type": "caches",
+      "weight": 0.82
+    },
+    {
+      "source": "batch-manifest-009",
+      "target": "staging-ads-028",
+      "type": "subscribes",
+      "weight": 0.6
+    },
+    {
+      "source": "global-manifest-005",
+      "target": "global-thumbnail-026",
+      "type": "queries",
+      "weight": 0.38
+    },
+    {
+      "source": "central-ads-029",
+      "target": "hot-encoder-032",
+      "type": "queries",
+      "weight": 0.95
+    },
+    {
+      "source": "fast-encoder-037",
+      "target": "player-ec2-003",
+      "type": "calls",
+      "weight": 0.56
+    },
+    {
+      "source": "staging-ads-028",
+      "target": "backup-encoder-012",
+      "type": "subscribes",
+      "weight": 0.71
+    },
+    {
+      "source": "shared-cdn-origin-013",
+      "target": "primary-metadata-015",
+      "type": "calls",
+      "weight": 0.73
+    },
+    {
+      "source": "staging-thumbnail-014",
+      "target": "secondary-analytics-035",
+      "type": "writes",
+      "weight": 0.43
+    },
+    {
+      "source": "backup-encoder-012",
+      "target": "primary-transcoder-021",
+      "type": "writes",
+      "weight": 0.27
+    },
+    {
+      "source": "central-transcoder-034",
+      "target": "hot-metadata-031",
+      "type": "calls",
+      "weight": 0.32
+    },
+    {
+      "source": "staging-cdn-origin-019",
+      "target": "regional-encoder-024",
+      "type": "writes",
+      "weight": 0.95
+    },
+    {
+      "source": "global-thumbnail-026",
+      "target": "hot-metadata-031",
+      "type": "reads",
+      "weight": 0.49
+    },
+    {
+      "source": "realtime-thumbnail-010",
+      "target": "drm-cloudfront-000",
+      "type": "triggers",
+      "weight": 0.47
+    },
+    {
+      "source": "analytics-s3-001",
+      "target": "staging-thumbnail-014",
+      "type": "queries",
+      "weight": 0.96
+    },
+    {
+      "source": "private-cdn-origin-006",
+      "target": "primary-encoder-018",
+      "type": "calls",
+      "weight": 0.15
+    },
+    {
+      "source": "private-drm-025",
+      "target": "regional-encoder-024",
+      "type": "triggers",
+      "weight": 0.9
+    },
+    {
+      "source": "secondary-analytics-035",
+      "target": "drm-cloudfront-000",
+      "type": "triggers",
+      "weight": 0.79
+    },
+    {
+      "source": "batch-drm-039",
+      "target": "primary-transcoder-021",
+      "type": "caches",
+      "weight": 0.71
+    },
+    {
+      "source": "staging-cdn-origin-019",
+      "target": "private-cdn-origin-006",
+      "type": "queries",
+      "weight": 0.77
+    },
+    {
+      "source": "primary-encoder-018",
+      "target": "central-ads-029",
+      "type": "writes",
+      "weight": 0.31
+    },
+    {
+      "source": "secondary-analytics-035",
+      "target": "ads-mediaconvert-002",
+      "type": "subscribes",
+      "weight": 0.91
+    },
+    {
+      "source": "shared-ads-038",
+      "target": "private-drm-025",
+      "type": "triggers",
+      "weight": 0.94
+    },
+    {
+      "source": "regional-encoder-007",
+      "target": "secondary-analytics-035",
+      "type": "reads",
+      "weight": 0.95
+    },
+    {
+      "source": "private-cdn-origin-006",
+      "target": "staging-thumbnail-014",
+      "type": "caches",
+      "weight": 0.14
+    },
+    {
+      "source": "edge-manifest-020",
+      "target": "staging-thumbnail-014",
+      "type": "reads",
+      "weight": 0.47
+    },
+    {
+      "source": "central-transcoder-034",
+      "target": "hot-encoder-032",
+      "type": "subscribes",
+      "weight": 0.6
+    },
+    {
+      "source": "staging-ads-028",
+      "target": "secondary-analytics-035",
+      "type": "reads",
+      "weight": 0.98
+    },
+    {
+      "source": "player-ec2-003",
+      "target": "public-manifest-030",
+      "type": "triggers",
+      "weight": 0.81
+    },
+    {
+      "source": "staging-thumbnail-014",
+      "target": "analytics-s3-001",
+      "type": "writes",
+      "weight": 0.47
+    },
+    {
+      "source": "batch-manifest-009",
+      "target": "metadata-dynamodb-004",
+      "type": "calls",
+      "weight": 0.6
+    },
+    {
+      "source": "staging-ads-028",
+      "target": "shared-ads-038",
+      "type": "caches",
+      "weight": 0.3
+    },
+    {
+      "source": "shared-ads-038",
+      "target": "regional-encoder-007",
+      "type": "subscribes",
+      "weight": 0.53
+    },
+    {
+      "source": "backup-encoder-012",
+      "target": "hot-metadata-031",
+      "type": "writes",
+      "weight": 1.0
+    },
+    {
+      "source": "cold-analytics-033",
+      "target": "backup-encoder-012",
+      "type": "writes",
+      "weight": 0.22
+    },
+    {
+      "source": "edge-manifest-020",
+      "target": "main-player-011",
+      "type": "queries",
+      "weight": 0.3
+    },
+    {
+      "source": "shared-cdn-origin-013",
+      "target": "private-metadata-008",
+      "type": "writes",
+      "weight": 0.5
+    },
+    {
+      "source": "drm-cloudfront-000",
+      "target": "global-manifest-005",
+      "type": "queries",
+      "weight": 0.18
+    },
+    {
+      "source": "hot-encoder-032",
+      "target": "ads-mediaconvert-002",
+      "type": "reads",
+      "weight": 0.19
+    },
+    {
+      "source": "staging-transcoder-022",
+      "target": "fast-encoder-017",
+      "type": "reads",
+      "weight": 0.31
+    },
+    {
+      "source": "player-ec2-003",
+      "target": "realtime-thumbnail-010",
+      "type": "calls",
+      "weight": 0.98
+    },
+    {
+      "source": "metadata-dynamodb-004",
+      "target": "central-transcoder-034",
+      "type": "subscribes",
+      "weight": 0.77
+    },
+    {
+      "source": "central-transcoder-034",
+      "target": "global-thumbnail-026",
+      "type": "writes",
+      "weight": 0.58
+    },
+    {
+      "source": "hot-metadata-031",
+      "target": "staging-cdn-origin-019",
+      "type": "caches",
+      "weight": 0.91
+    },
+    {
+      "source": "drm-cloudfront-000",
+      "target": "hot-encoder-032",
+      "type": "queries",
+      "weight": 0.61
+    },
+    {
+      "source": "public-manifest-030",
+      "target": "staging-cdn-origin-019",
+      "type": "calls",
+      "weight": 0.38
+    },
+    {
+      "source": "player-ec2-003",
+      "target": "primary-transcoder-021",
+      "type": "queries",
+      "weight": 0.74
+    },
+    {
+      "source": "private-drm-025",
+      "target": "player-ec2-003",
+      "type": "writes",
+      "weight": 0.88
+    },
+    {
+      "source": "cold-analytics-033",
+      "target": "analytics-s3-001",
+      "type": "subscribes",
+      "weight": 0.59
+    },
+    {
+      "source": "cold-analytics-033",
+      "target": "player-ec2-003",
+      "type": "caches",
+      "weight": 0.57
+    },
+    {
+      "source": "shared-ads-038",
+      "target": "private-metadata-008",
+      "type": "caches",
+      "weight": 0.96
+    },
+    {
+      "source": "player-ec2-003",
+      "target": "fast-transcoder-036",
+      "type": "writes",
+      "weight": 0.42
+    },
+    {
+      "source": "realtime-thumbnail-010",
+      "target": "public-manifest-030",
+      "type": "calls",
+      "weight": 0.41
+    }
+  ]
+}

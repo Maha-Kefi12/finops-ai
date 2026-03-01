@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "name": "Gaming (Startup, us-east-1)",
+    "id": "6897cc58",
+    "pattern": "gaming",
+    "complexity": "small",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 5,
+    "total_dependencies": 5,
+    "total_cost_monthly": 818.95,
+    "generated_at": "2026-03-01T19:23:57.536530",
+    "variation_seed": 7520
+  },
+  "services": [
+    {
+      "id": "rewards-nlb-000",
+      "name": "rewards-nlb",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 58.52,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "inventory-ec2-001",
+      "name": "inventory-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 293.78,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "telemetry-dynamodb-002",
+      "name": "telemetry-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 78.95,
+      "owner": "devops",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "leaderboard-elasticache-003",
+      "name": "leaderboard-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 337.13,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "inventory-kinesis-004",
+      "name": "inventory-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 50.57,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "rewards-nlb-000",
+      "target": "inventory-ec2-001",
+      "type": "caches",
+      "weight": 0.3
+    },
+    {
+      "source": "inventory-ec2-001",
+      "target": "telemetry-dynamodb-002",
+      "type": "subscribes",
+      "weight": 0.38
+    },
+    {
+      "source": "telemetry-dynamodb-002",
+      "target": "leaderboard-elasticache-003",
+      "type": "caches",
+      "weight": 0.98
+    },
+    {
+      "source": "leaderboard-elasticache-003",
+      "target": "inventory-kinesis-004",
+      "type": "writes",
+      "weight": 0.44
+    },
+    {
+      "source": "rewards-nlb-000",
+      "target": "inventory-kinesis-004",
+      "type": "caches",
+      "weight": 0.31
+    }
+  ]
+}

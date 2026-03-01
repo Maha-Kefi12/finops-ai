@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "name": "Fintech (Growth, ap-southeast-1)",
+    "id": "c714cb44",
+    "pattern": "fintech",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 5,
+    "total_dependencies": 5,
+    "total_cost_monthly": 9810.7,
+    "generated_at": "2026-03-01T19:23:58.210758",
+    "variation_seed": 37714
+  },
+  "services": [
+    {
+      "id": "compliance-api-000",
+      "name": "compliance-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 383.13,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ledger-eks-001",
+      "name": "ledger-eks",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 3043.38,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "risk-engine-aurora-002",
+      "name": "risk-engine-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 3697.83,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "payments-elasticache-003",
+      "name": "payments-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1692.8,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fraud-detection-dynamodb-004",
+      "name": "fraud-detection-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 993.56,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "compliance-api-000",
+      "target": "ledger-eks-001",
+      "type": "caches",
+      "weight": 0.77
+    },
+    {
+      "source": "ledger-eks-001",
+      "target": "risk-engine-aurora-002",
+      "type": "queries",
+      "weight": 0.68
+    },
+    {
+      "source": "risk-engine-aurora-002",
+      "target": "payments-elasticache-003",
+      "type": "writes",
+      "weight": 0.62
+    },
+    {
+      "source": "payments-elasticache-003",
+      "target": "fraud-detection-dynamodb-004",
+      "type": "subscribes",
+      "weight": 0.61
+    },
+    {
+      "source": "compliance-api-000",
+      "target": "risk-engine-aurora-002",
+      "type": "reads",
+      "weight": 0.73
+    }
+  ]
+}

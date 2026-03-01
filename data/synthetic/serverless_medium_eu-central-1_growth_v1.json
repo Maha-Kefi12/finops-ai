@@ -1,0 +1,225 @@
+{
+  "metadata": {
+    "name": "Serverless (Growth, eu-central-1)",
+    "id": "48cc5b12",
+    "pattern": "serverless",
+    "complexity": "medium",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 9,
+    "total_dependencies": 10,
+    "total_cost_monthly": 4438.11,
+    "generated_at": "2026-03-01T19:23:57.809067",
+    "variation_seed": 20416
+  },
+  "services": [
+    {
+      "id": "processor-api-000",
+      "name": "processor-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 434.28,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "handler-lambda-001",
+      "name": "handler-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 41.33,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "processor-dynamodb-002",
+      "name": "processor-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1965.56,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "router-s3-003",
+      "name": "router-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 541.34,
+      "owner": "security",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "validator-cloudfront-004",
+      "name": "validator-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 1134.68,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "private-router-005",
+      "name": "private-router",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 163.5,
+      "owner": "devops",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-scheduler-006",
+      "name": "async-scheduler",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 18.43,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "staging-validator-007",
+      "name": "staging-validator",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 110.29,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-handler-008",
+      "name": "backup-handler",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 28.7,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "processor-api-000",
+      "target": "handler-lambda-001",
+      "type": "subscribes",
+      "weight": 0.3
+    },
+    {
+      "source": "handler-lambda-001",
+      "target": "processor-dynamodb-002",
+      "type": "caches",
+      "weight": 0.39
+    },
+    {
+      "source": "processor-dynamodb-002",
+      "target": "router-s3-003",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "router-s3-003",
+      "target": "validator-cloudfront-004",
+      "type": "reads",
+      "weight": 0.42
+    },
+    {
+      "source": "validator-cloudfront-004",
+      "target": "private-router-005",
+      "type": "triggers",
+      "weight": 0.64
+    },
+    {
+      "source": "private-router-005",
+      "target": "async-scheduler-006",
+      "type": "writes",
+      "weight": 0.81
+    },
+    {
+      "source": "async-scheduler-006",
+      "target": "staging-validator-007",
+      "type": "queries",
+      "weight": 0.37
+    },
+    {
+      "source": "staging-validator-007",
+      "target": "backup-handler-008",
+      "type": "calls",
+      "weight": 0.64
+    },
+    {
+      "source": "handler-lambda-001",
+      "target": "backup-handler-008",
+      "type": "subscribes",
+      "weight": 0.83
+    },
+    {
+      "source": "router-s3-003",
+      "target": "backup-handler-008",
+      "type": "subscribes",
+      "weight": 0.12
+    }
+  ]
+}

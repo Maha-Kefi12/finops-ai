@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Healthcare (Growth, eu-central-1)",
+    "id": "24c9bce6",
+    "pattern": "healthcare",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 10563.1,
+    "generated_at": "2026-03-01T19:23:58.300403",
+    "variation_seed": 41768
+  },
+  "services": [
+    {
+      "id": "patient-portal-alb-000",
+      "name": "patient-portal-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 195.93,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "imaging-ecs-001",
+      "name": "imaging-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 2626.33,
+      "owner": "devops",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "vitals-aurora-002",
+      "name": "vitals-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 7740.84,
+      "owner": "growth-eng",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "patient-portal-alb-000",
+      "target": "imaging-ecs-001",
+      "type": "writes",
+      "weight": 0.71
+    },
+    {
+      "source": "imaging-ecs-001",
+      "target": "vitals-aurora-002",
+      "type": "triggers",
+      "weight": 0.96
+    }
+  ]
+}

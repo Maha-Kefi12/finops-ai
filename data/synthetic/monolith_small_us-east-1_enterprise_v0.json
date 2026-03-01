@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Monolith (Enterprise, us-east-1)",
+    "id": "f2511131",
+    "pattern": "monolith",
+    "complexity": "small",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 4453.75,
+    "generated_at": "2026-03-01T19:23:58.123658",
+    "variation_seed": 33646
+  },
+  "services": [
+    {
+      "id": "web-tier-alb-000",
+      "name": "web-tier-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 96.03,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "sessions-ec2-001",
+      "name": "sessions-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 3846.27,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "web-tier-rds-002",
+      "name": "web-tier-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 511.45,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "web-tier-alb-000",
+      "target": "sessions-ec2-001",
+      "type": "triggers",
+      "weight": 0.52
+    },
+    {
+      "source": "sessions-ec2-001",
+      "target": "web-tier-rds-002",
+      "type": "queries",
+      "weight": 0.83
+    },
+    {
+      "source": "web-tier-alb-000",
+      "target": "web-tier-rds-002",
+      "type": "caches",
+      "weight": 0.81
+    }
+  ]
+}

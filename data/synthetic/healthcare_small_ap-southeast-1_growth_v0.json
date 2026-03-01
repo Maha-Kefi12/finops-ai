@@ -1,0 +1,137 @@
+{
+  "metadata": {
+    "name": "Healthcare (Growth, ap-southeast-1)",
+    "id": "1a34579d",
+    "pattern": "healthcare",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 5,
+    "total_dependencies": 6,
+    "total_cost_monthly": 2460.54,
+    "generated_at": "2026-03-01T19:23:58.298150",
+    "variation_seed": 41396
+  },
+  "services": [
+    {
+      "id": "imaging-alb-000",
+      "name": "imaging-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 169.37,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "labs-ecs-001",
+      "name": "labs-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 319.79,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "labs-aurora-002",
+      "name": "labs-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 732.0,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "imaging-s3-003",
+      "name": "imaging-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 1067.06,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "vitals-cognito-004",
+      "name": "vitals-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 172.32,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "imaging-alb-000",
+      "target": "labs-ecs-001",
+      "type": "writes",
+      "weight": 0.69
+    },
+    {
+      "source": "labs-ecs-001",
+      "target": "labs-aurora-002",
+      "type": "reads",
+      "weight": 0.34
+    },
+    {
+      "source": "labs-aurora-002",
+      "target": "imaging-s3-003",
+      "type": "queries",
+      "weight": 0.85
+    },
+    {
+      "source": "imaging-s3-003",
+      "target": "vitals-cognito-004",
+      "type": "writes",
+      "weight": 0.39
+    },
+    {
+      "source": "labs-ecs-001",
+      "target": "imaging-s3-003",
+      "type": "writes",
+      "weight": 0.71
+    },
+    {
+      "source": "labs-aurora-002",
+      "target": "imaging-alb-000",
+      "type": "triggers",
+      "weight": 0.39
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "metadata": {
+    "name": "Ecommerce (Enterprise, us-east-1)",
+    "id": "ab6f5968",
+    "pattern": "ecommerce",
+    "complexity": "small",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 4,
+    "total_dependencies": 3,
+    "total_cost_monthly": 3680.42,
+    "generated_at": "2026-03-01T19:23:57.357848",
+    "variation_seed": 166
+  },
+  "services": [
+    {
+      "id": "checkout-alb-000",
+      "name": "checkout-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 188.33,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "catalog-ec2-001",
+      "name": "catalog-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 103.12,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "checkout-ec2-002",
+      "name": "checkout-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 1915.09,
+      "owner": "payments",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "catalog-rds-003",
+      "name": "catalog-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 1473.88,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "checkout-alb-000",
+      "target": "catalog-ec2-001",
+      "type": "queries",
+      "weight": 0.65
+    },
+    {
+      "source": "catalog-ec2-001",
+      "target": "checkout-ec2-002",
+      "type": "reads",
+      "weight": 0.75
+    },
+    {
+      "source": "checkout-ec2-002",
+      "target": "catalog-rds-003",
+      "type": "queries",
+      "weight": 0.3
+    }
+  ]
+}

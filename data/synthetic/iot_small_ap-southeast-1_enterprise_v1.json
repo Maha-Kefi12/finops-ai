@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Iot (Enterprise, ap-southeast-1)",
+    "id": "64f15fac",
+    "pattern": "iot",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 1416.91,
+    "generated_at": "2026-03-01T19:23:58.045528",
+    "variation_seed": 30336
+  },
+  "services": [
+    {
+      "id": "device-mgr-iot-000",
+      "name": "device-mgr-iot",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 886.96,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "digital-twin-kinesis-001",
+      "name": "digital-twin-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 339.09,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "device-mgr-lambda-002",
+      "name": "device-mgr-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 190.86,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "device-mgr-iot-000",
+      "target": "digital-twin-kinesis-001",
+      "type": "subscribes",
+      "weight": 0.68
+    },
+    {
+      "source": "digital-twin-kinesis-001",
+      "target": "device-mgr-lambda-002",
+      "type": "queries",
+      "weight": 0.46
+    },
+    {
+      "source": "digital-twin-kinesis-001",
+      "target": "device-mgr-iot-000",
+      "type": "caches",
+      "weight": 0.34
+    }
+  ]
+}

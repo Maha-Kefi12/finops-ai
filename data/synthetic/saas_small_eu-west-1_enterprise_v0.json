@@ -1,0 +1,159 @@
+{
+  "metadata": {
+    "name": "Saas (Enterprise, eu-west-1)",
+    "id": "855d0b6d",
+    "pattern": "saas",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 6,
+    "total_dependencies": 7,
+    "total_cost_monthly": 7914.54,
+    "generated_at": "2026-03-01T19:23:57.449565",
+    "variation_seed": 4072
+  },
+  "services": [
+    {
+      "id": "config-api-000",
+      "name": "config-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 386.86,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "workspace-ecs-001",
+      "name": "workspace-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 377.26,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "auth-aurora-002",
+      "name": "auth-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 5891.5,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "config-elasticache-003",
+      "name": "config-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 949.82,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "onboarding-cognito-004",
+      "name": "onboarding-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 114.24,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "primary-audit-005",
+      "name": "primary-audit",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 194.86,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "config-api-000",
+      "target": "workspace-ecs-001",
+      "type": "subscribes",
+      "weight": 0.65
+    },
+    {
+      "source": "workspace-ecs-001",
+      "target": "auth-aurora-002",
+      "type": "reads",
+      "weight": 0.93
+    },
+    {
+      "source": "auth-aurora-002",
+      "target": "config-elasticache-003",
+      "type": "reads",
+      "weight": 0.47
+    },
+    {
+      "source": "config-elasticache-003",
+      "target": "onboarding-cognito-004",
+      "type": "calls",
+      "weight": 0.69
+    },
+    {
+      "source": "onboarding-cognito-004",
+      "target": "primary-audit-005",
+      "type": "reads",
+      "weight": 0.88
+    },
+    {
+      "source": "config-elasticache-003",
+      "target": "auth-aurora-002",
+      "type": "reads",
+      "weight": 0.84
+    },
+    {
+      "source": "auth-aurora-002",
+      "target": "onboarding-cognito-004",
+      "type": "subscribes",
+      "weight": 0.77
+    }
+  ]
+}

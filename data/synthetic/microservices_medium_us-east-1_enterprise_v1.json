@@ -1,0 +1,315 @@
+{
+  "metadata": {
+    "name": "Microservices (Enterprise, us-east-1)",
+    "id": "ad6f828e",
+    "pattern": "microservices",
+    "complexity": "medium",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 12,
+    "total_dependencies": 17,
+    "total_cost_monthly": 10335.32,
+    "generated_at": "2026-03-01T19:23:57.712858",
+    "variation_seed": 16014
+  },
+  "services": [
+    {
+      "id": "notification-svc-alb-000",
+      "name": "notification-svc-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 83.79,
+      "owner": "security",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "payment-svc-ecs-001",
+      "name": "payment-svc-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 337.72,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "report-svc-rds-002",
+      "name": "report-svc-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 3876.33,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "audit-svc-elasticache-003",
+      "name": "audit-svc-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1810.61,
+      "owner": "devops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "report-svc-sqs-004",
+      "name": "report-svc-sqs",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 197.64,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cold-audit-svc-005",
+      "name": "cold-audit-svc",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1632.77,
+      "owner": "mobile-backend",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-user-svc-006",
+      "name": "regional-user-svc",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1224.39,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-gateway-007",
+      "name": "main-gateway",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 137.78,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-notification-svc-008",
+      "name": "primary-notification-svc",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 147.47,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-config-svc-009",
+      "name": "hot-config-svc",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 50.39,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-webhook-svc-010",
+      "name": "cold-webhook-svc",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 786.41,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-order-svc-011",
+      "name": "internal-order-svc",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 50.02,
+      "owner": "infra-core",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "notification-svc-alb-000",
+      "target": "payment-svc-ecs-001",
+      "type": "subscribes",
+      "weight": 0.95
+    },
+    {
+      "source": "payment-svc-ecs-001",
+      "target": "report-svc-rds-002",
+      "type": "subscribes",
+      "weight": 0.82
+    },
+    {
+      "source": "report-svc-rds-002",
+      "target": "audit-svc-elasticache-003",
+      "type": "writes",
+      "weight": 0.34
+    },
+    {
+      "source": "audit-svc-elasticache-003",
+      "target": "report-svc-sqs-004",
+      "type": "reads",
+      "weight": 0.74
+    },
+    {
+      "source": "report-svc-sqs-004",
+      "target": "cold-audit-svc-005",
+      "type": "calls",
+      "weight": 0.56
+    },
+    {
+      "source": "cold-audit-svc-005",
+      "target": "regional-user-svc-006",
+      "type": "queries",
+      "weight": 0.87
+    },
+    {
+      "source": "regional-user-svc-006",
+      "target": "main-gateway-007",
+      "type": "writes",
+      "weight": 0.74
+    },
+    {
+      "source": "main-gateway-007",
+      "target": "primary-notification-svc-008",
+      "type": "subscribes",
+      "weight": 0.66
+    },
+    {
+      "source": "primary-notification-svc-008",
+      "target": "hot-config-svc-009",
+      "type": "queries",
+      "weight": 0.54
+    },
+    {
+      "source": "hot-config-svc-009",
+      "target": "cold-webhook-svc-010",
+      "type": "triggers",
+      "weight": 0.95
+    },
+    {
+      "source": "cold-webhook-svc-010",
+      "target": "internal-order-svc-011",
+      "type": "caches",
+      "weight": 0.43
+    },
+    {
+      "source": "cold-webhook-svc-010",
+      "target": "audit-svc-elasticache-003",
+      "type": "caches",
+      "weight": 0.48
+    },
+    {
+      "source": "cold-audit-svc-005",
+      "target": "report-svc-rds-002",
+      "type": "calls",
+      "weight": 0.47
+    },
+    {
+      "source": "audit-svc-elasticache-003",
+      "target": "hot-config-svc-009",
+      "type": "reads",
+      "weight": 0.97
+    },
+    {
+      "source": "payment-svc-ecs-001",
+      "target": "internal-order-svc-011",
+      "type": "writes",
+      "weight": 0.35
+    },
+    {
+      "source": "notification-svc-alb-000",
+      "target": "regional-user-svc-006",
+      "type": "subscribes",
+      "weight": 0.68
+    },
+    {
+      "source": "report-svc-sqs-004",
+      "target": "cold-webhook-svc-010",
+      "type": "caches",
+      "weight": 0.15
+    }
+  ]
+}

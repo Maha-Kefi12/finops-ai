@@ -1,0 +1,159 @@
+{
+  "metadata": {
+    "name": "Saas (Enterprise, eu-west-1)",
+    "id": "ffa9afde",
+    "pattern": "saas",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 6,
+    "total_dependencies": 7,
+    "total_cost_monthly": 6318.66,
+    "generated_at": "2026-03-01T19:23:57.449780",
+    "variation_seed": 4110
+  },
+  "services": [
+    {
+      "id": "config-api-000",
+      "name": "config-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 383.76,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "workspace-ecs-001",
+      "name": "workspace-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 2747.22,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "onboarding-aurora-002",
+      "name": "onboarding-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 2820.74,
+      "owner": "api-gateway-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "tenant-elasticache-003",
+      "name": "tenant-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 143.63,
+      "owner": "ml-ops",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "analytics-cognito-004",
+      "name": "analytics-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 214.69,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-tenant-005",
+      "name": "edge-tenant",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 8.62,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "config-api-000",
+      "target": "workspace-ecs-001",
+      "type": "writes",
+      "weight": 0.55
+    },
+    {
+      "source": "workspace-ecs-001",
+      "target": "onboarding-aurora-002",
+      "type": "triggers",
+      "weight": 0.41
+    },
+    {
+      "source": "onboarding-aurora-002",
+      "target": "tenant-elasticache-003",
+      "type": "triggers",
+      "weight": 0.46
+    },
+    {
+      "source": "tenant-elasticache-003",
+      "target": "analytics-cognito-004",
+      "type": "subscribes",
+      "weight": 0.43
+    },
+    {
+      "source": "analytics-cognito-004",
+      "target": "edge-tenant-005",
+      "type": "subscribes",
+      "weight": 0.63
+    },
+    {
+      "source": "onboarding-aurora-002",
+      "target": "analytics-cognito-004",
+      "type": "triggers",
+      "weight": 0.9
+    },
+    {
+      "source": "workspace-ecs-001",
+      "target": "analytics-cognito-004",
+      "type": "subscribes",
+      "weight": 0.52
+    }
+  ]
+}

@@ -1,0 +1,259 @@
+{
+  "metadata": {
+    "name": "Saas (Growth, us-west-2)",
+    "id": "ef3b8e71",
+    "pattern": "saas",
+    "complexity": "medium",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 10,
+    "total_dependencies": 13,
+    "total_cost_monthly": 5642.49,
+    "generated_at": "2026-03-01T19:23:57.462202",
+    "variation_seed": 5312
+  },
+  "services": [
+    {
+      "id": "billing-api-000",
+      "name": "billing-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 433.12,
+      "owner": "frontend-guild",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "config-ecs-001",
+      "name": "config-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1308.51,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audit-aurora-002",
+      "name": "audit-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 926.69,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "auth-elasticache-003",
+      "name": "auth-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1350.59,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "auth-cognito-004",
+      "name": "auth-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 137.38,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-integrations-005",
+      "name": "primary-integrations",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 729.39,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "private-onboarding-006",
+      "name": "private-onboarding",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 27.79,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-workspace-007",
+      "name": "edge-workspace",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 470.93,
+      "owner": "security",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-analytics-008",
+      "name": "primary-analytics",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 109.19,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-notification-009",
+      "name": "shared-notification",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 148.9,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "billing-api-000",
+      "target": "config-ecs-001",
+      "type": "writes",
+      "weight": 0.95
+    },
+    {
+      "source": "config-ecs-001",
+      "target": "audit-aurora-002",
+      "type": "triggers",
+      "weight": 0.52
+    },
+    {
+      "source": "audit-aurora-002",
+      "target": "auth-elasticache-003",
+      "type": "caches",
+      "weight": 0.85
+    },
+    {
+      "source": "auth-elasticache-003",
+      "target": "auth-cognito-004",
+      "type": "reads",
+      "weight": 0.54
+    },
+    {
+      "source": "auth-cognito-004",
+      "target": "primary-integrations-005",
+      "type": "reads",
+      "weight": 0.97
+    },
+    {
+      "source": "primary-integrations-005",
+      "target": "private-onboarding-006",
+      "type": "writes",
+      "weight": 0.44
+    },
+    {
+      "source": "private-onboarding-006",
+      "target": "edge-workspace-007",
+      "type": "reads",
+      "weight": 0.63
+    },
+    {
+      "source": "edge-workspace-007",
+      "target": "primary-analytics-008",
+      "type": "reads",
+      "weight": 0.68
+    },
+    {
+      "source": "primary-analytics-008",
+      "target": "shared-notification-009",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "billing-api-000",
+      "target": "primary-analytics-008",
+      "type": "caches",
+      "weight": 0.59
+    },
+    {
+      "source": "billing-api-000",
+      "target": "auth-cognito-004",
+      "type": "writes",
+      "weight": 0.96
+    },
+    {
+      "source": "private-onboarding-006",
+      "target": "auth-elasticache-003",
+      "type": "queries",
+      "weight": 0.36
+    },
+    {
+      "source": "billing-api-000",
+      "target": "shared-notification-009",
+      "type": "triggers",
+      "weight": 0.19
+    }
+  ]
+}

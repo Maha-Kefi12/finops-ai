@@ -1,0 +1,677 @@
+{
+  "metadata": {
+    "name": "Gaming (Startup, us-west-2)",
+    "id": "c66cb9a3",
+    "pattern": "gaming",
+    "complexity": "large",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 26,
+    "total_dependencies": 40,
+    "total_cost_monthly": 4797.04,
+    "generated_at": "2026-03-01T19:23:57.569274",
+    "variation_seed": 9900
+  },
+  "services": [
+    {
+      "id": "store-nlb-000",
+      "name": "store-nlb",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 124.21,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "chat-ec2-001",
+      "name": "chat-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 292.21,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "sessions-dynamodb-002",
+      "name": "sessions-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 66.81,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "inventory-elasticache-003",
+      "name": "inventory-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 335.62,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "anticheat-kinesis-004",
+      "name": "anticheat-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 184.73,
+      "owner": "backend-squad",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cold-leaderboard-005",
+      "name": "cold-leaderboard",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 5.82,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-sessions-006",
+      "name": "core-sessions",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 148.6,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-anticheat-007",
+      "name": "fast-anticheat",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 76.57,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-anticheat-008",
+      "name": "fast-anticheat",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 293.54,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "public-telemetry-009",
+      "name": "public-telemetry",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 283.43,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-chat-010",
+      "name": "global-chat",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 18.29,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-matchmaker-011",
+      "name": "cold-matchmaker",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 172.41,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-sessions-012",
+      "name": "shared-sessions",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 228.42,
+      "owner": "security",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-matchmaker-013",
+      "name": "primary-matchmaker",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 273.39,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-leaderboard-014",
+      "name": "central-leaderboard",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 308.13,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-anticheat-015",
+      "name": "fast-anticheat",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 128.67,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-telemetry-016",
+      "name": "hot-telemetry",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 130.69,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-telemetry-017",
+      "name": "fast-telemetry",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 300.18,
+      "owner": "security",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-store-018",
+      "name": "public-store",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 166.7,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-anticheat-019",
+      "name": "private-anticheat",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 47.92,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-leaderboard-020",
+      "name": "secondary-leaderboard",
+      "type": "storage",
+      "aws_service": "Amazon EFS",
+      "cost_monthly": 278.86,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "fast-telemetry-021",
+      "name": "fast-telemetry",
+      "type": "load_balancer",
+      "aws_service": "Network Load Balancer",
+      "cost_monthly": 136.8,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "batch-leaderboard-022",
+      "name": "batch-leaderboard",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 139.72,
+      "owner": "infra-core",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-chat-023",
+      "name": "realtime-chat",
+      "type": "storage",
+      "aws_service": "Amazon EFS",
+      "cost_monthly": 344.33,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-matchmaker-024",
+      "name": "primary-matchmaker",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 162.64,
+      "owner": "devops",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-store-025",
+      "name": "async-store",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 148.35,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "store-nlb-000",
+      "target": "chat-ec2-001",
+      "type": "queries",
+      "weight": 0.52
+    },
+    {
+      "source": "chat-ec2-001",
+      "target": "sessions-dynamodb-002",
+      "type": "caches",
+      "weight": 0.52
+    },
+    {
+      "source": "sessions-dynamodb-002",
+      "target": "inventory-elasticache-003",
+      "type": "triggers",
+      "weight": 0.59
+    },
+    {
+      "source": "inventory-elasticache-003",
+      "target": "anticheat-kinesis-004",
+      "type": "subscribes",
+      "weight": 0.41
+    },
+    {
+      "source": "anticheat-kinesis-004",
+      "target": "cold-leaderboard-005",
+      "type": "reads",
+      "weight": 0.44
+    },
+    {
+      "source": "cold-leaderboard-005",
+      "target": "core-sessions-006",
+      "type": "reads",
+      "weight": 0.44
+    },
+    {
+      "source": "core-sessions-006",
+      "target": "fast-anticheat-007",
+      "type": "reads",
+      "weight": 0.36
+    },
+    {
+      "source": "fast-anticheat-007",
+      "target": "fast-anticheat-008",
+      "type": "calls",
+      "weight": 0.94
+    },
+    {
+      "source": "fast-anticheat-008",
+      "target": "public-telemetry-009",
+      "type": "calls",
+      "weight": 0.47
+    },
+    {
+      "source": "public-telemetry-009",
+      "target": "global-chat-010",
+      "type": "writes",
+      "weight": 0.87
+    },
+    {
+      "source": "global-chat-010",
+      "target": "cold-matchmaker-011",
+      "type": "reads",
+      "weight": 0.86
+    },
+    {
+      "source": "cold-matchmaker-011",
+      "target": "shared-sessions-012",
+      "type": "caches",
+      "weight": 0.83
+    },
+    {
+      "source": "shared-sessions-012",
+      "target": "primary-matchmaker-013",
+      "type": "caches",
+      "weight": 0.85
+    },
+    {
+      "source": "primary-matchmaker-013",
+      "target": "central-leaderboard-014",
+      "type": "calls",
+      "weight": 0.59
+    },
+    {
+      "source": "central-leaderboard-014",
+      "target": "fast-anticheat-015",
+      "type": "calls",
+      "weight": 0.93
+    },
+    {
+      "source": "fast-anticheat-015",
+      "target": "hot-telemetry-016",
+      "type": "triggers",
+      "weight": 0.74
+    },
+    {
+      "source": "hot-telemetry-016",
+      "target": "fast-telemetry-017",
+      "type": "reads",
+      "weight": 0.8
+    },
+    {
+      "source": "fast-telemetry-017",
+      "target": "public-store-018",
+      "type": "reads",
+      "weight": 0.72
+    },
+    {
+      "source": "public-store-018",
+      "target": "private-anticheat-019",
+      "type": "triggers",
+      "weight": 0.46
+    },
+    {
+      "source": "private-anticheat-019",
+      "target": "secondary-leaderboard-020",
+      "type": "writes",
+      "weight": 0.76
+    },
+    {
+      "source": "secondary-leaderboard-020",
+      "target": "fast-telemetry-021",
+      "type": "calls",
+      "weight": 0.96
+    },
+    {
+      "source": "fast-telemetry-021",
+      "target": "batch-leaderboard-022",
+      "type": "subscribes",
+      "weight": 0.92
+    },
+    {
+      "source": "batch-leaderboard-022",
+      "target": "realtime-chat-023",
+      "type": "queries",
+      "weight": 0.82
+    },
+    {
+      "source": "realtime-chat-023",
+      "target": "primary-matchmaker-024",
+      "type": "calls",
+      "weight": 0.65
+    },
+    {
+      "source": "primary-matchmaker-024",
+      "target": "async-store-025",
+      "type": "subscribes",
+      "weight": 0.38
+    },
+    {
+      "source": "fast-anticheat-007",
+      "target": "hot-telemetry-016",
+      "type": "calls",
+      "weight": 0.85
+    },
+    {
+      "source": "cold-matchmaker-011",
+      "target": "cold-leaderboard-005",
+      "type": "subscribes",
+      "weight": 0.79
+    },
+    {
+      "source": "fast-telemetry-017",
+      "target": "fast-anticheat-007",
+      "type": "triggers",
+      "weight": 0.64
+    },
+    {
+      "source": "fast-anticheat-015",
+      "target": "store-nlb-000",
+      "type": "subscribes",
+      "weight": 0.23
+    },
+    {
+      "source": "primary-matchmaker-024",
+      "target": "global-chat-010",
+      "type": "caches",
+      "weight": 0.52
+    },
+    {
+      "source": "primary-matchmaker-013",
+      "target": "fast-telemetry-021",
+      "type": "calls",
+      "weight": 0.64
+    },
+    {
+      "source": "secondary-leaderboard-020",
+      "target": "hot-telemetry-016",
+      "type": "calls",
+      "weight": 0.42
+    },
+    {
+      "source": "sessions-dynamodb-002",
+      "target": "fast-telemetry-021",
+      "type": "triggers",
+      "weight": 0.49
+    },
+    {
+      "source": "chat-ec2-001",
+      "target": "batch-leaderboard-022",
+      "type": "triggers",
+      "weight": 0.59
+    },
+    {
+      "source": "secondary-leaderboard-020",
+      "target": "realtime-chat-023",
+      "type": "writes",
+      "weight": 0.41
+    },
+    {
+      "source": "central-leaderboard-014",
+      "target": "public-telemetry-009",
+      "type": "writes",
+      "weight": 0.66
+    },
+    {
+      "source": "chat-ec2-001",
+      "target": "central-leaderboard-014",
+      "type": "triggers",
+      "weight": 0.89
+    },
+    {
+      "source": "fast-anticheat-015",
+      "target": "async-store-025",
+      "type": "writes",
+      "weight": 0.12
+    },
+    {
+      "source": "store-nlb-000",
+      "target": "hot-telemetry-016",
+      "type": "caches",
+      "weight": 0.32
+    },
+    {
+      "source": "cold-leaderboard-005",
+      "target": "batch-leaderboard-022",
+      "type": "triggers",
+      "weight": 0.34
+    }
+  ]
+}

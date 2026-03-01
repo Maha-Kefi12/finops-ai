@@ -1,0 +1,125 @@
+{
+  "metadata": {
+    "name": "Serverless (Enterprise, us-west-2)",
+    "id": "679c12c1",
+    "pattern": "serverless",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 5,
+    "total_dependencies": 4,
+    "total_cost_monthly": 3778.47,
+    "generated_at": "2026-03-01T19:23:57.796065",
+    "variation_seed": 19362
+  },
+  "services": [
+    {
+      "id": "scheduler-api-000",
+      "name": "scheduler-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 336.03,
+      "owner": "payments",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "processor-lambda-001",
+      "name": "processor-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 14.93,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "transformer-dynamodb-002",
+      "name": "transformer-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1102.15,
+      "owner": "devops",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "scheduler-s3-003",
+      "name": "scheduler-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 288.32,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "router-cloudfront-004",
+      "name": "router-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 2037.04,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "scheduler-api-000",
+      "target": "processor-lambda-001",
+      "type": "writes",
+      "weight": 0.71
+    },
+    {
+      "source": "processor-lambda-001",
+      "target": "transformer-dynamodb-002",
+      "type": "subscribes",
+      "weight": 0.61
+    },
+    {
+      "source": "transformer-dynamodb-002",
+      "target": "scheduler-s3-003",
+      "type": "caches",
+      "weight": 0.66
+    },
+    {
+      "source": "scheduler-s3-003",
+      "target": "router-cloudfront-004",
+      "type": "triggers",
+      "weight": 0.91
+    }
+  ]
+}

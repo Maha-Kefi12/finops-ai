@@ -1,0 +1,147 @@
+{
+  "metadata": {
+    "name": "Data Pipeline (Enterprise, us-west-2)",
+    "id": "96fb3bb0",
+    "pattern": "data_pipeline",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 6,
+    "total_dependencies": 5,
+    "total_cost_monthly": 8356.54,
+    "generated_at": "2026-03-01T19:23:57.622649",
+    "variation_seed": 11922
+  },
+  "services": [
+    {
+      "id": "archive-kinesis-000",
+      "name": "archive-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 104.38,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "replay-lambda-001",
+      "name": "replay-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 153.39,
+      "owner": "payments",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "enrichment-s3-002",
+      "name": "enrichment-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 489.67,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "dedup-glue-003",
+      "name": "dedup-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 497.09,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "dedup-redshift-004",
+      "name": "dedup-redshift",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 7032.2,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-replay-005",
+      "name": "staging-replay",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 79.81,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "archive-kinesis-000",
+      "target": "replay-lambda-001",
+      "type": "triggers",
+      "weight": 0.53
+    },
+    {
+      "source": "replay-lambda-001",
+      "target": "enrichment-s3-002",
+      "type": "calls",
+      "weight": 0.32
+    },
+    {
+      "source": "enrichment-s3-002",
+      "target": "dedup-glue-003",
+      "type": "calls",
+      "weight": 0.4
+    },
+    {
+      "source": "dedup-glue-003",
+      "target": "dedup-redshift-004",
+      "type": "reads",
+      "weight": 0.62
+    },
+    {
+      "source": "dedup-redshift-004",
+      "target": "staging-replay-005",
+      "type": "calls",
+      "weight": 0.97
+    }
+  ]
+}

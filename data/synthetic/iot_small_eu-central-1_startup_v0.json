@@ -1,0 +1,153 @@
+{
+  "metadata": {
+    "name": "Iot (Startup, eu-central-1)",
+    "id": "21c36885",
+    "pattern": "iot",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 6,
+    "total_dependencies": 6,
+    "total_cost_monthly": 2929.17,
+    "generated_at": "2026-03-01T19:23:58.046906",
+    "variation_seed": 30546
+  },
+  "services": [
+    {
+      "id": "digital-twin-iot-000",
+      "name": "digital-twin-iot",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 428.91,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "provisioning-kinesis-001",
+      "name": "provisioning-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 630.87,
+      "owner": "ml-ops",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shadow-lambda-002",
+      "name": "shadow-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 558.89,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "alerts-dynamodb-003",
+      "name": "alerts-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 501.29,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shadow-s3-004",
+      "name": "shadow-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 278.95,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-provisioning-005",
+      "name": "core-provisioning",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 530.26,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "digital-twin-iot-000",
+      "target": "provisioning-kinesis-001",
+      "type": "writes",
+      "weight": 0.89
+    },
+    {
+      "source": "provisioning-kinesis-001",
+      "target": "shadow-lambda-002",
+      "type": "queries",
+      "weight": 0.96
+    },
+    {
+      "source": "shadow-lambda-002",
+      "target": "alerts-dynamodb-003",
+      "type": "queries",
+      "weight": 0.66
+    },
+    {
+      "source": "alerts-dynamodb-003",
+      "target": "shadow-s3-004",
+      "type": "calls",
+      "weight": 0.39
+    },
+    {
+      "source": "shadow-s3-004",
+      "target": "core-provisioning-005",
+      "type": "triggers",
+      "weight": 0.76
+    },
+    {
+      "source": "alerts-dynamodb-003",
+      "target": "core-provisioning-005",
+      "type": "writes",
+      "weight": 0.93
+    }
+  ]
+}

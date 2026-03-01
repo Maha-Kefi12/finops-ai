@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "name": "Monolith (Growth, eu-central-1)",
+    "id": "f220c6b4",
+    "pattern": "monolith",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 5,
+    "total_dependencies": 5,
+    "total_cost_monthly": 8359.09,
+    "generated_at": "2026-03-01T19:23:58.128146",
+    "variation_seed": 34328
+  },
+  "services": [
+    {
+      "id": "mailer-alb-000",
+      "name": "mailer-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 159.39,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "mailer-ec2-001",
+      "name": "mailer-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 3515.31,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "file-store-rds-002",
+      "name": "file-store-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 2042.87,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "mailer-s3-003",
+      "name": "mailer-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 466.34,
+      "owner": "notifications",
+      "environment": "dr",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "scheduler-elasticache-004",
+      "name": "scheduler-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 2175.18,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "mailer-alb-000",
+      "target": "mailer-ec2-001",
+      "type": "queries",
+      "weight": 0.32
+    },
+    {
+      "source": "mailer-ec2-001",
+      "target": "file-store-rds-002",
+      "type": "writes",
+      "weight": 0.98
+    },
+    {
+      "source": "file-store-rds-002",
+      "target": "mailer-s3-003",
+      "type": "writes",
+      "weight": 0.97
+    },
+    {
+      "source": "mailer-s3-003",
+      "target": "scheduler-elasticache-004",
+      "type": "caches",
+      "weight": 0.66
+    },
+    {
+      "source": "scheduler-elasticache-004",
+      "target": "file-store-rds-002",
+      "type": "subscribes",
+      "weight": 0.93
+    }
+  ]
+}

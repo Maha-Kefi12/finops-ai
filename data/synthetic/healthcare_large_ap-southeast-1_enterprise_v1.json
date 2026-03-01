@@ -1,0 +1,757 @@
+{
+  "metadata": {
+    "name": "Healthcare (Enterprise, ap-southeast-1)",
+    "id": "a8a532c9",
+    "pattern": "healthcare",
+    "complexity": "large",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 28,
+    "total_dependencies": 48,
+    "total_cost_monthly": 29054.86,
+    "generated_at": "2026-03-01T19:23:58.326694",
+    "variation_seed": 43356
+  },
+  "services": [
+    {
+      "id": "prescriptions-alb-000",
+      "name": "prescriptions-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 160.77,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "telemedicine-ecs-001",
+      "name": "telemedicine-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 3334.68,
+      "owner": "payments",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "consent-aurora-002",
+      "name": "consent-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 5217.55,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "patient-portal-s3-003",
+      "name": "patient-portal-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 339.23,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "labs-cognito-004",
+      "name": "labs-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 59.94,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-vitals-005",
+      "name": "private-vitals",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 204.37,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-imaging-006",
+      "name": "edge-imaging",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 100.15,
+      "owner": "identity-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-ehr-007",
+      "name": "cold-ehr",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 524.95,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "secondary-claims-008",
+      "name": "secondary-claims",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 31.05,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "cold-vitals-009",
+      "name": "cold-vitals",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 32.25,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-claims-010",
+      "name": "async-claims",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1497.15,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "backup-claims-011",
+      "name": "backup-claims",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 300.32,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "central-labs-012",
+      "name": "central-labs",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1893.9,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-imaging-013",
+      "name": "backup-imaging",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 99.26,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-patient-portal-014",
+      "name": "edge-patient-portal",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 2176.46,
+      "owner": "data-eng",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "private-scheduling-015",
+      "name": "private-scheduling",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 227.88,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-vitals-016",
+      "name": "core-vitals",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 983.68,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-scheduling-017",
+      "name": "hot-scheduling",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 329.41,
+      "owner": "devops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "edge-imaging-018",
+      "name": "edge-imaging",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 3408.72,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-claims-019",
+      "name": "internal-claims",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 2114.81,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-telemedicine-020",
+      "name": "core-telemedicine",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 3178.37,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-claims-021",
+      "name": "public-claims",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 13.78,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-consent-022",
+      "name": "staging-consent",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 73.53,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-labs-023",
+      "name": "primary-labs",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 335.58,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-ehr-024",
+      "name": "public-ehr",
+      "type": "service",
+      "aws_service": "AWS Secrets Manager",
+      "cost_monthly": 11.43,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "shared-consent-025",
+      "name": "shared-consent",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 52.32,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "regional-patient-portal-026",
+      "name": "regional-patient-portal",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 219.39,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "shared-imaging-027",
+      "name": "shared-imaging",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 2133.93,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "prescriptions-alb-000",
+      "target": "telemedicine-ecs-001",
+      "type": "reads",
+      "weight": 0.52
+    },
+    {
+      "source": "telemedicine-ecs-001",
+      "target": "consent-aurora-002",
+      "type": "caches",
+      "weight": 0.46
+    },
+    {
+      "source": "consent-aurora-002",
+      "target": "patient-portal-s3-003",
+      "type": "reads",
+      "weight": 0.75
+    },
+    {
+      "source": "patient-portal-s3-003",
+      "target": "labs-cognito-004",
+      "type": "caches",
+      "weight": 0.81
+    },
+    {
+      "source": "labs-cognito-004",
+      "target": "private-vitals-005",
+      "type": "reads",
+      "weight": 0.62
+    },
+    {
+      "source": "private-vitals-005",
+      "target": "edge-imaging-006",
+      "type": "calls",
+      "weight": 0.77
+    },
+    {
+      "source": "edge-imaging-006",
+      "target": "cold-ehr-007",
+      "type": "reads",
+      "weight": 0.67
+    },
+    {
+      "source": "cold-ehr-007",
+      "target": "secondary-claims-008",
+      "type": "writes",
+      "weight": 0.91
+    },
+    {
+      "source": "secondary-claims-008",
+      "target": "cold-vitals-009",
+      "type": "reads",
+      "weight": 0.83
+    },
+    {
+      "source": "cold-vitals-009",
+      "target": "async-claims-010",
+      "type": "triggers",
+      "weight": 0.92
+    },
+    {
+      "source": "async-claims-010",
+      "target": "backup-claims-011",
+      "type": "subscribes",
+      "weight": 0.97
+    },
+    {
+      "source": "backup-claims-011",
+      "target": "central-labs-012",
+      "type": "writes",
+      "weight": 0.55
+    },
+    {
+      "source": "central-labs-012",
+      "target": "backup-imaging-013",
+      "type": "subscribes",
+      "weight": 0.3
+    },
+    {
+      "source": "backup-imaging-013",
+      "target": "edge-patient-portal-014",
+      "type": "queries",
+      "weight": 0.47
+    },
+    {
+      "source": "edge-patient-portal-014",
+      "target": "private-scheduling-015",
+      "type": "calls",
+      "weight": 0.88
+    },
+    {
+      "source": "private-scheduling-015",
+      "target": "core-vitals-016",
+      "type": "subscribes",
+      "weight": 0.71
+    },
+    {
+      "source": "core-vitals-016",
+      "target": "hot-scheduling-017",
+      "type": "queries",
+      "weight": 0.8
+    },
+    {
+      "source": "hot-scheduling-017",
+      "target": "edge-imaging-018",
+      "type": "triggers",
+      "weight": 0.37
+    },
+    {
+      "source": "edge-imaging-018",
+      "target": "internal-claims-019",
+      "type": "subscribes",
+      "weight": 0.3
+    },
+    {
+      "source": "internal-claims-019",
+      "target": "core-telemedicine-020",
+      "type": "triggers",
+      "weight": 0.44
+    },
+    {
+      "source": "core-telemedicine-020",
+      "target": "public-claims-021",
+      "type": "writes",
+      "weight": 0.6
+    },
+    {
+      "source": "public-claims-021",
+      "target": "staging-consent-022",
+      "type": "triggers",
+      "weight": 0.55
+    },
+    {
+      "source": "staging-consent-022",
+      "target": "primary-labs-023",
+      "type": "triggers",
+      "weight": 0.89
+    },
+    {
+      "source": "primary-labs-023",
+      "target": "public-ehr-024",
+      "type": "writes",
+      "weight": 0.53
+    },
+    {
+      "source": "public-ehr-024",
+      "target": "shared-consent-025",
+      "type": "queries",
+      "weight": 0.43
+    },
+    {
+      "source": "shared-consent-025",
+      "target": "regional-patient-portal-026",
+      "type": "reads",
+      "weight": 0.4
+    },
+    {
+      "source": "regional-patient-portal-026",
+      "target": "shared-imaging-027",
+      "type": "caches",
+      "weight": 0.73
+    },
+    {
+      "source": "private-vitals-005",
+      "target": "core-vitals-016",
+      "type": "writes",
+      "weight": 0.34
+    },
+    {
+      "source": "shared-consent-025",
+      "target": "private-vitals-005",
+      "type": "writes",
+      "weight": 0.41
+    },
+    {
+      "source": "secondary-claims-008",
+      "target": "internal-claims-019",
+      "type": "reads",
+      "weight": 0.87
+    },
+    {
+      "source": "shared-imaging-027",
+      "target": "consent-aurora-002",
+      "type": "subscribes",
+      "weight": 0.41
+    },
+    {
+      "source": "staging-consent-022",
+      "target": "public-ehr-024",
+      "type": "subscribes",
+      "weight": 0.58
+    },
+    {
+      "source": "hot-scheduling-017",
+      "target": "consent-aurora-002",
+      "type": "queries",
+      "weight": 0.76
+    },
+    {
+      "source": "edge-patient-portal-014",
+      "target": "core-telemedicine-020",
+      "type": "triggers",
+      "weight": 0.72
+    },
+    {
+      "source": "consent-aurora-002",
+      "target": "secondary-claims-008",
+      "type": "subscribes",
+      "weight": 0.26
+    },
+    {
+      "source": "public-claims-021",
+      "target": "primary-labs-023",
+      "type": "triggers",
+      "weight": 0.1
+    },
+    {
+      "source": "public-claims-021",
+      "target": "edge-patient-portal-014",
+      "type": "reads",
+      "weight": 0.51
+    },
+    {
+      "source": "core-vitals-016",
+      "target": "prescriptions-alb-000",
+      "type": "triggers",
+      "weight": 0.67
+    },
+    {
+      "source": "core-telemedicine-020",
+      "target": "private-scheduling-015",
+      "type": "writes",
+      "weight": 0.18
+    },
+    {
+      "source": "secondary-claims-008",
+      "target": "backup-claims-011",
+      "type": "triggers",
+      "weight": 0.22
+    },
+    {
+      "source": "cold-vitals-009",
+      "target": "core-vitals-016",
+      "type": "subscribes",
+      "weight": 0.73
+    },
+    {
+      "source": "consent-aurora-002",
+      "target": "primary-labs-023",
+      "type": "calls",
+      "weight": 0.63
+    },
+    {
+      "source": "hot-scheduling-017",
+      "target": "async-claims-010",
+      "type": "caches",
+      "weight": 0.8
+    },
+    {
+      "source": "shared-consent-025",
+      "target": "internal-claims-019",
+      "type": "writes",
+      "weight": 0.92
+    },
+    {
+      "source": "public-claims-021",
+      "target": "regional-patient-portal-026",
+      "type": "caches",
+      "weight": 0.52
+    },
+    {
+      "source": "edge-imaging-018",
+      "target": "central-labs-012",
+      "type": "caches",
+      "weight": 0.37
+    },
+    {
+      "source": "secondary-claims-008",
+      "target": "patient-portal-s3-003",
+      "type": "writes",
+      "weight": 0.74
+    },
+    {
+      "source": "central-labs-012",
+      "target": "prescriptions-alb-000",
+      "type": "triggers",
+      "weight": 0.59
+    }
+  ]
+}

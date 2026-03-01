@@ -1,0 +1,175 @@
+{
+  "metadata": {
+    "name": "Edtech (Growth, us-west-2)",
+    "id": "312cedd9",
+    "pattern": "edtech",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 7,
+    "total_dependencies": 7,
+    "total_cost_monthly": 5255.56,
+    "generated_at": "2026-03-01T19:23:58.386468",
+    "variation_seed": 45302
+  },
+  "services": [
+    {
+      "id": "content-mgr-cloudfront-000",
+      "name": "content-mgr-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 88.24,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "gradebook-ec2-001",
+      "name": "gradebook-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 489.53,
+      "owner": "security",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "assessments-rds-002",
+      "name": "assessments-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 2861.2,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "gradebook-s3-003",
+      "name": "gradebook-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 488.32,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "gradebook-elasticache-004",
+      "name": "gradebook-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 431.66,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "global-courses-005",
+      "name": "global-courses",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 39.64,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-forums-006",
+      "name": "internal-forums",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 856.97,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "content-mgr-cloudfront-000",
+      "target": "gradebook-ec2-001",
+      "type": "writes",
+      "weight": 0.56
+    },
+    {
+      "source": "gradebook-ec2-001",
+      "target": "assessments-rds-002",
+      "type": "writes",
+      "weight": 0.82
+    },
+    {
+      "source": "assessments-rds-002",
+      "target": "gradebook-s3-003",
+      "type": "caches",
+      "weight": 0.46
+    },
+    {
+      "source": "gradebook-s3-003",
+      "target": "gradebook-elasticache-004",
+      "type": "triggers",
+      "weight": 0.54
+    },
+    {
+      "source": "gradebook-elasticache-004",
+      "target": "global-courses-005",
+      "type": "writes",
+      "weight": 0.71
+    },
+    {
+      "source": "global-courses-005",
+      "target": "internal-forums-006",
+      "type": "queries",
+      "weight": 0.45
+    },
+    {
+      "source": "assessments-rds-002",
+      "target": "gradebook-ec2-001",
+      "type": "reads",
+      "weight": 0.36
+    }
+  ]
+}

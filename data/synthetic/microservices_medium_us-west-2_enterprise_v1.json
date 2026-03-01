@@ -1,0 +1,367 @@
+{
+  "metadata": {
+    "name": "Microservices (Enterprise, us-west-2)",
+    "id": "c820a52b",
+    "pattern": "microservices",
+    "complexity": "medium",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 13,
+    "total_dependencies": 23,
+    "total_cost_monthly": 10337.06,
+    "generated_at": "2026-03-01T19:23:57.720571",
+    "variation_seed": 16572
+  },
+  "services": [
+    {
+      "id": "search-svc-alb-000",
+      "name": "search-svc-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 155.74,
+      "owner": "devops",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "config-svc-ecs-001",
+      "name": "config-svc-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 202.41,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "audit-svc-rds-002",
+      "name": "audit-svc-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 4711.46,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "user-svc-elasticache-003",
+      "name": "user-svc-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1290.98,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "notification-svc-sqs-004",
+      "name": "notification-svc-sqs",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 178.43,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "core-order-svc-005",
+      "name": "core-order-svc",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 81.19,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-user-svc-006",
+      "name": "central-user-svc",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 65.11,
+      "owner": "ml-ops",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "global-config-svc-007",
+      "name": "global-config-svc",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 165.21,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "main-search-svc-008",
+      "name": "main-search-svc",
+      "type": "queue",
+      "aws_service": "Amazon MSK",
+      "cost_monthly": 859.39,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-report-svc-009",
+      "name": "internal-report-svc",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 73.26,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-gateway-010",
+      "name": "staging-gateway",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1856.2,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-config-svc-011",
+      "name": "async-config-svc",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 610.69,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-report-svc-012",
+      "name": "global-report-svc",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 86.99,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "search-svc-alb-000",
+      "target": "config-svc-ecs-001",
+      "type": "subscribes",
+      "weight": 0.73
+    },
+    {
+      "source": "config-svc-ecs-001",
+      "target": "audit-svc-rds-002",
+      "type": "triggers",
+      "weight": 0.41
+    },
+    {
+      "source": "audit-svc-rds-002",
+      "target": "user-svc-elasticache-003",
+      "type": "triggers",
+      "weight": 0.47
+    },
+    {
+      "source": "user-svc-elasticache-003",
+      "target": "notification-svc-sqs-004",
+      "type": "writes",
+      "weight": 0.31
+    },
+    {
+      "source": "notification-svc-sqs-004",
+      "target": "core-order-svc-005",
+      "type": "reads",
+      "weight": 0.83
+    },
+    {
+      "source": "core-order-svc-005",
+      "target": "central-user-svc-006",
+      "type": "calls",
+      "weight": 0.67
+    },
+    {
+      "source": "central-user-svc-006",
+      "target": "global-config-svc-007",
+      "type": "calls",
+      "weight": 0.72
+    },
+    {
+      "source": "global-config-svc-007",
+      "target": "main-search-svc-008",
+      "type": "writes",
+      "weight": 0.55
+    },
+    {
+      "source": "main-search-svc-008",
+      "target": "internal-report-svc-009",
+      "type": "subscribes",
+      "weight": 0.72
+    },
+    {
+      "source": "internal-report-svc-009",
+      "target": "staging-gateway-010",
+      "type": "subscribes",
+      "weight": 0.52
+    },
+    {
+      "source": "staging-gateway-010",
+      "target": "async-config-svc-011",
+      "type": "subscribes",
+      "weight": 0.77
+    },
+    {
+      "source": "async-config-svc-011",
+      "target": "global-report-svc-012",
+      "type": "queries",
+      "weight": 0.82
+    },
+    {
+      "source": "global-report-svc-012",
+      "target": "user-svc-elasticache-003",
+      "type": "writes",
+      "weight": 0.98
+    },
+    {
+      "source": "main-search-svc-008",
+      "target": "user-svc-elasticache-003",
+      "type": "calls",
+      "weight": 0.65
+    },
+    {
+      "source": "global-report-svc-012",
+      "target": "main-search-svc-008",
+      "type": "reads",
+      "weight": 0.71
+    },
+    {
+      "source": "main-search-svc-008",
+      "target": "async-config-svc-011",
+      "type": "reads",
+      "weight": 0.26
+    },
+    {
+      "source": "search-svc-alb-000",
+      "target": "user-svc-elasticache-003",
+      "type": "subscribes",
+      "weight": 0.81
+    },
+    {
+      "source": "internal-report-svc-009",
+      "target": "async-config-svc-011",
+      "type": "caches",
+      "weight": 0.23
+    },
+    {
+      "source": "notification-svc-sqs-004",
+      "target": "search-svc-alb-000",
+      "type": "subscribes",
+      "weight": 0.57
+    },
+    {
+      "source": "search-svc-alb-000",
+      "target": "core-order-svc-005",
+      "type": "queries",
+      "weight": 0.65
+    },
+    {
+      "source": "global-report-svc-012",
+      "target": "async-config-svc-011",
+      "type": "reads",
+      "weight": 0.83
+    },
+    {
+      "source": "core-order-svc-005",
+      "target": "async-config-svc-011",
+      "type": "reads",
+      "weight": 0.28
+    },
+    {
+      "source": "search-svc-alb-000",
+      "target": "staging-gateway-010",
+      "type": "writes",
+      "weight": 0.82
+    }
+  ]
+}

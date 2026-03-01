@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "name": "Logistics (Growth, us-east-1)",
+    "id": "724e07fb",
+    "pattern": "logistics",
+    "complexity": "small",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 4,
+    "total_dependencies": 4,
+    "total_cost_monthly": 6564.65,
+    "generated_at": "2026-03-01T19:23:58.469685",
+    "variation_seed": 48502
+  },
+  "services": [
+    {
+      "id": "warehouse-api-000",
+      "name": "warehouse-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 269.79,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "delivery-ecs-001",
+      "name": "delivery-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1080.34,
+      "owner": "security",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "returns-rds-002",
+      "name": "returns-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 3574.27,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "tracking-dynamodb-003",
+      "name": "tracking-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1640.25,
+      "owner": "search-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "warehouse-api-000",
+      "target": "delivery-ecs-001",
+      "type": "reads",
+      "weight": 0.46
+    },
+    {
+      "source": "delivery-ecs-001",
+      "target": "returns-rds-002",
+      "type": "subscribes",
+      "weight": 0.96
+    },
+    {
+      "source": "returns-rds-002",
+      "target": "tracking-dynamodb-003",
+      "type": "caches",
+      "weight": 0.66
+    },
+    {
+      "source": "delivery-ecs-001",
+      "target": "warehouse-api-000",
+      "type": "subscribes",
+      "weight": 0.85
+    }
+  ]
+}

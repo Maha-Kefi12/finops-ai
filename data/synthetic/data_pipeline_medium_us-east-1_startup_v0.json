@@ -1,0 +1,321 @@
+{
+  "metadata": {
+    "name": "Data Pipeline (Startup, us-east-1)",
+    "id": "125166ce",
+    "pattern": "data_pipeline",
+    "complexity": "medium",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 12,
+    "total_dependencies": 18,
+    "total_cost_monthly": 4726.19,
+    "generated_at": "2026-03-01T19:23:57.624169",
+    "variation_seed": 12132
+  },
+  "services": [
+    {
+      "id": "validation-kinesis-000",
+      "name": "validation-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 395.27,
+      "owner": "api-gateway-team",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "aggregation-lambda-001",
+      "name": "aggregation-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 40.48,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "dedup-s3-002",
+      "name": "dedup-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 677.08,
+      "owner": "content-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "routing-glue-003",
+      "name": "routing-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 772.29,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "dedup-redshift-004",
+      "name": "dedup-redshift",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 708.42,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-aggregation-005",
+      "name": "async-aggregation",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 542.37,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-validation-006",
+      "name": "hot-validation",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 480.32,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-replay-007",
+      "name": "global-replay",
+      "type": "serverless",
+      "aws_service": "Amazon EventBridge",
+      "cost_monthly": 23.19,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-dedup-008",
+      "name": "hot-dedup",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 562.18,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-validation-009",
+      "name": "main-validation",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 133.31,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-ingestion-010",
+      "name": "hot-ingestion",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 53.59,
+      "owner": "security",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-schema-011",
+      "name": "main-schema",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 337.69,
+      "owner": "devops",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "validation-kinesis-000",
+      "target": "aggregation-lambda-001",
+      "type": "reads",
+      "weight": 0.39
+    },
+    {
+      "source": "aggregation-lambda-001",
+      "target": "dedup-s3-002",
+      "type": "reads",
+      "weight": 0.79
+    },
+    {
+      "source": "dedup-s3-002",
+      "target": "routing-glue-003",
+      "type": "writes",
+      "weight": 0.66
+    },
+    {
+      "source": "routing-glue-003",
+      "target": "dedup-redshift-004",
+      "type": "caches",
+      "weight": 0.52
+    },
+    {
+      "source": "dedup-redshift-004",
+      "target": "async-aggregation-005",
+      "type": "triggers",
+      "weight": 0.69
+    },
+    {
+      "source": "async-aggregation-005",
+      "target": "hot-validation-006",
+      "type": "calls",
+      "weight": 0.9
+    },
+    {
+      "source": "hot-validation-006",
+      "target": "global-replay-007",
+      "type": "reads",
+      "weight": 0.5
+    },
+    {
+      "source": "global-replay-007",
+      "target": "hot-dedup-008",
+      "type": "subscribes",
+      "weight": 0.37
+    },
+    {
+      "source": "hot-dedup-008",
+      "target": "main-validation-009",
+      "type": "reads",
+      "weight": 0.68
+    },
+    {
+      "source": "main-validation-009",
+      "target": "hot-ingestion-010",
+      "type": "reads",
+      "weight": 0.89
+    },
+    {
+      "source": "hot-ingestion-010",
+      "target": "main-schema-011",
+      "type": "writes",
+      "weight": 0.57
+    },
+    {
+      "source": "hot-dedup-008",
+      "target": "aggregation-lambda-001",
+      "type": "calls",
+      "weight": 0.96
+    },
+    {
+      "source": "hot-ingestion-010",
+      "target": "main-validation-009",
+      "type": "subscribes",
+      "weight": 0.32
+    },
+    {
+      "source": "hot-validation-006",
+      "target": "async-aggregation-005",
+      "type": "subscribes",
+      "weight": 0.12
+    },
+    {
+      "source": "main-schema-011",
+      "target": "hot-dedup-008",
+      "type": "calls",
+      "weight": 0.51
+    },
+    {
+      "source": "main-validation-009",
+      "target": "dedup-s3-002",
+      "type": "caches",
+      "weight": 0.26
+    },
+    {
+      "source": "hot-dedup-008",
+      "target": "global-replay-007",
+      "type": "triggers",
+      "weight": 0.52
+    },
+    {
+      "source": "hot-dedup-008",
+      "target": "async-aggregation-005",
+      "type": "triggers",
+      "weight": 0.33
+    }
+  ]
+}

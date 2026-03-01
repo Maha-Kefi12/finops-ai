@@ -1,0 +1,899 @@
+{
+  "metadata": {
+    "name": "Edtech (Growth, ap-southeast-1)",
+    "id": "33d7016f",
+    "pattern": "edtech",
+    "complexity": "xlarge",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 32,
+    "total_dependencies": 61,
+    "total_cost_monthly": 36162.8,
+    "generated_at": "2026-03-01T19:23:58.447823",
+    "variation_seed": 47906
+  },
+  "services": [
+    {
+      "id": "courses-cloudfront-000",
+      "name": "courses-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 2441.22,
+      "owner": "devops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "enrollment-ec2-001",
+      "name": "enrollment-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 668.51,
+      "owner": "reliability-eng",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "forums-rds-002",
+      "name": "forums-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 2113.53,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "enrollment-s3-003",
+      "name": "enrollment-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 901.54,
+      "owner": "devops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "enrollment-elasticache-004",
+      "name": "enrollment-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 1509.47,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-video-lessons-005",
+      "name": "primary-video-lessons",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 35.91,
+      "owner": "backend-squad",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-enrollment-006",
+      "name": "cold-enrollment",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 89.7,
+      "owner": "frontend-guild",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "staging-enrollment-007",
+      "name": "staging-enrollment",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 203.26,
+      "owner": "backend-squad",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-video-lessons-008",
+      "name": "batch-video-lessons",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1066.87,
+      "owner": "api-gateway-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-progress-009",
+      "name": "public-progress",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 65.41,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-video-lessons-010",
+      "name": "batch-video-lessons",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 222.03,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-enrollment-011",
+      "name": "hot-enrollment",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 1900.78,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "batch-courses-012",
+      "name": "batch-courses",
+      "type": "serverless",
+      "aws_service": "AWS Step Functions",
+      "cost_monthly": 35.0,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-gradebook-013",
+      "name": "main-gradebook",
+      "type": "service",
+      "aws_service": "Amazon Route 53",
+      "cost_monthly": 31.94,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "staging-gradebook-014",
+      "name": "staging-gradebook",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 281.22,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-content-mgr-015",
+      "name": "backup-content-mgr",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 111.77,
+      "owner": "content-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "async-proctoring-016",
+      "name": "async-proctoring",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 127.29,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-assessments-017",
+      "name": "staging-assessments",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 734.46,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "central-video-lessons-018",
+      "name": "central-video-lessons",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 1128.29,
+      "owner": "security",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-content-mgr-019",
+      "name": "main-content-mgr",
+      "type": "batch",
+      "aws_service": "Amazon EC2 (Worker)",
+      "cost_monthly": 1405.26,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-proctoring-020",
+      "name": "staging-proctoring",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 2510.18,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "core-gradebook-021",
+      "name": "core-gradebook",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 33.92,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-assessments-022",
+      "name": "realtime-assessments",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 795.13,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-assessments-023",
+      "name": "realtime-assessments",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 1847.81,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-certificates-024",
+      "name": "main-certificates",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 2249.24,
+      "owner": "devops",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "async-content-mgr-025",
+      "name": "async-content-mgr",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 3247.5,
+      "owner": "identity-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-assessments-026",
+      "name": "batch-assessments",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 2893.95,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "private-enrollment-027",
+      "name": "private-enrollment",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 340.06,
+      "owner": "data-eng",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "async-video-lessons-028",
+      "name": "async-video-lessons",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 3025.45,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "cold-video-lessons-029",
+      "name": "cold-video-lessons",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 2132.08,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-video-lessons-030",
+      "name": "main-video-lessons",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 1171.81,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "internal-content-mgr-031",
+      "name": "internal-content-mgr",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 842.21,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "courses-cloudfront-000",
+      "target": "enrollment-ec2-001",
+      "type": "queries",
+      "weight": 0.46
+    },
+    {
+      "source": "enrollment-ec2-001",
+      "target": "forums-rds-002",
+      "type": "calls",
+      "weight": 0.68
+    },
+    {
+      "source": "forums-rds-002",
+      "target": "enrollment-s3-003",
+      "type": "reads",
+      "weight": 0.8
+    },
+    {
+      "source": "enrollment-s3-003",
+      "target": "enrollment-elasticache-004",
+      "type": "reads",
+      "weight": 0.85
+    },
+    {
+      "source": "enrollment-elasticache-004",
+      "target": "primary-video-lessons-005",
+      "type": "caches",
+      "weight": 0.34
+    },
+    {
+      "source": "primary-video-lessons-005",
+      "target": "cold-enrollment-006",
+      "type": "caches",
+      "weight": 0.4
+    },
+    {
+      "source": "cold-enrollment-006",
+      "target": "staging-enrollment-007",
+      "type": "caches",
+      "weight": 0.43
+    },
+    {
+      "source": "staging-enrollment-007",
+      "target": "batch-video-lessons-008",
+      "type": "writes",
+      "weight": 0.45
+    },
+    {
+      "source": "batch-video-lessons-008",
+      "target": "public-progress-009",
+      "type": "triggers",
+      "weight": 0.36
+    },
+    {
+      "source": "public-progress-009",
+      "target": "batch-video-lessons-010",
+      "type": "triggers",
+      "weight": 0.72
+    },
+    {
+      "source": "batch-video-lessons-010",
+      "target": "hot-enrollment-011",
+      "type": "triggers",
+      "weight": 0.4
+    },
+    {
+      "source": "hot-enrollment-011",
+      "target": "batch-courses-012",
+      "type": "queries",
+      "weight": 0.6
+    },
+    {
+      "source": "batch-courses-012",
+      "target": "main-gradebook-013",
+      "type": "calls",
+      "weight": 0.43
+    },
+    {
+      "source": "main-gradebook-013",
+      "target": "staging-gradebook-014",
+      "type": "caches",
+      "weight": 0.57
+    },
+    {
+      "source": "staging-gradebook-014",
+      "target": "backup-content-mgr-015",
+      "type": "caches",
+      "weight": 0.51
+    },
+    {
+      "source": "backup-content-mgr-015",
+      "target": "async-proctoring-016",
+      "type": "triggers",
+      "weight": 0.52
+    },
+    {
+      "source": "async-proctoring-016",
+      "target": "staging-assessments-017",
+      "type": "calls",
+      "weight": 0.6
+    },
+    {
+      "source": "staging-assessments-017",
+      "target": "central-video-lessons-018",
+      "type": "calls",
+      "weight": 0.73
+    },
+    {
+      "source": "central-video-lessons-018",
+      "target": "main-content-mgr-019",
+      "type": "triggers",
+      "weight": 0.9
+    },
+    {
+      "source": "main-content-mgr-019",
+      "target": "staging-proctoring-020",
+      "type": "reads",
+      "weight": 0.68
+    },
+    {
+      "source": "staging-proctoring-020",
+      "target": "core-gradebook-021",
+      "type": "triggers",
+      "weight": 0.86
+    },
+    {
+      "source": "core-gradebook-021",
+      "target": "realtime-assessments-022",
+      "type": "queries",
+      "weight": 0.51
+    },
+    {
+      "source": "realtime-assessments-022",
+      "target": "realtime-assessments-023",
+      "type": "writes",
+      "weight": 0.48
+    },
+    {
+      "source": "realtime-assessments-023",
+      "target": "main-certificates-024",
+      "type": "caches",
+      "weight": 0.99
+    },
+    {
+      "source": "main-certificates-024",
+      "target": "async-content-mgr-025",
+      "type": "subscribes",
+      "weight": 0.88
+    },
+    {
+      "source": "async-content-mgr-025",
+      "target": "batch-assessments-026",
+      "type": "subscribes",
+      "weight": 0.59
+    },
+    {
+      "source": "batch-assessments-026",
+      "target": "private-enrollment-027",
+      "type": "subscribes",
+      "weight": 0.72
+    },
+    {
+      "source": "private-enrollment-027",
+      "target": "async-video-lessons-028",
+      "type": "triggers",
+      "weight": 0.78
+    },
+    {
+      "source": "async-video-lessons-028",
+      "target": "cold-video-lessons-029",
+      "type": "writes",
+      "weight": 0.41
+    },
+    {
+      "source": "cold-video-lessons-029",
+      "target": "main-video-lessons-030",
+      "type": "subscribes",
+      "weight": 0.58
+    },
+    {
+      "source": "main-video-lessons-030",
+      "target": "internal-content-mgr-031",
+      "type": "triggers",
+      "weight": 0.44
+    },
+    {
+      "source": "enrollment-s3-003",
+      "target": "public-progress-009",
+      "type": "caches",
+      "weight": 0.46
+    },
+    {
+      "source": "batch-assessments-026",
+      "target": "staging-gradebook-014",
+      "type": "queries",
+      "weight": 0.47
+    },
+    {
+      "source": "cold-video-lessons-029",
+      "target": "staging-enrollment-007",
+      "type": "subscribes",
+      "weight": 0.26
+    },
+    {
+      "source": "realtime-assessments-023",
+      "target": "cold-enrollment-006",
+      "type": "calls",
+      "weight": 0.65
+    },
+    {
+      "source": "cold-enrollment-006",
+      "target": "enrollment-ec2-001",
+      "type": "subscribes",
+      "weight": 0.93
+    },
+    {
+      "source": "main-content-mgr-019",
+      "target": "batch-assessments-026",
+      "type": "subscribes",
+      "weight": 0.52
+    },
+    {
+      "source": "staging-enrollment-007",
+      "target": "private-enrollment-027",
+      "type": "subscribes",
+      "weight": 0.71
+    },
+    {
+      "source": "staging-assessments-017",
+      "target": "cold-enrollment-006",
+      "type": "subscribes",
+      "weight": 0.6
+    },
+    {
+      "source": "realtime-assessments-023",
+      "target": "main-video-lessons-030",
+      "type": "reads",
+      "weight": 0.68
+    },
+    {
+      "source": "staging-gradebook-014",
+      "target": "main-video-lessons-030",
+      "type": "subscribes",
+      "weight": 0.62
+    },
+    {
+      "source": "staging-proctoring-020",
+      "target": "backup-content-mgr-015",
+      "type": "triggers",
+      "weight": 0.63
+    },
+    {
+      "source": "enrollment-s3-003",
+      "target": "main-content-mgr-019",
+      "type": "writes",
+      "weight": 0.44
+    },
+    {
+      "source": "async-content-mgr-025",
+      "target": "main-certificates-024",
+      "type": "calls",
+      "weight": 0.76
+    },
+    {
+      "source": "cold-video-lessons-029",
+      "target": "courses-cloudfront-000",
+      "type": "triggers",
+      "weight": 0.54
+    },
+    {
+      "source": "async-content-mgr-025",
+      "target": "staging-proctoring-020",
+      "type": "reads",
+      "weight": 0.32
+    },
+    {
+      "source": "public-progress-009",
+      "target": "batch-video-lessons-008",
+      "type": "queries",
+      "weight": 0.51
+    },
+    {
+      "source": "main-certificates-024",
+      "target": "core-gradebook-021",
+      "type": "reads",
+      "weight": 0.14
+    },
+    {
+      "source": "private-enrollment-027",
+      "target": "courses-cloudfront-000",
+      "type": "reads",
+      "weight": 0.88
+    },
+    {
+      "source": "enrollment-ec2-001",
+      "target": "realtime-assessments-023",
+      "type": "writes",
+      "weight": 0.99
+    },
+    {
+      "source": "hot-enrollment-011",
+      "target": "main-certificates-024",
+      "type": "reads",
+      "weight": 0.26
+    },
+    {
+      "source": "backup-content-mgr-015",
+      "target": "public-progress-009",
+      "type": "triggers",
+      "weight": 0.22
+    },
+    {
+      "source": "internal-content-mgr-031",
+      "target": "enrollment-s3-003",
+      "type": "caches",
+      "weight": 0.5
+    },
+    {
+      "source": "main-certificates-024",
+      "target": "backup-content-mgr-015",
+      "type": "triggers",
+      "weight": 0.67
+    },
+    {
+      "source": "staging-proctoring-020",
+      "target": "staging-enrollment-007",
+      "type": "writes",
+      "weight": 0.75
+    },
+    {
+      "source": "enrollment-elasticache-004",
+      "target": "backup-content-mgr-015",
+      "type": "queries",
+      "weight": 0.85
+    },
+    {
+      "source": "core-gradebook-021",
+      "target": "main-video-lessons-030",
+      "type": "writes",
+      "weight": 0.83
+    },
+    {
+      "source": "main-content-mgr-019",
+      "target": "enrollment-ec2-001",
+      "type": "queries",
+      "weight": 0.14
+    },
+    {
+      "source": "realtime-assessments-023",
+      "target": "main-content-mgr-019",
+      "type": "triggers",
+      "weight": 0.97
+    },
+    {
+      "source": "batch-video-lessons-010",
+      "target": "main-content-mgr-019",
+      "type": "writes",
+      "weight": 0.73
+    },
+    {
+      "source": "core-gradebook-021",
+      "target": "hot-enrollment-011",
+      "type": "reads",
+      "weight": 0.62
+    }
+  ]
+}

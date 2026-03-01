@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Monolith (Startup, ap-southeast-1)",
+    "id": "075bf70f",
+    "pattern": "monolith",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 3957.79,
+    "generated_at": "2026-03-01T19:23:58.125324",
+    "variation_seed": 33932
+  },
+  "services": [
+    {
+      "id": "web-tier-alb-000",
+      "name": "web-tier-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 97.22,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "sessions-ec2-001",
+      "name": "sessions-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 2443.81,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "batch-jobs-rds-002",
+      "name": "batch-jobs-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 1416.76,
+      "owner": "devops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "web-tier-alb-000",
+      "target": "sessions-ec2-001",
+      "type": "triggers",
+      "weight": 0.46
+    },
+    {
+      "source": "sessions-ec2-001",
+      "target": "batch-jobs-rds-002",
+      "type": "queries",
+      "weight": 0.57
+    },
+    {
+      "source": "batch-jobs-rds-002",
+      "target": "sessions-ec2-001",
+      "type": "reads",
+      "weight": 0.87
+    }
+  ]
+}

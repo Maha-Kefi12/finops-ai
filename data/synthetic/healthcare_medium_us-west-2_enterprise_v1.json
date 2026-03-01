@@ -1,0 +1,261 @@
+{
+  "metadata": {
+    "name": "Healthcare (Enterprise, us-west-2)",
+    "id": "0e5d8a2b",
+    "pattern": "healthcare",
+    "complexity": "medium",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "enterprise",
+    "cost_tier_label": "Enterprise",
+    "total_services": 9,
+    "total_dependencies": 16,
+    "total_cost_monthly": 11086.06,
+    "generated_at": "2026-03-01T19:23:58.310608",
+    "variation_seed": 42612
+  },
+  "services": [
+    {
+      "id": "ehr-alb-000",
+      "name": "ehr-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 102.37,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "claims-ecs-001",
+      "name": "claims-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 609.82,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "consent-aurora-002",
+      "name": "consent-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 7414.95,
+      "owner": "streaming-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "patient-portal-s3-003",
+      "name": "patient-portal-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 167.68,
+      "owner": "security",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "imaging-cognito-004",
+      "name": "imaging-cognito",
+      "type": "service",
+      "aws_service": "Amazon Cognito",
+      "cost_monthly": 216.97,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "global-labs-005",
+      "name": "global-labs",
+      "type": "service",
+      "aws_service": "AWS WAF",
+      "cost_monthly": 175.66,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "hot-prescriptions-006",
+      "name": "hot-prescriptions",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 118.28,
+      "owner": "streaming-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "central-imaging-007",
+      "name": "central-imaging",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 315.81,
+      "owner": "analytics-team",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "core-labs-008",
+      "name": "core-labs",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 1964.52,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "ehr-alb-000",
+      "target": "claims-ecs-001",
+      "type": "caches",
+      "weight": 0.7
+    },
+    {
+      "source": "claims-ecs-001",
+      "target": "consent-aurora-002",
+      "type": "subscribes",
+      "weight": 0.73
+    },
+    {
+      "source": "consent-aurora-002",
+      "target": "patient-portal-s3-003",
+      "type": "calls",
+      "weight": 0.88
+    },
+    {
+      "source": "patient-portal-s3-003",
+      "target": "imaging-cognito-004",
+      "type": "subscribes",
+      "weight": 0.54
+    },
+    {
+      "source": "imaging-cognito-004",
+      "target": "global-labs-005",
+      "type": "queries",
+      "weight": 0.79
+    },
+    {
+      "source": "global-labs-005",
+      "target": "hot-prescriptions-006",
+      "type": "queries",
+      "weight": 0.81
+    },
+    {
+      "source": "hot-prescriptions-006",
+      "target": "central-imaging-007",
+      "type": "reads",
+      "weight": 0.81
+    },
+    {
+      "source": "central-imaging-007",
+      "target": "core-labs-008",
+      "type": "caches",
+      "weight": 0.7
+    },
+    {
+      "source": "central-imaging-007",
+      "target": "claims-ecs-001",
+      "type": "caches",
+      "weight": 0.92
+    },
+    {
+      "source": "imaging-cognito-004",
+      "target": "ehr-alb-000",
+      "type": "reads",
+      "weight": 0.41
+    },
+    {
+      "source": "patient-portal-s3-003",
+      "target": "global-labs-005",
+      "type": "calls",
+      "weight": 0.3
+    },
+    {
+      "source": "ehr-alb-000",
+      "target": "patient-portal-s3-003",
+      "type": "triggers",
+      "weight": 0.11
+    },
+    {
+      "source": "global-labs-005",
+      "target": "core-labs-008",
+      "type": "reads",
+      "weight": 0.32
+    },
+    {
+      "source": "consent-aurora-002",
+      "target": "global-labs-005",
+      "type": "triggers",
+      "weight": 0.3
+    },
+    {
+      "source": "core-labs-008",
+      "target": "global-labs-005",
+      "type": "queries",
+      "weight": 0.22
+    },
+    {
+      "source": "core-labs-008",
+      "target": "claims-ecs-001",
+      "type": "reads",
+      "weight": 0.2
+    }
+  ]
+}

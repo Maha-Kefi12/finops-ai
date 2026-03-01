@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Iot (Startup, us-east-1)",
+    "id": "23311fa3",
+    "pattern": "iot",
+    "complexity": "small",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 1475.18,
+    "generated_at": "2026-03-01T19:23:58.041669",
+    "variation_seed": 29802
+  },
+  "services": [
+    {
+      "id": "telemetry-iot-000",
+      "name": "telemetry-iot",
+      "type": "service",
+      "aws_service": "AWS IoT Core",
+      "cost_monthly": 229.03,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "fleet-kinesis-001",
+      "name": "fleet-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 874.97,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "digital-twin-lambda-002",
+      "name": "digital-twin-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 371.18,
+      "owner": "platform-team",
+      "environment": "dr",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "telemetry-iot-000",
+      "target": "fleet-kinesis-001",
+      "type": "writes",
+      "weight": 0.68
+    },
+    {
+      "source": "fleet-kinesis-001",
+      "target": "digital-twin-lambda-002",
+      "type": "reads",
+      "weight": 0.52
+    },
+    {
+      "source": "telemetry-iot-000",
+      "target": "digital-twin-lambda-002",
+      "type": "caches",
+      "weight": 0.8
+    }
+  ]
+}

@@ -1,0 +1,213 @@
+{
+  "metadata": {
+    "name": "Serverless Application",
+    "pattern": "serverless",
+    "complexity": "small",
+    "environment": "production",
+    "region": "us-east-1",
+    "generated_at": "2026-03-01T16:13:45.271601",
+    "total_services": 10,
+    "total_cost_monthly": 324.09999999999997
+  },
+  "services": [
+    {
+      "id": "load_balancer-001",
+      "name": "api-gateway",
+      "type": "load_balancer",
+      "environment": "production",
+      "owner": "backend-team",
+      "cost_monthly": 9.0,
+      "attributes": {
+        "lb_type": "ALB",
+        "count": 0
+      }
+    },
+    {
+      "id": "lambda-001",
+      "name": "auth-function",
+      "type": "serverless",
+      "environment": "production",
+      "owner": "backend-team",
+      "cost_monthly": 1.0,
+      "attributes": {
+        "memory_mb": 128,
+        "invocations_monthly": 5000000
+      }
+    },
+    {
+      "id": "lambda-002",
+      "name": "create-function",
+      "type": "serverless",
+      "environment": "production",
+      "owner": "backend-team",
+      "cost_monthly": 8.35,
+      "attributes": {
+        "memory_mb": 1024,
+        "invocations_monthly": 5000000
+      }
+    },
+    {
+      "id": "lambda-003",
+      "name": "read-function",
+      "type": "serverless",
+      "environment": "production",
+      "owner": "backend-team",
+      "cost_monthly": 0.41,
+      "attributes": {
+        "memory_mb": 512,
+        "invocations_monthly": 500000
+      }
+    },
+    {
+      "id": "lambda-004",
+      "name": "update-function",
+      "type": "serverless",
+      "environment": "production",
+      "owner": "backend-team",
+      "cost_monthly": 4.15,
+      "attributes": {
+        "memory_mb": 512,
+        "invocations_monthly": 5000000
+      }
+    },
+    {
+      "id": "lambda-005",
+      "name": "delete-function",
+      "type": "serverless",
+      "environment": "production",
+      "owner": "backend-team",
+      "cost_monthly": 1.67,
+      "attributes": {
+        "memory_mb": 2048,
+        "invocations_monthly": 500000
+      }
+    },
+    {
+      "id": "database_postgres-001",
+      "name": "main-db",
+      "type": "database",
+      "environment": "production",
+      "owner": "backend-team",
+      "cost_monthly": 240,
+      "attributes": {
+        "instance_type": "db.m5.xlarge",
+        "instance_count": 1
+      }
+    },
+    {
+      "id": "s3-001",
+      "name": "user-data",
+      "type": "storage",
+      "environment": "production",
+      "owner": "backend-team",
+      "cost_monthly": 57.5,
+      "attributes": {
+        "size_gb": 2500,
+        "storage_class": "STANDARD"
+      }
+    },
+    {
+      "id": "queue_sqs-001",
+      "name": "event-queue",
+      "type": "queue",
+      "environment": "production",
+      "owner": "backend-team",
+      "cost_monthly": 2.0,
+      "attributes": {
+        "messages_monthly": 5000000
+      }
+    },
+    {
+      "id": "lambda-006",
+      "name": "event-processor",
+      "type": "serverless",
+      "environment": "production",
+      "owner": "backend-team",
+      "cost_monthly": 0.02,
+      "attributes": {
+        "memory_mb": 128,
+        "invocations_monthly": 100000
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "load_balancer-001",
+      "target": "lambda-001",
+      "type": "routes_to",
+      "weight": 1.0
+    },
+    {
+      "source": "load_balancer-001",
+      "target": "lambda-002",
+      "type": "routes_to",
+      "weight": 0.3
+    },
+    {
+      "source": "load_balancer-001",
+      "target": "lambda-003",
+      "type": "routes_to",
+      "weight": 0.8
+    },
+    {
+      "source": "load_balancer-001",
+      "target": "lambda-004",
+      "type": "routes_to",
+      "weight": 0.4
+    },
+    {
+      "source": "load_balancer-001",
+      "target": "lambda-005",
+      "type": "routes_to",
+      "weight": 0.2
+    },
+    {
+      "source": "lambda-002",
+      "target": "database_postgres-001",
+      "type": "writes_to",
+      "weight": 1.0
+    },
+    {
+      "source": "lambda-002",
+      "target": "queue_sqs-001",
+      "type": "writes_to",
+      "weight": 1.0
+    },
+    {
+      "source": "lambda-003",
+      "target": "database_postgres-001",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "lambda-003",
+      "target": "s3-001",
+      "type": "reads_from",
+      "weight": 0.4
+    },
+    {
+      "source": "lambda-004",
+      "target": "database_postgres-001",
+      "type": "writes_to",
+      "weight": 1.0
+    },
+    {
+      "source": "lambda-005",
+      "target": "database_postgres-001",
+      "type": "writes_to",
+      "weight": 1.0
+    },
+    {
+      "source": "lambda-006",
+      "target": "queue_sqs-001",
+      "type": "reads_from",
+      "weight": 1.0
+    },
+    {
+      "source": "lambda-006",
+      "target": "s3-001",
+      "type": "writes_to",
+      "weight": 0.6
+    }
+  ]
+}

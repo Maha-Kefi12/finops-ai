@@ -1,0 +1,103 @@
+{
+  "metadata": {
+    "name": "Media Streaming (Startup, eu-central-1)",
+    "id": "906fc880",
+    "pattern": "media_streaming",
+    "complexity": "small",
+    "region": "eu-central-1",
+    "region_name": "EU (Frankfurt)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 4,
+    "total_dependencies": 3,
+    "total_cost_monthly": 1827.07,
+    "generated_at": "2026-03-01T19:23:57.962504",
+    "variation_seed": 26864
+  },
+  "services": [
+    {
+      "id": "manifest-cloudfront-000",
+      "name": "manifest-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 418.38,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "encoder-s3-001",
+      "name": "encoder-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 497.3,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ads-mediaconvert-002",
+      "name": "ads-mediaconvert",
+      "type": "batch",
+      "aws_service": "AWS Elemental MediaConvert",
+      "cost_monthly": 487.75,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ads-ec2-003",
+      "name": "ads-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 423.64,
+      "owner": "platform-team",
+      "environment": "staging",
+      "region": "eu-central-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "manifest-cloudfront-000",
+      "target": "encoder-s3-001",
+      "type": "writes",
+      "weight": 0.77
+    },
+    {
+      "source": "encoder-s3-001",
+      "target": "ads-mediaconvert-002",
+      "type": "queries",
+      "weight": 0.91
+    },
+    {
+      "source": "ads-mediaconvert-002",
+      "target": "ads-ec2-003",
+      "type": "subscribes",
+      "weight": 0.57
+    }
+  ]
+}

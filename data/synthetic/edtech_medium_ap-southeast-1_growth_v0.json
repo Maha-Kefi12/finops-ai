@@ -1,0 +1,255 @@
+{
+  "metadata": {
+    "name": "Edtech (Growth, ap-southeast-1)",
+    "id": "12d39e96",
+    "pattern": "edtech",
+    "complexity": "medium",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 9,
+    "total_dependencies": 15,
+    "total_cost_monthly": 7866.93,
+    "generated_at": "2026-03-01T19:23:58.395453",
+    "variation_seed": 46046
+  },
+  "services": [
+    {
+      "id": "assessments-cloudfront-000",
+      "name": "assessments-cloudfront",
+      "type": "cdn",
+      "aws_service": "Amazon CloudFront",
+      "cost_monthly": 2369.81,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "assessments-ec2-001",
+      "name": "assessments-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 2173.26,
+      "owner": "growth-eng",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "video-lessons-rds-002",
+      "name": "video-lessons-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 899.7,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "courses-s3-003",
+      "name": "courses-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 948.67,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "forums-elasticache-004",
+      "name": "forums-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 154.1,
+      "owner": "ml-ops",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "staging-assessments-005",
+      "name": "staging-assessments",
+      "type": "queue",
+      "aws_service": "Amazon SNS",
+      "cost_monthly": 27.38,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-courses-006",
+      "name": "public-courses",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 706.33,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-assessments-007",
+      "name": "edge-assessments",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 153.81,
+      "owner": "data-eng",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "batch-assessments-008",
+      "name": "batch-assessments",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 433.87,
+      "owner": "search-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "assessments-cloudfront-000",
+      "target": "assessments-ec2-001",
+      "type": "reads",
+      "weight": 0.36
+    },
+    {
+      "source": "assessments-ec2-001",
+      "target": "video-lessons-rds-002",
+      "type": "reads",
+      "weight": 0.61
+    },
+    {
+      "source": "video-lessons-rds-002",
+      "target": "courses-s3-003",
+      "type": "queries",
+      "weight": 0.99
+    },
+    {
+      "source": "courses-s3-003",
+      "target": "forums-elasticache-004",
+      "type": "caches",
+      "weight": 0.67
+    },
+    {
+      "source": "forums-elasticache-004",
+      "target": "staging-assessments-005",
+      "type": "subscribes",
+      "weight": 0.51
+    },
+    {
+      "source": "staging-assessments-005",
+      "target": "public-courses-006",
+      "type": "caches",
+      "weight": 0.77
+    },
+    {
+      "source": "public-courses-006",
+      "target": "edge-assessments-007",
+      "type": "queries",
+      "weight": 0.85
+    },
+    {
+      "source": "edge-assessments-007",
+      "target": "batch-assessments-008",
+      "type": "queries",
+      "weight": 0.91
+    },
+    {
+      "source": "assessments-cloudfront-000",
+      "target": "forums-elasticache-004",
+      "type": "subscribes",
+      "weight": 0.41
+    },
+    {
+      "source": "assessments-ec2-001",
+      "target": "edge-assessments-007",
+      "type": "subscribes",
+      "weight": 0.36
+    },
+    {
+      "source": "video-lessons-rds-002",
+      "target": "staging-assessments-005",
+      "type": "writes",
+      "weight": 0.51
+    },
+    {
+      "source": "video-lessons-rds-002",
+      "target": "public-courses-006",
+      "type": "caches",
+      "weight": 0.46
+    },
+    {
+      "source": "batch-assessments-008",
+      "target": "assessments-ec2-001",
+      "type": "caches",
+      "weight": 0.47
+    },
+    {
+      "source": "public-courses-006",
+      "target": "assessments-cloudfront-000",
+      "type": "reads",
+      "weight": 0.4
+    },
+    {
+      "source": "courses-s3-003",
+      "target": "video-lessons-rds-002",
+      "type": "caches",
+      "weight": 0.69
+    }
+  ]
+}

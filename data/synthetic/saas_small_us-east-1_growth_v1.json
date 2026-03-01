@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "name": "Saas (Growth, us-east-1)",
+    "id": "71aefc20",
+    "pattern": "saas",
+    "complexity": "small",
+    "region": "us-east-1",
+    "region_name": "US East (N. Virginia)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 4,
+    "total_dependencies": 4,
+    "total_cost_monthly": 6402.54,
+    "generated_at": "2026-03-01T19:23:57.448241",
+    "variation_seed": 3862
+  },
+  "services": [
+    {
+      "id": "workspace-api-000",
+      "name": "workspace-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 266.91,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "config-ecs-001",
+      "name": "config-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 1779.2,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "tenant-aurora-002",
+      "name": "tenant-aurora",
+      "type": "database",
+      "aws_service": "Amazon Aurora",
+      "cost_monthly": 3438.96,
+      "owner": "infra-core",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "integrations-elasticache-003",
+      "name": "integrations-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 917.47,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-east-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "workspace-api-000",
+      "target": "config-ecs-001",
+      "type": "triggers",
+      "weight": 0.97
+    },
+    {
+      "source": "config-ecs-001",
+      "target": "tenant-aurora-002",
+      "type": "reads",
+      "weight": 0.34
+    },
+    {
+      "source": "tenant-aurora-002",
+      "target": "integrations-elasticache-003",
+      "type": "queries",
+      "weight": 0.55
+    },
+    {
+      "source": "tenant-aurora-002",
+      "target": "config-ecs-001",
+      "type": "caches",
+      "weight": 0.97
+    }
+  ]
+}

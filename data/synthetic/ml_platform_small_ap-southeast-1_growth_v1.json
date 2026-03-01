@@ -1,0 +1,153 @@
+{
+  "metadata": {
+    "name": "Ml Platform (Growth, ap-southeast-1)",
+    "id": "12e0c9a5",
+    "pattern": "ml_platform",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 6,
+    "total_dependencies": 6,
+    "total_cost_monthly": 15007.2,
+    "generated_at": "2026-03-01T19:23:57.877592",
+    "variation_seed": 22834
+  },
+  "services": [
+    {
+      "id": "monitoring-sagemaker-000",
+      "name": "monitoring-sagemaker",
+      "type": "service",
+      "aws_service": "Amazon SageMaker",
+      "cost_monthly": 6787.44,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "monitoring-s3-001",
+      "name": "monitoring-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 70.13,
+      "owner": "mobile-backend",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "serving-glue-002",
+      "name": "serving-glue",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 648.01,
+      "owner": "platform-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "pipeline-redshift-003",
+      "name": "pipeline-redshift",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 4692.35,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "experiment-ec2-004",
+      "name": "experiment-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 2227.84,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "edge-monitoring-005",
+      "name": "edge-monitoring",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 581.43,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "monitoring-sagemaker-000",
+      "target": "monitoring-s3-001",
+      "type": "reads",
+      "weight": 0.71
+    },
+    {
+      "source": "monitoring-s3-001",
+      "target": "serving-glue-002",
+      "type": "triggers",
+      "weight": 0.41
+    },
+    {
+      "source": "serving-glue-002",
+      "target": "pipeline-redshift-003",
+      "type": "subscribes",
+      "weight": 0.95
+    },
+    {
+      "source": "pipeline-redshift-003",
+      "target": "experiment-ec2-004",
+      "type": "caches",
+      "weight": 0.32
+    },
+    {
+      "source": "experiment-ec2-004",
+      "target": "edge-monitoring-005",
+      "type": "caches",
+      "weight": 0.99
+    },
+    {
+      "source": "serving-glue-002",
+      "target": "experiment-ec2-004",
+      "type": "reads",
+      "weight": 0.81
+    }
+  ]
+}

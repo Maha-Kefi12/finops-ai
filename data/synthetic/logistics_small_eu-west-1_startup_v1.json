@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "name": "Logistics (Startup, eu-west-1)",
+    "id": "57896d55",
+    "pattern": "logistics",
+    "complexity": "small",
+    "region": "eu-west-1",
+    "region_name": "EU (Ireland)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 5,
+    "total_dependencies": 5,
+    "total_cost_monthly": 1789.14,
+    "generated_at": "2026-03-01T19:23:58.470507",
+    "variation_seed": 48626
+  },
+  "services": [
+    {
+      "id": "dispatch-api-000",
+      "name": "dispatch-api",
+      "type": "service",
+      "aws_service": "Amazon API Gateway",
+      "cost_monthly": 370.51,
+      "owner": "api-gateway-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "rates-ecs-001",
+      "name": "rates-ecs",
+      "type": "service",
+      "aws_service": "Amazon ECS Fargate",
+      "cost_monthly": 537.61,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "routing-rds-002",
+      "name": "routing-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 426.08,
+      "owner": "identity-team",
+      "environment": "dr",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "delivery-dynamodb-003",
+      "name": "delivery-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 329.98,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "customs-sqs-004",
+      "name": "customs-sqs",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 124.96,
+      "owner": "security",
+      "environment": "staging",
+      "region": "eu-west-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "dispatch-api-000",
+      "target": "rates-ecs-001",
+      "type": "calls",
+      "weight": 0.59
+    },
+    {
+      "source": "rates-ecs-001",
+      "target": "routing-rds-002",
+      "type": "calls",
+      "weight": 0.33
+    },
+    {
+      "source": "routing-rds-002",
+      "target": "delivery-dynamodb-003",
+      "type": "reads",
+      "weight": 0.6
+    },
+    {
+      "source": "delivery-dynamodb-003",
+      "target": "customs-sqs-004",
+      "type": "subscribes",
+      "weight": 0.7
+    },
+    {
+      "source": "customs-sqs-004",
+      "target": "dispatch-api-000",
+      "type": "caches",
+      "weight": 0.91
+    }
+  ]
+}

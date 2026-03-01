@@ -1,0 +1,153 @@
+{
+  "metadata": {
+    "name": "Ecommerce (Startup, ap-southeast-1)",
+    "id": "6d398395",
+    "pattern": "ecommerce",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 6,
+    "total_dependencies": 6,
+    "total_cost_monthly": 5289.18,
+    "generated_at": "2026-03-01T19:23:57.360105",
+    "variation_seed": 414
+  },
+  "services": [
+    {
+      "id": "reviews-alb-000",
+      "name": "reviews-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 103.62,
+      "owner": "ml-ops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "promotions-ec2-001",
+      "name": "promotions-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 169.27,
+      "owner": "billing-team",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "pricing-ec2-002",
+      "name": "pricing-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 908.0,
+      "owner": "billing-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "inventory-rds-003",
+      "name": "inventory-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS PostgreSQL",
+      "cost_monthly": 1537.77,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "catalog-elasticache-004",
+      "name": "catalog-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 948.55,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-inventory-005",
+      "name": "public-inventory",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 1621.97,
+      "owner": "devops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "reviews-alb-000",
+      "target": "promotions-ec2-001",
+      "type": "subscribes",
+      "weight": 0.67
+    },
+    {
+      "source": "promotions-ec2-001",
+      "target": "pricing-ec2-002",
+      "type": "triggers",
+      "weight": 0.61
+    },
+    {
+      "source": "pricing-ec2-002",
+      "target": "inventory-rds-003",
+      "type": "reads",
+      "weight": 0.68
+    },
+    {
+      "source": "inventory-rds-003",
+      "target": "catalog-elasticache-004",
+      "type": "triggers",
+      "weight": 0.88
+    },
+    {
+      "source": "catalog-elasticache-004",
+      "target": "public-inventory-005",
+      "type": "writes",
+      "weight": 0.45
+    },
+    {
+      "source": "catalog-elasticache-004",
+      "target": "promotions-ec2-001",
+      "type": "triggers",
+      "weight": 0.61
+    }
+  ]
+}

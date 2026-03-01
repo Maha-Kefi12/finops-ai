@@ -1,0 +1,467 @@
+{
+  "metadata": {
+    "name": "Adtech (Startup, us-west-2)",
+    "id": "e1be2ec1",
+    "pattern": "adtech",
+    "complexity": "large",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "startup",
+    "cost_tier_label": "Startup",
+    "total_services": 17,
+    "total_dependencies": 29,
+    "total_cost_monthly": 4349.23,
+    "generated_at": "2026-03-01T19:23:58.676397",
+    "variation_seed": 58298
+  },
+  "services": [
+    {
+      "id": "bidder-alb-000",
+      "name": "bidder-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 75.84,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "frequency-cap-ec2-001",
+      "name": "frequency-cap-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 279.17,
+      "owner": "frontend-guild",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "targeting-dynamodb-002",
+      "name": "targeting-dynamodb",
+      "type": "database",
+      "aws_service": "Amazon DynamoDB",
+      "cost_monthly": 378.32,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "ad-server-elasticache-003",
+      "name": "ad-server-elasticache",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 266.32,
+      "owner": "analytics-team",
+      "environment": "dr",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.medium",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "reports-kinesis-004",
+      "name": "reports-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 237.8,
+      "owner": "analytics-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": false
+      }
+    },
+    {
+      "id": "fast-reports-005",
+      "name": "fast-reports",
+      "type": "database",
+      "aws_service": "Amazon Redshift",
+      "cost_monthly": 435.42,
+      "owner": "notifications",
+      "environment": "staging",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.xlarge",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "hot-targeting-006",
+      "name": "hot-targeting",
+      "type": "batch",
+      "aws_service": "AWS Glue",
+      "cost_monthly": 420.06,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "public-bidder-007",
+      "name": "public-bidder",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 169.53,
+      "owner": "identity-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "backup-targeting-008",
+      "name": "backup-targeting",
+      "type": "queue",
+      "aws_service": "Amazon SQS",
+      "cost_monthly": 30.2,
+      "owner": "platform-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-creative-store-009",
+      "name": "realtime-creative-store",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 267.5,
+      "owner": "reliability-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-attribution-010",
+      "name": "realtime-attribution",
+      "type": "batch",
+      "aws_service": "Amazon EMR",
+      "cost_monthly": 242.77,
+      "owner": "mobile-backend",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "realtime-bidder-011",
+      "name": "realtime-bidder",
+      "type": "search",
+      "aws_service": "Amazon OpenSearch",
+      "cost_monthly": 390.11,
+      "owner": "security",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": false
+      }
+    },
+    {
+      "id": "backup-ad-server-012",
+      "name": "backup-ad-server",
+      "type": "service",
+      "aws_service": "Amazon CloudWatch",
+      "cost_monthly": 104.3,
+      "owner": "notifications",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "main-campaign-mgr-013",
+      "name": "main-campaign-mgr",
+      "type": "service",
+      "aws_service": "Amazon EC2 (Web)",
+      "cost_monthly": 298.59,
+      "owner": "frontend-guild",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "primary-campaign-mgr-014",
+      "name": "primary-campaign-mgr",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Redis",
+      "cost_monthly": 200.3,
+      "owner": "growth-eng",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-frequency-cap-015",
+      "name": "regional-frequency-cap",
+      "type": "cache",
+      "aws_service": "Amazon ElastiCache Memcached",
+      "cost_monthly": 171.93,
+      "owner": "search-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "m5.large",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "regional-targeting-016",
+      "name": "regional-targeting",
+      "type": "service",
+      "aws_service": "Amazon EKS",
+      "cost_monthly": 381.07,
+      "owner": "payments",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "r5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "bidder-alb-000",
+      "target": "frequency-cap-ec2-001",
+      "type": "triggers",
+      "weight": 0.7
+    },
+    {
+      "source": "frequency-cap-ec2-001",
+      "target": "targeting-dynamodb-002",
+      "type": "caches",
+      "weight": 0.58
+    },
+    {
+      "source": "targeting-dynamodb-002",
+      "target": "ad-server-elasticache-003",
+      "type": "queries",
+      "weight": 0.93
+    },
+    {
+      "source": "ad-server-elasticache-003",
+      "target": "reports-kinesis-004",
+      "type": "triggers",
+      "weight": 0.67
+    },
+    {
+      "source": "reports-kinesis-004",
+      "target": "fast-reports-005",
+      "type": "subscribes",
+      "weight": 0.4
+    },
+    {
+      "source": "fast-reports-005",
+      "target": "hot-targeting-006",
+      "type": "writes",
+      "weight": 0.98
+    },
+    {
+      "source": "hot-targeting-006",
+      "target": "public-bidder-007",
+      "type": "subscribes",
+      "weight": 0.78
+    },
+    {
+      "source": "public-bidder-007",
+      "target": "backup-targeting-008",
+      "type": "subscribes",
+      "weight": 0.94
+    },
+    {
+      "source": "backup-targeting-008",
+      "target": "realtime-creative-store-009",
+      "type": "calls",
+      "weight": 0.58
+    },
+    {
+      "source": "realtime-creative-store-009",
+      "target": "realtime-attribution-010",
+      "type": "reads",
+      "weight": 0.48
+    },
+    {
+      "source": "realtime-attribution-010",
+      "target": "realtime-bidder-011",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "realtime-bidder-011",
+      "target": "backup-ad-server-012",
+      "type": "reads",
+      "weight": 0.86
+    },
+    {
+      "source": "backup-ad-server-012",
+      "target": "main-campaign-mgr-013",
+      "type": "reads",
+      "weight": 0.95
+    },
+    {
+      "source": "main-campaign-mgr-013",
+      "target": "primary-campaign-mgr-014",
+      "type": "writes",
+      "weight": 0.37
+    },
+    {
+      "source": "primary-campaign-mgr-014",
+      "target": "regional-frequency-cap-015",
+      "type": "queries",
+      "weight": 0.85
+    },
+    {
+      "source": "regional-frequency-cap-015",
+      "target": "regional-targeting-016",
+      "type": "triggers",
+      "weight": 0.37
+    },
+    {
+      "source": "public-bidder-007",
+      "target": "main-campaign-mgr-013",
+      "type": "queries",
+      "weight": 0.52
+    },
+    {
+      "source": "primary-campaign-mgr-014",
+      "target": "reports-kinesis-004",
+      "type": "caches",
+      "weight": 0.22
+    },
+    {
+      "source": "backup-targeting-008",
+      "target": "frequency-cap-ec2-001",
+      "type": "writes",
+      "weight": 0.86
+    },
+    {
+      "source": "primary-campaign-mgr-014",
+      "target": "fast-reports-005",
+      "type": "reads",
+      "weight": 0.53
+    },
+    {
+      "source": "realtime-attribution-010",
+      "target": "primary-campaign-mgr-014",
+      "type": "subscribes",
+      "weight": 0.56
+    },
+    {
+      "source": "realtime-attribution-010",
+      "target": "public-bidder-007",
+      "type": "triggers",
+      "weight": 0.45
+    },
+    {
+      "source": "hot-targeting-006",
+      "target": "main-campaign-mgr-013",
+      "type": "subscribes",
+      "weight": 0.46
+    },
+    {
+      "source": "backup-targeting-008",
+      "target": "hot-targeting-006",
+      "type": "calls",
+      "weight": 0.3
+    },
+    {
+      "source": "realtime-creative-store-009",
+      "target": "reports-kinesis-004",
+      "type": "triggers",
+      "weight": 0.89
+    },
+    {
+      "source": "fast-reports-005",
+      "target": "ad-server-elasticache-003",
+      "type": "writes",
+      "weight": 0.33
+    },
+    {
+      "source": "reports-kinesis-004",
+      "target": "public-bidder-007",
+      "type": "queries",
+      "weight": 0.26
+    },
+    {
+      "source": "backup-ad-server-012",
+      "target": "reports-kinesis-004",
+      "type": "queries",
+      "weight": 0.19
+    },
+    {
+      "source": "realtime-bidder-011",
+      "target": "backup-targeting-008",
+      "type": "triggers",
+      "weight": 0.14
+    }
+  ]
+}

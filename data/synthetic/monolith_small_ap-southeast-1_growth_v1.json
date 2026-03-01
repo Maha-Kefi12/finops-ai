@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "name": "Monolith (Growth, ap-southeast-1)",
+    "id": "c14e2e4c",
+    "pattern": "monolith",
+    "complexity": "small",
+    "region": "ap-southeast-1",
+    "region_name": "Asia Pacific (Singapore)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 3,
+    "total_dependencies": 3,
+    "total_cost_monthly": 7835.15,
+    "generated_at": "2026-03-01T19:23:58.125711",
+    "variation_seed": 33994
+  },
+  "services": [
+    {
+      "id": "app-server-alb-000",
+      "name": "app-server-alb",
+      "type": "load_balancer",
+      "aws_service": "Application Load Balancer",
+      "cost_monthly": 48.02,
+      "owner": "streaming-team",
+      "environment": "dr",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.large",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "scheduler-ec2-001",
+      "name": "scheduler-ec2",
+      "type": "service",
+      "aws_service": "Amazon EC2 (App)",
+      "cost_monthly": 3479.22,
+      "owner": "devops",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "mailer-rds-002",
+      "name": "mailer-rds",
+      "type": "database",
+      "aws_service": "Amazon RDS MySQL",
+      "cost_monthly": 4307.91,
+      "owner": "reliability-eng",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": false,
+        "multi_az": false,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "app-server-alb-000",
+      "target": "scheduler-ec2-001",
+      "type": "triggers",
+      "weight": 0.59
+    },
+    {
+      "source": "scheduler-ec2-001",
+      "target": "mailer-rds-002",
+      "type": "queries",
+      "weight": 0.85
+    },
+    {
+      "source": "mailer-rds-002",
+      "target": "scheduler-ec2-001",
+      "type": "subscribes",
+      "weight": 0.59
+    }
+  ]
+}

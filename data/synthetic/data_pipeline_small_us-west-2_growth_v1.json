@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "name": "Data Pipeline (Growth, us-west-2)",
+    "id": "eac73a15",
+    "pattern": "data_pipeline",
+    "complexity": "small",
+    "region": "us-west-2",
+    "region_name": "US West (Oregon)",
+    "cost_tier": "growth",
+    "cost_tier_label": "Growth",
+    "total_services": 3,
+    "total_dependencies": 2,
+    "total_cost_monthly": 646.5,
+    "generated_at": "2026-03-01T19:23:57.622160",
+    "variation_seed": 11860
+  },
+  "services": [
+    {
+      "id": "ingestion-kinesis-000",
+      "name": "ingestion-kinesis",
+      "type": "queue",
+      "aws_service": "Amazon Kinesis",
+      "cost_monthly": 149.54,
+      "owner": "content-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "c5.large",
+        "auto_scaling": false,
+        "multi_az": true,
+        "encryption": true
+      }
+    },
+    {
+      "id": "aggregation-lambda-001",
+      "name": "aggregation-lambda",
+      "type": "serverless",
+      "aws_service": "AWS Lambda",
+      "cost_monthly": 405.21,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.micro",
+        "auto_scaling": true,
+        "multi_az": false,
+        "encryption": true
+      }
+    },
+    {
+      "id": "replay-s3-002",
+      "name": "replay-s3",
+      "type": "storage",
+      "aws_service": "Amazon S3",
+      "cost_monthly": 91.75,
+      "owner": "billing-team",
+      "environment": "production",
+      "region": "us-west-2",
+      "attributes": {
+        "instance_type": "t3.small",
+        "auto_scaling": true,
+        "multi_az": true,
+        "encryption": true
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "source": "ingestion-kinesis-000",
+      "target": "aggregation-lambda-001",
+      "type": "queries",
+      "weight": 0.73
+    },
+    {
+      "source": "aggregation-lambda-001",
+      "target": "replay-s3-002",
+      "type": "subscribes",
+      "weight": 0.63
+    }
+  ]
+}
