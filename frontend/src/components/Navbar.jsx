@@ -1,9 +1,13 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, GitBranch, BrainCircuit } from 'lucide-react'
+import { LayoutDashboard, GitBranch, BrainCircuit, Layers, BarChart3, Network, Workflow } from 'lucide-react'
 
 const links = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/pipeline', label: 'Pipeline', icon: Layers },
     { to: '/graph', label: 'Graph Engine', icon: GitBranch },
+    { to: '/metrics', label: 'Metrics', icon: BarChart3 },
+    { to: '/topology', label: 'Topology', icon: Network },
+    { to: '/graphrag', label: 'GraphRAG', icon: Workflow },
     { to: '/analysis', label: 'AI Analysis', icon: BrainCircuit },
 ]
 

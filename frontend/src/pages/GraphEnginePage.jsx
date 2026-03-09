@@ -10,7 +10,11 @@ const TYPE_COLORS = {
     service: '#2563eb', database: '#d97706', cache: '#059669',
     queue: '#7c3aed', load_balancer: '#0891b2', storage: '#ea580c',
     serverless: '#ca8a04', cdn: '#db2777', search: '#0d9488',
-    batch: '#9333ea',
+    batch: '#9333ea', vpc: '#6366f1', subnet: '#818cf8',
+    security_group: '#f43f5e', gateway: '#14b8a6', route_table: '#a855f7',
+    ecs_cluster: '#0ea5e9', container: '#06b6d4', target_group: '#84cc16',
+    monitoring: '#f59e0b', notification: '#ec4899', elastic_ip: '#10b981',
+    container_registry: '#0284c7', logging: '#64748b', iam_role: '#dc2626',
 }
 
 function NodeDetailPanel({ node, onClose }) {
@@ -27,7 +31,7 @@ function NodeDetailPanel({ node, onClose }) {
             <p className="text-xs text-gray-500 mb-4 capitalize">{node.type} • {node.owner || 'unknown'}</p>
             <div className="grid grid-cols-2 gap-2">
                 {[
-                    { label: 'Monthly Cost', value: `$${node.cost?.toLocaleString() || 0}` },
+                    { label: 'Monthly Cost', value: `$${(node.cost_monthly || node.cost || 0).toLocaleString()}` },
                     { label: 'Degree Centrality', value: (node.degree_centrality || 0).toFixed(3) },
                     { label: 'Betweenness', value: (node.betweenness_centrality || 0).toFixed(3) },
                     { label: 'Cost Share', value: `${((node.cost_share || 0) * 100).toFixed(1)}%` },
@@ -88,8 +92,8 @@ export default function GraphEnginePage() {
             const res = await getGraph(arch.id)
             setSelectedGraph(arch); setArchInfo(res.data)
             setGraphData({
-                nodes: (res.data.nodes || []).map(n => ({ ...n, id: n.id || n.name })),
-                links: (res.data.edges || []).map(e => ({ source: e.source, target: e.target, type: e.type, weight: e.weight || 1 }))
+                nodes: (res.data.nodes || []).map(n => ({ ...n, id: n.id || n.name, cost: n.cost_monthly || 0 })),
+                links: (res.data.links || []).map(e => ({ source: e.source, target: e.target, type: e.type, weight: e.weight || 1 }))
             })
         } catch { }
         setLoading(false)
@@ -121,9 +125,9 @@ export default function GraphEnginePage() {
 
     const stats = archInfo ? {
         services: archInfo.nodes?.length || 0,
-        deps: archInfo.edges?.length || 0,
-        cost: archInfo.nodes?.reduce((s, n) => s + (n.cost || 0), 0) || 0,
-        density: archInfo.density || 0,
+        deps: archInfo.links?.length || 0,
+        cost: archInfo.nodes?.reduce((s, n) => s + (n.cost_monthly || 0), 0) || 0,
+        density: archInfo.metrics?.summary?.density || 0,
     } : null
 
     return (
@@ -143,7 +147,7 @@ export default function GraphEnginePage() {
                             {graphs.map(g => (
                                 <button key={g.id} onClick={() => selectArchitecture(g)}
                                     className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors flex justify-between">
-                                    <span>{g.name}</span><span className="text-xs text-gray-400">{g.service_count} svc</span>
+                                    <span>{g.name}</span><span className="text-xs text-gray-400">{g.total_services} svc</span>
                                 </button>
                             ))}
                         </div>
@@ -155,7 +159,7 @@ export default function GraphEnginePage() {
                 <div className="grid grid-cols-4 gap-3 mb-4">
                     {[
                         { label: 'Services', value: stats.services }, { label: 'Dependencies', value: stats.deps },
-                        { label: 'Monthly Cost', value: `$${stats.cost.toLocaleString()}` }, { label: 'Density', value: stats.density.toFixed(3) },
+                        { label: 'Monthly Cost', value: `$${stats.cost.toFixed(0)}` }, { label: 'Density', value: stats.density.toFixed(4) },
                     ].map(({ label, value }) => (
                         <div key={label} className="card px-4 py-2.5 flex items-center gap-3">
                             <div><p className="text-sm font-bold text-gray-900">{value}</p><p className="text-[10px] text-gray-400 uppercase">{label}</p></div>

@@ -102,7 +102,7 @@ class BaseAgent(ABC):
                         "num_predict": max_tokens,
                     },
                 },
-                timeout=120,
+                timeout=300,
             )
             if resp.status_code == 200:
                 return resp.json().get("message", {}).get("content", "")

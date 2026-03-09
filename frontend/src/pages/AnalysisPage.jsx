@@ -1,13 +1,121 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { listArchitectures, analyzeArchitecture } from '../api/client'
+import { listArchitectures, analyzeArchitecture, ingestFromAws, getAwsPipelineStatus } from '../api/client'
 import {
     BrainCircuit, Sparkles, AlertTriangle, Shield, TrendingUp,
     DollarSign, Activity, Cpu, Zap, ChevronDown, Search,
     Target, Eye, BarChart3, FileText, ArrowRight,
     CheckCircle2, XCircle, Clock, Layers, GitBranch,
-    Lightbulb, Wrench, ArrowUpRight
+    Lightbulb, Wrench, ArrowUpRight, Cloud, Loader2,
+    Network, Database, Server
 } from 'lucide-react'
+
+/* ── AWS Ingestion stages ──────────────────────────────────────── */
+const AWS_STAGES = [
+    { key: 'queued',      label: 'Queued',     icon: Clock,        pct: 5 },
+    { key: 'discovery',   label: 'Discovery',  icon: Search,       pct: 30 },
+    { key: 'graph_build', label: 'Graph Build', icon: Network,      pct: 55 },
+    { key: 'storing',     label: 'Storage',    icon: Database,     pct: 75 },
+    { key: 'llm_report',  label: 'LLM Report', icon: BrainCircuit, pct: 90 },
+    { key: 'completed',   label: 'Done',       icon: CheckCircle2, pct: 100 },
+]
+
+function stagePct(stage) {
+    if (stage === 'failed') return 0
+    const norm = stage?.replace(/_done$/, '').replace(/^stored$/, 'storing').replace(/^llm_done$/, 'llm_report') || 'queued'
+    return AWS_STAGES.find(s => s.key === norm)?.pct || 10
+}
+
+/* ── AWS Progress Bar Component ────────────────────────────────── */
+function AwsProgressBar({ progress, onCancel }) {
+    if (!progress) return null
+    const { stage, detail, elapsed, totalServices, totalCost, error } = progress
+    const isDone = stage === 'completed'
+    const isFailed = stage === 'failed'
+    const pct = isDone ? 100 : isFailed ? 0 : stagePct(stage)
+
+    return (
+        <div className="card p-5 mb-6 border-2 border-amber-200 bg-gradient-to-br from-amber-50/50 to-orange-50/50">
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                    {isDone ? <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                     : isFailed ? <XCircle className="w-5 h-5 text-red-600" />
+                     : <Loader2 className="w-5 h-5 text-amber-600 animate-spin" />}
+                    <span className={`text-sm font-bold ${isDone ? 'text-emerald-700' : isFailed ? 'text-red-700' : 'text-amber-700'}`}>
+                        {isDone ? 'AWS Ingestion Complete — Running Analysis...' : isFailed ? 'Ingestion Failed' : 'AWS Live Discovery'}
+                    </span>
+                </div>
+                <div className="flex items-center gap-3">
+                    {elapsed > 0 && (
+                        <span className="text-xs text-gray-500 font-mono bg-white px-2 py-1 rounded border border-gray-200">
+                            {elapsed.toFixed(1)}s
+                        </span>
+                    )}
+                    {!isDone && !isFailed && onCancel && (
+                        <button onClick={onCancel} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+                    )}
+                </div>
+            </div>
+            <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden mb-2">
+                <div className={`h-full rounded-full transition-all duration-700 ease-out ${
+                    isDone ? 'bg-emerald-500' : isFailed ? 'bg-red-500' : 'bg-gradient-to-r from-amber-400 to-orange-500'
+                }`} style={{ width: `${pct}%` }} />
+            </div>
+            <div className="flex items-center justify-between mb-2">
+                {AWS_STAGES.map((s) => {
+                    const Icon = s.icon
+                    const currentPct = stagePct(stage)
+                    const isActive = !isFailed && Math.abs(currentPct - s.pct) < 15 && currentPct <= s.pct
+                    const isComplete = !isFailed && currentPct > s.pct
+                    return (
+                        <div key={s.key} className="flex flex-col items-center gap-1">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${
+                                isComplete ? 'bg-emerald-100 text-emerald-600 border border-emerald-300'
+                                : isActive ? 'bg-amber-100 text-amber-700 border border-amber-400 ring-2 ring-amber-200'
+                                : 'bg-gray-100 text-gray-400 border border-gray-200'
+                            }`}>
+                                {isComplete ? <CheckCircle2 className="w-3.5 h-3.5" />
+                                 : isActive ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                 : <Icon className="w-3.5 h-3.5" />}
+                            </div>
+                            <span className={`text-[9px] font-medium ${isActive ? 'text-amber-700' : isComplete ? 'text-emerald-600' : 'text-gray-400'}`}>
+                                {s.label}
+                            </span>
+                        </div>
+                    )
+                })}
+            </div>
+            {detail && (
+                <div className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 ${
+                    isFailed ? 'bg-red-50 text-red-700 border border-red-200'
+                    : isDone ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-white text-gray-600 border border-gray-200'
+                }`}>
+                    {!isDone && !isFailed && <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />}
+                    {detail}
+                </div>
+            )}
+            {isDone && totalServices > 0 && (
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div className="bg-white rounded-lg p-2.5 border border-emerald-200 shadow-sm">
+                        <p className="text-xs text-gray-500 flex items-center gap-1"><Server className="w-3 h-3" /> Resources</p>
+                        <p className="text-base font-bold text-gray-900">{totalServices}</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-2.5 border border-emerald-200 shadow-sm">
+                        <p className="text-xs text-gray-500 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Monthly Cost</p>
+                        <p className="text-base font-bold text-gray-900">${(totalCost || 0).toLocaleString()}</p>
+                    </div>
+                </div>
+            )}
+            {isFailed && error && (
+                <div className="mt-2 bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-xs text-red-600 font-mono break-all">{error}</p>
+                    <p className="text-xs text-gray-500 mt-1">Check AWS credentials in .env</p>
+                </div>
+            )}
+        </div>
+    )
+}
 
 /* ═══════════════════════════════════════════════════════════════
    Severity color mapping (light theme)
@@ -211,22 +319,100 @@ export default function AnalysisPage() {
     const [loading, setLoading] = useState(false)
     const [dropdownOpen, setDropdownOpen] = useState(false)
     const [findingFilter, setFindingFilter] = useState('all')
+    const [awsProgress, setAwsProgress] = useState(null)
+    const awsPollRef = useRef(null)
+    const awsStartRef = useRef(null)
+    const awsTimerRef = useRef(null)
 
     useEffect(() => {
         listArchitectures()
             .then(res => setArchitectures(res.data.architectures))
             .catch(() => { })
+        return () => cancelAwsDiscovery()
     }, [])
 
     useEffect(() => {
-        if (selectedArch && !result) runAnalysis()
+        if (selectedArch && !result && selectedArch.filename !== '__aws_live__') runAnalysis()
     }, [selectedArch])
+
+    function cancelAwsDiscovery() {
+        if (awsPollRef.current) clearInterval(awsPollRef.current)
+        if (awsTimerRef.current) clearInterval(awsTimerRef.current)
+        awsPollRef.current = null
+        awsTimerRef.current = null
+    }
+
+    async function handleAwsLiveAnalysis() {
+        setDropdownOpen(false)
+        setResult(null)
+        setLoading(false)
+        setAwsProgress({ stage: 'queued', detail: 'Starting AWS discovery...', elapsed: 0 })
+        awsStartRef.current = Date.now()
+
+        // Elapsed timer
+        awsTimerRef.current = setInterval(() => {
+            setAwsProgress(prev => prev ? { ...prev, elapsed: (Date.now() - awsStartRef.current) / 1000 } : prev)
+        }, 500)
+
+        try {
+            const res = await ingestFromAws('us-east-1')
+            const snapshotId = res.data?.snapshot_id
+            if (!snapshotId) {
+                setAwsProgress(prev => ({ ...prev, stage: 'failed', detail: 'No snapshot_id returned' }))
+                cancelAwsDiscovery()
+                return
+            }
+
+            // Poll for status
+            awsPollRef.current = setInterval(async () => {
+                try {
+                    const st = await getAwsPipelineStatus(snapshotId)
+                    const d = st.data
+                    setAwsProgress(prev => ({
+                        ...prev,
+                        stage: d.pipeline_stage || d.status,
+                        detail: d.pipeline_detail || '',
+                        totalServices: d.total_services || 0,
+                        totalCost: d.total_cost_monthly || 0,
+                        error: d.error_message || null,
+                    }))
+
+                    if (d.status === 'completed') {
+                        cancelAwsDiscovery()
+                        // Refresh architectures list
+                        try {
+                            const refreshed = await listArchitectures()
+                            setArchitectures(refreshed.data.architectures)
+                        } catch (e) {}
+                        // Auto-select the new architecture and run analysis
+                        const archId = d.architecture_id
+                        if (archId) {
+                            setSelectedArch({ architecture_id: archId, name: `AWS Live (${archId.slice(0, 8)})`, filename: null })
+                            setLoading(true)
+                            try {
+                                const analysisRes = await analyzeArchitecture(null, archId)
+                                setResult(analysisRes.data)
+                            } catch (e) { console.error('Analysis failed:', e) }
+                            setLoading(false)
+                        }
+                    } else if (d.status === 'failed') {
+                        cancelAwsDiscovery()
+                    }
+                } catch (e) {
+                    console.error('Poll error:', e)
+                }
+            }, 1500)
+        } catch (e) {
+            setAwsProgress(prev => ({ ...prev, stage: 'failed', detail: e.message || 'Failed to start AWS discovery' }))
+            cancelAwsDiscovery()
+        }
+    }
 
     async function runAnalysis() {
         if (!selectedArch) return
         setLoading(true); setResult(null)
         try {
-            const res = await analyzeArchitecture(selectedArch.filename)
+            const res = await analyzeArchitecture(selectedArch.filename, selectedArch.architecture_id)
             setResult(res.data)
         } catch (e) { console.error('Analysis failed:', e) }
         setLoading(false)
@@ -258,8 +444,15 @@ export default function AnalysisPage() {
                     </button>
                     {dropdownOpen && (
                         <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg p-1.5 z-30 max-h-72 overflow-y-auto">
+                            {/* AWS Live Discovery option */}
+                            <button onClick={handleAwsLiveAnalysis}
+                                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-amber-700 hover:bg-amber-50 transition-colors border-b border-gray-100 mb-1 flex items-center gap-2">
+                                <Cloud className="w-4 h-4 text-amber-600" />
+                                AWS Live Discovery
+                                <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Live</span>
+                            </button>
                             {architectures.map(a => (
-                                <button key={a.filename} onClick={() => { setSelectedArch(a); setDropdownOpen(false); setResult(null) }}
+                                <button key={a.filename || a.architecture_id} onClick={() => { setSelectedArch(a); setDropdownOpen(false); setResult(null) }}
                                     className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
                                     <div className="flex justify-between items-center">
                                         <span className="font-medium">{a.name}</span>
@@ -272,6 +465,9 @@ export default function AnalysisPage() {
                     )}
                 </div>
             </div>
+
+            {/* AWS Progress Bar */}
+            {awsProgress && <AwsProgressBar progress={awsProgress} onCancel={() => { cancelAwsDiscovery(); setAwsProgress(null) }} />}
 
             {/* Loading */}
             {loading && (

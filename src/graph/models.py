@@ -62,3 +62,24 @@ class Dependency(Base):
     weight = Column(Float, default=1.0)
 
     architecture = relationship("Architecture", back_populates="dependencies")
+
+
+class IngestionSnapshot(Base):
+    __tablename__ = "ingestion_snapshots"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    account_id = Column(String, nullable=True)
+    architecture_id = Column(String, nullable=True)
+    source = Column(String, nullable=False, default="file")
+    status = Column(String, nullable=False, default="pending")
+    pipeline_stage = Column(String, nullable=True)
+    pipeline_detail = Column(String, nullable=True)
+    region = Column(String, nullable=True)
+    total_services = Column(Integer, nullable=True, default=0)
+    total_cost_monthly = Column(Float, nullable=True, default=0.0)
+    duration_seconds = Column(Float, nullable=True, default=0.0)
+    error_message = Column(String, nullable=True)
+    raw_data = Column(JSON, nullable=True)
+    llm_report = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

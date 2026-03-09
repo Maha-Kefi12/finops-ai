@@ -9,6 +9,8 @@ from src.storage.database import init_db
 from src.api.handlers.ingest import router as ingest_router
 from src.api.handlers.graphs import router as graphs_router
 from src.api.handlers.analyze import router as analyze_router
+from src.api.handlers.topology import router as topology_router
+from src.api.handlers.graphrag import router as graphrag_router
 
 
 @asynccontextmanager
@@ -42,6 +44,8 @@ app.add_middleware(
 app.include_router(ingest_router)
 app.include_router(graphs_router)
 app.include_router(analyze_router)
+app.include_router(topology_router)
+app.include_router(graphrag_router)
 
 
 @app.get("/health")

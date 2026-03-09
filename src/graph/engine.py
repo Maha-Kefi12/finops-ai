@@ -17,7 +17,20 @@ SERVICE_TYPE_COLORS = {
     "cdn": "#f97316",           # orange - CDN
     "search": "#ef4444",        # red - search
     "batch": "#84cc16",         # lime - workers
-    "cdn": "#f97316",
+    "vpc": "#6366f1",           # indigo - VPC
+    "subnet": "#818cf8",        # light indigo - subnet
+    "security_group": "#f43f5e",# rose - security group
+    "gateway": "#14b8a6",       # teal - gateways
+    "route_table": "#a855f7",   # purple - route tables
+    "ecs_cluster": "#0ea5e9",   # sky - ECS cluster
+    "container": "#06b6d4",     # cyan - containers
+    "target_group": "#84cc16",  # lime - target groups
+    "monitoring": "#f59e0b",    # amber - monitoring
+    "notification": "#ec4899",  # pink - notifications
+    "elastic_ip": "#10b981",    # emerald - EIPs
+    "container_registry": "#0284c7", # blue - ECR
+    "logging": "#64748b",       # slate - logging
+    "iam_role": "#dc2626",      # red - IAM
 }
 
 
