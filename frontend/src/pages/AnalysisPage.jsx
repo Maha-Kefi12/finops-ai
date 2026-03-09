@@ -366,6 +366,19 @@ export default function AnalysisPage() {
             // Poll for status
             awsPollRef.current = setInterval(async () => {
                 try {
+                    // ── Client-side timeout: stop if polling > 5 min ──
+                    const elapsedMs = Date.now() - awsStartRef.current
+                    if (elapsedMs > 5 * 60 * 1000) {
+                        cancelAwsDiscovery()
+                        setAwsProgress(prev => ({
+                            ...prev,
+                            stage: 'failed',
+                            detail: 'Discovery timed out after 5 minutes. Please retry.',
+                            error: 'Pipeline timed out — please try again.',
+                        }))
+                        return
+                    }
+
                     const st = await getAwsPipelineStatus(snapshotId)
                     const d = st.data
                     setAwsProgress(prev => ({

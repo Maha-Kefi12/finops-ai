@@ -416,6 +416,21 @@ def _run_aws_ingestion_background(snap_id: str, region: str, account_id: Optiona
 def ingest_from_aws(req: IngestAwsRequest, db: Session = Depends(get_db)):
     """Start AWS discovery pipeline. Returns immediately with snapshot_id for polling."""
     import threading
+    import datetime
+
+    # ── Clean up stale running snapshots before starting a new one ─
+    stale_cutoff = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
+    stale = db.query(IngestionSnapshot).filter(
+        IngestionSnapshot.status == "running",
+        IngestionSnapshot.created_at < stale_cutoff,
+    ).all()
+    for s in stale:
+        s.status = "failed"
+        s.pipeline_stage = "failed"
+        s.pipeline_detail = "Expired — superseded by new ingestion request"
+        s.error_message = "Superseded by new ingestion request"
+    if stale:
+        db.commit()
 
     snap = IngestionSnapshot(
         account_id=req.account_id,
@@ -447,6 +462,7 @@ def ingest_from_aws(req: IngestAwsRequest, db: Session = Depends(get_db)):
 @router.get("/ingest/aws/status/{snapshot_id}")
 def get_aws_pipeline_status(snapshot_id: str, db: Session = Depends(get_db)):
     """Poll pipeline status for a running AWS ingestion."""
+    import datetime
     db.expire_all()
 
     snap = db.query(IngestionSnapshot).filter(
@@ -454,6 +470,18 @@ def get_aws_pipeline_status(snapshot_id: str, db: Session = Depends(get_db)):
     ).first()
     if not snap:
         raise HTTPException(404, "Snapshot not found")
+
+    # ── Auto-expire stale running snapshots (>5 min) ──────────────
+    if snap.status == "running" and snap.created_at:
+        age_seconds = (datetime.datetime.utcnow() - snap.created_at).total_seconds()
+        if age_seconds > 300:  # 5 minutes
+            snap.status = "failed"
+            snap.pipeline_stage = "failed"
+            snap.pipeline_detail = f"Pipeline timed out after {age_seconds:.0f}s (stale snapshot)"
+            snap.error_message = "Pipeline timed out — the background worker may have crashed. Please retry."
+            snap.duration_seconds = round(age_seconds, 2)
+            db.commit()
+            db.refresh(snap)
 
     result = {
         "snapshot_id": snap.id,

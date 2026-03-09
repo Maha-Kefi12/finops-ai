@@ -473,6 +473,21 @@ export default function TopologyPage() {
 
             awsPollRef.current = setInterval(async () => {
                 try {
+                    // ── Client-side timeout: stop if polling > 5 min ──
+                    const elapsedMs = Date.now() - awsStartRef.current
+                    if (elapsedMs > 5 * 60 * 1000) {
+                        clearInterval(awsPollRef.current); clearInterval(awsTimerRef.current)
+                        awsPollRef.current = null; awsTimerRef.current = null
+                        setAwsLoading(false)
+                        setAwsProgress(prev => ({
+                            ...prev,
+                            stage: 'failed',
+                            detail: 'Discovery timed out after 5 minutes. Please retry.',
+                            error: 'Pipeline timed out — please try again.',
+                        }))
+                        return
+                    }
+
                     const statusRes = await getAwsPipelineStatus(snapshotId)
                     const data = statusRes.data
                     setAwsProgress(prev => ({
