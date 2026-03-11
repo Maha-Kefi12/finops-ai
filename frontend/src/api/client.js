@@ -18,6 +18,22 @@ export const ingestFromAws = (region = 'us-east-1', accountId = null) =>
     api.post('/ingest/aws', { region, account_id: accountId }, { timeout: 30000 })
 export const getAwsPipelineStatus = (snapshotId) =>
     api.get(`/ingest/aws/status/${snapshotId}`)
+
+// ── CUR Pipeline ────────────────────────────────────────────────────
+export const ingestFromCur = (region = 'us-east-1', curBucket = null, curPrefix = null, collectCloudwatch = true) =>
+    api.post('/ingest/cur', {
+        region,
+        cur_bucket: curBucket,
+        cur_prefix: curPrefix,
+        collect_cloudwatch: collectCloudwatch,
+    }, { timeout: 30000 })
+export const getCurPipelineStatus = (snapshotId) =>
+    api.get(`/ingest/cur/status/${snapshotId}`)
+
+// ── Neo4j ───────────────────────────────────────────────────────────
+export const getNeo4jStatus = () => api.get('/neo4j/status')
+export const getNeo4jGraph = (archId) => api.get(`/neo4j/graph/${archId}`)
+
 export const listSnapshots = () => api.get('/ingest/snapshots')
 export const getSnapshot = (id) => api.get(`/ingest/snapshots/${id}`)
 export const getGraphMetrics = (archId) => api.get(`/graph-metrics/${archId}`)
