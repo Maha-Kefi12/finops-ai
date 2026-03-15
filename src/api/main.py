@@ -11,6 +11,7 @@ from src.api.handlers.graphs import router as graphs_router
 from src.api.handlers.analyze import router as analyze_router
 from src.api.handlers.topology import router as topology_router
 from src.api.handlers.graphrag import router as graphrag_router
+from src.api.handlers.docs import router as docs_router
 
 
 @asynccontextmanager
@@ -46,6 +47,7 @@ app.include_router(graphs_router)
 app.include_router(analyze_router)
 app.include_router(topology_router)
 app.include_router(graphrag_router)
+app.include_router(docs_router)
 
 
 @app.get("/health")

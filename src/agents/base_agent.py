@@ -85,7 +85,7 @@ class BaseAgent(ABC):
             )
 
         if not HAS_REQUESTS:
-            return self._deterministic_fallback(user_prompt)
+            raise RuntimeError("LLM unavailable: requests library not installed")
 
         try:
             resp = requests.post(
@@ -106,10 +106,9 @@ class BaseAgent(ABC):
             )
             if resp.status_code == 200:
                 return resp.json().get("message", {}).get("content", "")
-        except Exception:
-            pass
-
-        return self._deterministic_fallback(user_prompt)
+            raise RuntimeError(f"LLM returned status {resp.status_code}")
+        except Exception as e:
+            raise RuntimeError(f"LLM call failed: {e}")
 
     def _deterministic_fallback(self, user_prompt: str) -> str:
         """When LLM is unavailable, produce a structured analysis

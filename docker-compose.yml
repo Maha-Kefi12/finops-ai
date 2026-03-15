@@ -30,7 +30,7 @@ services:
     volumes:
       - neo4j_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1" ]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -64,6 +64,7 @@ services:
       - ./data/rag_index:/app/data/rag_index
       - ./data/cur_exports:/app/data/cur_exports
       - ./src:/app/src
+      - ./docs:/app/docs:ro
     depends_on:
       postgres:
         condition: service_healthy

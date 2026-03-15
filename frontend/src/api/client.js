@@ -52,6 +52,20 @@ export const analyzeArchitecture = (filename, architectureId) => {
 }
 export const listAnalysisResults = () => api.get('/analyze/results')
 export const getAnalysisResult = (id) => api.get(`/analyze/results/${id}`)
+export const deepGraphAnalysis = (architectureId, architectureFile) => {
+    const body = {}
+    if (architectureId) body.architecture_id = architectureId
+    if (architectureFile) body.architecture_file = architectureFile
+    return api.post('/analyze/deep', body, { timeout: 300000 })
+}
+
+// ── Recommendation Engine ────────────────────────────────────────────
+export const generateRecommendations = (architectureId, architectureFile) => {
+    const body = {}
+    if (architectureId) body.architecture_id = architectureId
+    if (architectureFile) body.architecture_file = architectureFile
+    return api.post('/analyze/recommendations', body, { timeout: 300000 })
+}
 
 // ── Topology ─────────────────────────────────────────────────────────
 export const analyzeTopology = (filename) =>
@@ -89,5 +103,10 @@ export const runCombinedTraversal = (archId, seedNode = null, targetNode = null,
         arch_id: archId, seed_node: seedNode, target_node: targetNode,
         hops, window_hours: windowHours, strategies,
     })
+
+// ── Graph RAG Docs ──────────────────────────────────────────────────
+export const searchDocs = (query, topK = 5) =>
+    api.post('/docs/search', { query, top_k: topK })
+export const getDocsStats = () => api.get('/docs/stats')
 
 export default api

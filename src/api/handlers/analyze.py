@@ -177,3 +177,216 @@ async def list_architectures(db: Session = Depends(get_db)):
                 pass
 
     return {"architectures": files}
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Deep Graph Analysis — per-node metrics + interesting node narratives
+# ──────────────────────────────────────────────────────────────────────
+class DeepAnalysisRequest(BaseModel):
+    architecture_id: Optional[str] = None
+    architecture_file: Optional[str] = None
+
+
+@router.post("/analyze/deep")
+async def deep_graph_analysis(req: DeepAnalysisRequest, db: Session = Depends(get_db)):
+    """Run the deep graph analyzer: compute per-node metrics, identify
+    interesting nodes, build context + narratives."""
+    import asyncio
+    from dataclasses import asdict
+    from src.analysis.graph_analyzer import GraphAnalyzer
+
+    graph_data = None
+
+    # ── Try loading from Neo4j (CUR pipeline result) ─────────────────
+    if req.architecture_id:
+        # First try: load raw_data from IngestionSnapshot (full CUR graph)
+        from src.graph.models import IngestionSnapshot
+        snap = (
+            db.query(IngestionSnapshot)
+            .filter(
+                IngestionSnapshot.architecture_id == req.architecture_id,
+                IngestionSnapshot.status == "completed",
+            )
+            .order_by(IngestionSnapshot.created_at.desc())
+            .first()
+        )
+        if snap and snap.raw_data:
+            graph_data = snap.raw_data if isinstance(snap.raw_data, dict) else json.loads(snap.raw_data)
+
+        # Fallback: load from DB (architecture/services/dependencies)
+        if not graph_data:
+            arch = db.query(Architecture).filter(Architecture.id == req.architecture_id).first()
+            if not arch:
+                raise HTTPException(404, f"Architecture not found: {req.architecture_id}")
+            services = db.query(Service).filter(Service.architecture_id == req.architecture_id).all()
+            deps = db.query(Dependency).filter(Dependency.architecture_id == req.architecture_id).all()
+            graph_data = {
+                "metadata": {
+                    "name": arch.name,
+                    "pattern": arch.pattern,
+                    "complexity": arch.complexity or "medium",
+                    "environment": arch.environment or "production",
+                    "region": arch.region or "us-east-1",
+                    "total_services": arch.total_services,
+                    "total_cost_monthly": arch.total_cost_monthly,
+                },
+                "services": [
+                    {
+                        "id": _strip_prefix(s.id, req.architecture_id),
+                        "name": s.name,
+                        "type": s.service_type or "service",
+                        "cost_monthly": s.cost_monthly or 0.0,
+                        "environment": s.environment or "production",
+                        "owner": s.owner or "",
+                        "attributes": s.attributes or {},
+                    }
+                    for s in services
+                ],
+                "dependencies": [
+                    {
+                        "source": _strip_prefix(d.source, req.architecture_id),
+                        "target": _strip_prefix(d.target, req.architecture_id),
+                        "type": d.dep_type or "calls",
+                        "weight": d.weight or 1.0,
+                    }
+                    for d in deps
+                ],
+            }
+
+    # ── Load from synthetic file ─────────────────────────────────────
+    elif req.architecture_file:
+        arch_path = SYNTHETIC_DIR / req.architecture_file
+        if not arch_path.exists():
+            raise HTTPException(404, f"Architecture file not found: {req.architecture_file}")
+        with open(arch_path) as f:
+            graph_data = json.load(f)
+    else:
+        raise HTTPException(400, "Provide architecture_id or architecture_file")
+
+    # ── Run analysis in thread ───────────────────────────────────────
+    def _run():
+        analyzer = GraphAnalyzer(graph_data)
+        return analyzer.analyze()
+
+    report = await asyncio.to_thread(_run)
+    return asdict(report)
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Full Recommendation Engine — Context Package → LLM → Cards
+# ──────────────────────────────────────────────────────────────────────
+class RecommendationRequest(BaseModel):
+    architecture_id: Optional[str] = None
+    architecture_file: Optional[str] = None
+
+
+@router.post("/analyze/recommendations")
+async def generate_recommendations(req: RecommendationRequest, db: Session = Depends(get_db)):
+    """Run the full pipeline: deep analysis → 8-section context package
+    → LLM → structured recommendation cards with CUR cost breakdowns."""
+    import asyncio
+    from dataclasses import asdict
+    from src.analysis.graph_analyzer import GraphAnalyzer
+    from src.analysis.context_assembler import ContextAssembler
+    from src.llm.client import generate_recommendations as gen_recs
+
+    graph_data = None
+
+    # ── Load graph data (same logic as /analyze/deep) ────────────────
+    if req.architecture_id:
+        from src.graph.models import IngestionSnapshot
+        snap = (
+            db.query(IngestionSnapshot)
+            .filter(
+                IngestionSnapshot.architecture_id == req.architecture_id,
+                IngestionSnapshot.status == "completed",
+            )
+            .order_by(IngestionSnapshot.created_at.desc())
+            .first()
+        )
+        if snap and snap.raw_data:
+            graph_data = snap.raw_data if isinstance(snap.raw_data, dict) else json.loads(snap.raw_data)
+
+        if not graph_data:
+            arch = db.query(Architecture).filter(Architecture.id == req.architecture_id).first()
+            if not arch:
+                raise HTTPException(404, f"Architecture not found: {req.architecture_id}")
+            services = db.query(Service).filter(Service.architecture_id == req.architecture_id).all()
+            deps = db.query(Dependency).filter(Dependency.architecture_id == req.architecture_id).all()
+            graph_data = {
+                "metadata": {
+                    "name": arch.name,
+                    "pattern": arch.pattern,
+                    "complexity": arch.complexity or "medium",
+                    "environment": arch.environment or "production",
+                    "region": arch.region or "us-east-1",
+                    "total_services": arch.total_services,
+                    "total_cost_monthly": arch.total_cost_monthly,
+                },
+                "services": [
+                    {
+                        "id": _strip_prefix(s.id, req.architecture_id),
+                        "name": s.name,
+                        "type": s.service_type or "service",
+                        "cost_monthly": s.cost_monthly or 0.0,
+                        "environment": s.environment or "production",
+                        "owner": s.owner or "",
+                        "attributes": s.attributes or {},
+                    }
+                    for s in services
+                ],
+                "dependencies": [
+                    {
+                        "source": _strip_prefix(d.source, req.architecture_id),
+                        "target": _strip_prefix(d.target, req.architecture_id),
+                        "type": d.dep_type or "calls",
+                        "weight": d.weight or 1.0,
+                    }
+                    for d in deps
+                ],
+            }
+
+    elif req.architecture_file:
+        arch_path = SYNTHETIC_DIR / req.architecture_file
+        if not arch_path.exists():
+            raise HTTPException(404, f"Architecture file not found: {req.architecture_file}")
+        with open(arch_path) as f:
+            graph_data = json.load(f)
+    else:
+        raise HTTPException(400, "Provide architecture_id or architecture_file")
+
+    # ── Full pipeline in thread ──────────────────────────────────────
+    def _run():
+        import traceback as tb
+        try:
+            # Step 1: Deep analysis
+            analyzer = GraphAnalyzer(graph_data)
+            report = analyzer.analyze()
+
+            # Step 2: Assemble 8-section context package
+            assembler = ContextAssembler(graph_data, report)
+            ctx_pkg = assembler.assemble()
+
+            # Step 3: Generate recommendations via LLM
+            arch_name = graph_data.get("metadata", {}).get("name", "")
+            rec_result = gen_recs(
+                context_package=ctx_pkg,
+                architecture_name=arch_name,
+                raw_graph_data=graph_data,
+            )
+
+            return {
+                "recommendations": rec_result.cards,
+                "total_estimated_savings": rec_result.total_estimated_savings,
+                "llm_used": rec_result.llm_used,
+                "generation_time_ms": rec_result.generation_time_ms,
+                "context_package": asdict(ctx_pkg),
+                "architecture_name": rec_result.architecture_name or arch_name,
+            }
+        except Exception as e:
+            error_tb = tb.format_exc()
+            print(f"❌ Recommendation pipeline error:\n{error_tb}")
+            raise HTTPException(500, detail=f"Recommendation pipeline failed: {str(e)}")
+
+    result = await asyncio.to_thread(_run)
+    return result
