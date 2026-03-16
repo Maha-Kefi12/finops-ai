@@ -55,10 +55,16 @@ class DocIndexer:
             logger.warning("Docs directory not found: %s", self.docs_dir)
             return 0
 
-        for filepath in sorted(self.docs_dir.iterdir()):
-            if filepath.is_dir():
-                continue
+        # Recursively collect all .md and .pdf files under docs (and top-level)
+        def collect_doc_files() -> List[Path]:
+            out: List[Path] = []
+            for ext in ("*.md", "*.pdf"):
+                for p in sorted(self.docs_dir.rglob(ext)):
+                    if p.is_file():
+                        out.append(p)
+            return out
 
+        for filepath in collect_doc_files():
             try:
                 if filepath.suffix.lower() == ".pdf":
                     text = self._parse_pdf_safe(filepath, timeout=30)
@@ -70,19 +76,25 @@ class DocIndexer:
                 if not text or len(text.strip()) < 50:
                     continue
 
-                # Store raw document
+                # Store raw document (relative path for nesting)
+                try:
+                    rel = filepath.relative_to(self.docs_dir)
+                    display_name = str(rel).replace("\\", "/")
+                except ValueError:
+                    display_name = filepath.name
+
                 self.documents.append({
-                    "filename": filepath.name,
+                    "filename": display_name,
                     "type": filepath.suffix.lower(),
                     "size_bytes": filepath.stat().st_size,
                     "text_length": len(text),
                 })
 
                 # Chunk the document
-                chunks = self._chunk_text(text, filepath.name)
+                chunks = self._chunk_text(text, display_name)
                 all_chunks.extend(chunks)
                 logger.info("Parsed %s: %d chars → %d chunks",
-                            filepath.name, len(text), len(chunks))
+                            display_name, len(text), len(chunks))
 
             except Exception as e:
                 logger.warning("Failed to parse %s: %s", filepath.name, e)
@@ -221,9 +233,11 @@ class DocIndexer:
 
         query_vec = self.embedder.transform(query)
         results = self.store.search(query_vec, top_k=top_k)
+        # Allow up to 1200 chars per chunk so LLM gets fuller doc context
+        max_chars = 1200
         return [
             {
-                "text": r["text"][:800],
+                "text": (r["text"] or "")[:max_chars],
                 "source": r["metadata"].get("source", "unknown"),
                 "category": r["metadata"].get("category", "general"),
                 "chunk_index": r["metadata"].get("chunk_index", 0),

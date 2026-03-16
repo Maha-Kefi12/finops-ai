@@ -38,6 +38,35 @@ _EMOJI_PATTERN = re.compile(
 _LEADING_SYMBOL = re.compile(r"^\s*" + _EMOJI_PATTERN.pattern + r"\s*", flags=re.UNICODE | re.MULTILINE)
 
 
+def strip_latex(text: str) -> str:
+    """Convert LaTeX notation to clean display text (no backslashes/symbols)."""
+    if not text or not isinstance(text, str):
+        return text or ""
+    # \text{...} -> contents only
+    text = re.sub(r"\\text\s*\{([^}]*)\}", r"\1", text)
+    # Common LaTeX -> plain
+    text = re.sub(r"\\times\s*", " x ", text)
+    text = re.sub(r"\\cdot\s*", " ", text)
+    text = re.sub(r"\\quad\s*", " ", text)
+    text = re.sub(r"\\,", " ", text)
+    text = re.sub(r"\\\$", "$", text)
+    # Inline math \( ... \) -> replace with cleaned inner text
+    def _replace_inline_math(match):
+        inner = match.group(1)
+        inner = re.sub(r"\\times\s*", " x ", inner)
+        inner = re.sub(r"\\text\s*\{([^}]*)\}", r"\1", inner)
+        inner = re.sub(r"\\,", " ", inner)
+        return inner.strip()
+    text = re.sub(r"\\\(([^)]*)\)", _replace_inline_math, text)
+    # Display math \[ ... \]
+    text = re.sub(r"\\\[.*?\\\]", "", text, flags=re.DOTALL)
+    # $$ ... $$
+    text = re.sub(r"\$\$[^$]*\$\$", "", text)
+    # Remove backslash-escaped single chars
+    text = re.sub(r"\\([^a-zA-Z{])", r"\1", text)
+    return text
+
+
 def strip_symbols(text) -> str:
     """Remove all emoji and special symbol characters from text.
     Cleans up leading symbols and collapses extra whitespace.
@@ -48,6 +77,8 @@ def strip_symbols(text) -> str:
         text = str(text)
     if not text:
         return text
+    # Remove LaTeX first
+    text = strip_latex(text)
     # Remove all emoji/symbols
     cleaned = _EMOJI_PATTERN.sub("", text)
     # Collapse multiple spaces

@@ -13,7 +13,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from src.storage.database import get_db
-from src.graph.models import Architecture, Service, Dependency
+from src.graph.models import Architecture, Service, Dependency, IngestionSnapshot, RecommendationResult
 
 router = APIRouter(prefix="/api", tags=["analyze"])
 
@@ -24,6 +24,11 @@ class AnalyzeRequest(BaseModel):
     architecture_file: Optional[str] = None  # filename in data/synthetic/
     architecture_id: Optional[str] = None    # UUID from database
     scenario: Optional[str] = "spike"
+
+
+class RecommendationRequest(BaseModel):
+    architecture_file: Optional[str] = None
+    architecture_id: Optional[str] = None
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -388,5 +393,53 @@ async def generate_recommendations(req: RecommendationRequest, db: Session = Dep
             print(f"❌ Recommendation pipeline error:\n{error_tb}")
             raise HTTPException(500, detail=f"Recommendation pipeline failed: {str(e)}")
 
-    result = await asyncio.to_thread(_run)
-    return result
+    try:
+        result = await asyncio.to_thread(_run)
+        # Store successful result in PostgreSQL for retry / history
+        row = RecommendationResult(
+            architecture_id=req.architecture_id or "",
+            architecture_file=req.architecture_file,
+            status="completed",
+            payload=result,
+            generation_time_ms=result.get("generation_time_ms"),
+            total_estimated_savings=result.get("total_estimated_savings"),
+            card_count=len(result.get("recommendations", [])),
+        )
+        db.add(row)
+        db.commit()
+        return result
+    except HTTPException as e:
+        # Store failed run so user can retry or inspect
+        err_msg = e.detail if isinstance(e.detail, str) else str(e.detail) if e.detail else str(e)
+        row = RecommendationResult(
+            architecture_id=req.architecture_id or "",
+            architecture_file=req.architecture_file,
+            status="failed",
+            error_message=err_msg[:4096] if err_msg else None,
+        )
+        try:
+            db.add(row)
+            db.commit()
+        except Exception:
+            db.rollback()
+        raise
+
+
+@router.get("/analyze/recommendations/last")
+async def get_last_recommendation(db: Session = Depends(get_db)):
+    """Fetch the most recent recommendation result from the database."""
+    last = (
+        db.query(RecommendationResult)
+        .order_by(RecommendationResult.created_at.desc())
+        .first()
+    )
+    if not last:
+        return {"status": "none", "message": "No recommendations found in history"}
+    
+    return {
+        "id": last.id,
+        "status": last.status,
+        "created_at": last.created_at,
+        "results": last.payload if last.status == "completed" else None,
+        "error": last.error_message if last.status == "failed" else None
+    }

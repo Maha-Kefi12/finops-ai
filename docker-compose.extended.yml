@@ -1,0 +1,146 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: finops-ai-postgres
+    environment:
+      POSTGRES_USER: finops
+      POSTGRES_PASSWORD: finops_dev_pwd
+      POSTGRES_DB: finops_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finops"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache & Celery Broker
+  redis:
+    image: redis:7-alpine
+    container_name: finops-ai-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: finops-ai-backend
+    environment:
+      DATABASE_URL: postgresql://finops:finops_dev_pwd@postgres:5432/finops_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      OLLAMA_URL: http://ollama:11434
+      FINOPS_MODEL: qwen2.5:7b
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Celery Worker (Background Tasks)
+  celery_worker:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: finops-ai-celery-worker
+    environment:
+      DATABASE_URL: postgresql://finops:finops_dev_pwd@postgres:5432/finops_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      OLLAMA_URL: http://ollama:11434
+      FINOPS_MODEL: qwen2.5:7b
+    depends_on:
+      - postgres
+      - redis
+      - backend
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+    command: celery -A src.background.tasks worker --loglevel=info --concurrency=2
+
+  # Celery Beat (Scheduled Tasks)
+  celery_beat:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: finops-ai-celery-beat
+    environment:
+      DATABASE_URL: postgresql://finops:finops_dev_pwd@postgres:5432/finops_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      OLLAMA_URL: http://ollama:11434
+      FINOPS_MODEL: qwen2.5:7b
+    depends_on:
+      - postgres
+      - redis
+      - backend
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - /app/celerybeat-schedule  # Celery Beat scheduler database
+    command: celery -A src.background.tasks beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+  # Ollama LLM Server (Optional)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: finops-ai-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+    # Uncomment to auto-pull model on startup
+    # entrypoint: /bin/bash -c "ollama serve & sleep 5 && ollama pull qwen2.5:7b"
+
+  # Frontend (Vite Dev Server)
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile.dev
+    container_name: finops-ai-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.js:/app/vite.config.js
+    environment:
+      VITE_API_URL: http://localhost:8000
+    command: npm run dev -- --host
+
+volumes:
+  postgres_data:
+  redis_data:
+  ollama_data:
+
+networks:
+  default:
+    name: finops-network

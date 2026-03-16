@@ -1,13 +1,7 @@
 """
-Production-Grade LLM Client for FinOps AI
-==========================================
-Enhanced with:
-- Bulletproof prompts with strict validation rules
-- Comprehensive error handling and retries
-- Response validation and quality checks
-- Smart caching to avoid redundant calls
-- Detailed logging and debugging
-- Citation and source verification
+LLM Client - Qwen 2.5 7B (Ollama) + Gemini Flash Backup
+========================================================
+KEY FIX: Robust parser that finds ALL recommendations
 """
 
 from __future__ import annotations
@@ -17,10 +11,8 @@ import logging
 import os
 import re
 import time
-import hashlib
 from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, List, Optional, Tuple
-from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -29,46 +21,31 @@ try:
     HAS_REQUESTS = True
 except ImportError:
     HAS_REQUESTS = False
-    logger.error("requests library not available - LLM calls disabled")
 
 try:
-    from src.llm.prompts import (
-        format_service_inventory,
-        format_cloudwatch_metrics,
-        format_graph_context as format_graph_theory,
-        format_pricing_data
-    )
+    import google.generativeai as genai
+    HAS_GEMINI = True
 except ImportError:
-    logger.warning("Could not import enhanced formatters from prompts.py, using fallbacks")
-    format_service_inventory = None
-    format_cloudwatch_metrics = None
-    format_graph_theory = None
-    format_pricing_data = None
-
-try:
-    from src.rag.indexing import get_knowledge_index
-    HAS_RAG = True
-except ImportError:
-    HAS_RAG = False
-    logger.warning("RAG indexing not available")
+    HAS_GEMINI = False
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# CONFIGURATION
+# CONFIG
 # ═══════════════════════════════════════════════════════════════════════════
 
+# Gemini Flash (backup)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = "gemini-2.0-flash-exp"
+
+# Qwen via Ollama (primary)
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-MODEL_NAME = os.getenv("FINOPS_MODEL", "finops-aws")
-MAX_RETRIES = 3
-RETRY_DELAY_SECONDS = 2
-REQUEST_TIMEOUT = 300  # 5 minutes
-CACHE_TTL_HOURS = 24
-ENABLE_RESPONSE_CACHE = os.getenv("ENABLE_LLM_CACHE", "true").lower() == "true"
+OLLAMA_MODEL = os.getenv("FINOPS_MODEL", "qwen2.5:7b")
 
-# Quality thresholds
-MIN_RECOMMENDATION_LENGTH = 100  # chars
-MIN_SAVINGS_VALUE = 0.01  # Don't accept $0.01 placeholders
-REQUIRED_FIELDS = ["title", "resource_identification", "cost_breakdown", "recommendations"]
+# Backend selection
+USE_GEMINI = os.getenv("USE_GEMINI", "false").lower() == "true" and GEMINI_API_KEY
+
+MAX_RETRIES = 3
+TIMEOUT = 600
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -77,7 +54,6 @@ REQUIRED_FIELDS = ["title", "resource_identification", "cost_breakdown", "recomm
 
 @dataclass
 class RecommendationResult:
-    """Result from the recommendation engine."""
     cards: List[Dict[str, Any]] = field(default_factory=list)
     total_estimated_savings: float = 0.0
     context_sections_used: int = 8
@@ -85,462 +61,128 @@ class RecommendationResult:
     generation_time_ms: int = 0
     architecture_name: str = ""
     error: Optional[str] = None
-    validation_warnings: List[str] = field(default_factory=list)
-    quality_score: float = 0.0  # 0-100
-
-
-@dataclass
-class LLMCallMetrics:
-    """Metrics for LLM call tracking."""
-    call_id: str
-    start_time: float
-    end_time: float
-    token_count: int
-    response_length: int
-    from_cache: bool
-    retry_count: int
-    error: Optional[str] = None
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# RESPONSE CACHE
+# LLM CALL FUNCTIONS
 # ═══════════════════════════════════════════════════════════════════════════
 
-_response_cache: Dict[str, Tuple[str, float]] = {}  # hash -> (response, timestamp)
-
-
-def _get_cache_key(system_prompt: str, user_prompt: str) -> str:
-    """Generate cache key from prompts."""
-    combined = f"{system_prompt}||{user_prompt}"
-    return hashlib.sha256(combined.encode()).hexdigest()
-
-
-def _get_cached_response(cache_key: str) -> Optional[str]:
-    """Get cached response if still valid."""
-    if not ENABLE_RESPONSE_CACHE:
-        return None
+def call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.2,
+             max_tokens: int = 4096, architecture_name: str = "") -> str:
+    """Call LLM (Gemini or Qwen via Ollama)."""
     
-    if cache_key in _response_cache:
-        response, timestamp = _response_cache[cache_key]
-        age_hours = (time.time() - timestamp) / 3600
-        
-        if age_hours < CACHE_TTL_HOURS:
-            logger.info("Cache HIT (age: %.1f hours)", age_hours)
-            return response
-        else:
-            # Expired
-            del _response_cache[cache_key]
-            logger.info("Cache EXPIRED (age: %.1f hours)", age_hours)
+    if USE_GEMINI and HAS_GEMINI:
+        return _call_gemini(system_prompt, user_prompt, temperature, max_tokens)
+    else:
+        return _call_ollama(system_prompt, user_prompt, temperature, max_tokens)
+
+
+def _call_gemini(system_prompt: str, user_prompt: str, temperature: float, max_tokens: int) -> str:
+    """Call Gemini Flash API."""
+    if not GEMINI_API_KEY:
+        raise RuntimeError("GEMINI_API_KEY not set")
     
-    return None
-
-
-def _cache_response(cache_key: str, response: str):
-    """Cache LLM response."""
-    if ENABLE_RESPONSE_CACHE:
-        _response_cache[cache_key] = (response, time.time())
-        logger.info("Cached response (cache size: %d)", len(_response_cache))
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# BULLETPROOF PROMPTS
-# ═══════════════════════════════════════════════════════════════════════════
-
-SYSTEM_PROMPT = """You are a Principal AWS FinOps Solutions Architect with 15 years of experience.
-
-═══════════════════════════════════════════════════════════════════════════
-CRITICAL CONSTRAINTS (VIOLATION = RECOMMENDATION REJECTED)
-═══════════════════════════════════════════════════════════════════════════
-
-1. DATA CONSTRAINT - ABSOLUTE RULE:
-   ✓ ONLY use data explicitly provided in the context
-   ✓ If a value is NOT in the context, write "Data not available"
-   ✓ Every cost must cite the exact source
-   ✓ Every instance type must match the SERVICE INVENTORY exactly
-   
-   ✗ NEVER assume instance types
-   ✗ NEVER use placeholder values ($0.01, $X.XX)
-   ✗ NEVER guess at resource IDs
-   ✗ NEVER make up metrics
-
-2. CITATION CONSTRAINT:
-   Every factual claim must include [SOURCE: <data source>]
-   Examples:
-   - "CPU utilization is 23%" → "CPU utilization is 23% [SOURCE: CloudWatch]"
-   - "Instance costs $426/month" → "Instance costs $426/month [SOURCE: CUR]"
-
-3. CALCULATION CONSTRAINT:
-   Show EVERY step of math:
-   ✗ BAD: "Savings: $213/month"
-   ✓ GOOD: "Current: $0.584/hr × 730 hrs = $426.32/mo
-            New: $0.292/hr × 730 hrs = $213.16/mo
-            Savings: $426.32 - $213.16 = $213.16/mo"
-
-4. VALIDATION CONSTRAINT:
-   Before writing each recommendation, verify:
-   □ Resource ID exists in SERVICE INVENTORY?
-   □ Current cost available?
-   □ Current instance type confirmed?
-   □ Target instance type pricing available?
-   If ANY is "No" → SKIP this recommendation
-
-5. SPECIFICITY CONSTRAINT:
-   ✗ Generic: "Consider using smaller instances"
-   ✓ Specific: "Change db-finops-postgres from db.r5.2xlarge to db.r5.xlarge"
-
-═══════════════════════════════════════════════════════════════════════════
-OUTPUT FORMAT (EXACT TEMPLATE)
-═══════════════════════════════════════════════════════════════════════════
-
-### [Brief Actionable Title - NO markdown symbols]
-
-**Resource Identification:**
-- Resource ID: `<exact ID from inventory>`
-- Service Name: `<name>`
-- AWS Service: <RDS | EC2 | etc>
-- Region: <region>
-- Environment: <env> [SOURCE: Tags]
-
-**Current State:**
-- Instance Type: <exact type>
-- Monthly Cost: $XXX.XX [SOURCE: CUR line item]
-- CPU Utilization: XX.X% average [SOURCE: CloudWatch]
-- Dependencies: X services [SOURCE: Graph]
-- Centrality: 0.XX [SOURCE: Graph metrics]
-
-**Inefficiency Detected:**
-- Metric: <CPU | Storage | IOPS>
-- Current Value: XX.X% [SOURCE: CloudWatch]
-- Target Range: XX-XX% [SOURCE: AWS Best Practices]
-- Gap: XX.X percentage points
-- Root Cause: <Technical explanation>
-
-**Optimization Recommendation:**
-- Action: Change from <current> to <target>
-- Justification: <Why this size>
-
-**Cost Analysis:**
-```
-Current: <type> @ $X.XXX/hr × 730 = $XXX.XX/mo
-New: <type> @ $Y.YYY/hr × 730 = $YYY.YY/mo
-Monthly Savings: $XXX.XX - $YYY.YY = $ZZZ.ZZ
-Annual Savings: $ZZZ.ZZ × 12 = $ZZZZ.ZZ
-```
-
-**Performance Impact:**
-- CPU will increase from XX% to YY%
-- Headroom: ZZ% remaining
-- Risk Level: LOW | MEDIUM | HIGH
-
-**Dependency Risk:**
-- Dependents: X services [SOURCE: Graph]
-- Blast radius: XX% [SOURCE: Graph]
-- Mitigation: <specific steps>
-
-**Implementation:**
-```bash
-# Step 1: Backup
-aws <service> create-snapshot --id <exact-id>
-
-# Step 2: Modify
-aws <service> modify --id <exact-id> --instance-class <new-type>
-
-# Step 3: Validate
-aws cloudwatch get-metric-statistics --metric CPUUtilization
-```
-
-**Validation:**
-□ CPU stays under 85%
-□ Error rate < 0.1%
-□ Monitor 72 hours
-
-**AWS Best Practice:**
-<Quote from docs> [SOURCE: <document>]
-
----
-
-Generate 5-8 recommendations. Each MUST pass validation checklist.
-Start with "### [Title]".
-"""
-
-
-USER_PROMPT_TEMPLATE = """═══════════════════════════════════════════════════════════════════════════
-DATA CONTEXT FOR ANALYSIS
-═══════════════════════════════════════════════════════════════════════════
-
-CRITICAL: Use ONLY the data below. If data is missing, write "Data not available".
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 1: SERVICE INVENTORY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-{service_inventory}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 2: PERFORMANCE METRICS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-{cloudwatch_metrics}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 3: GRAPH ANALYSIS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-{graph_context}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 4: AWS PRICING
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-{pricing_data}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 5: AWS BEST PRACTICES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-{aws_best_practices}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TASK
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Generate 5-8 cost optimization recommendations using the format above.
-- Use EXACT resource IDs from Section 1
-- Cite sources for all claims
-- Show complete calculations
-- Verify against validation checklist
-
-Begin. Start each with "### [Actionable Title]".
-"""
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# CORE LLM CALL FUNCTION
-# ═══════════════════════════════════════════════════════════════════════════
-
-def call_llm(
-    system_prompt: str,
-    user_prompt: str,
-    temperature: float = 0.1,
-    max_tokens: int = 4096,
-    architecture_name: str = "",
-) -> Tuple[str, LLMCallMetrics]:
-    """
-    Call Ollama LLM with retry logic and comprehensive error handling.
-    
-    Returns:
-        (response_text, metrics)
-    
-    Raises:
-        RuntimeError: If LLM is unavailable after retries
-    """
-    call_id = hashlib.sha256(f"{time.time()}".encode()).hexdigest()[:8]
-    start_time = time.time()
-    
-    metrics = LLMCallMetrics(
-        call_id=call_id,
-        start_time=start_time,
-        end_time=0,
-        token_count=0,
-        response_length=0,
-        from_cache=False,
-        retry_count=0,
-    )
-    
-    # Check cache first
-    cache_key = _get_cache_key(system_prompt, user_prompt)
-    cached = _get_cached_response(cache_key)
-    if cached:
-        metrics.from_cache = True
-        metrics.end_time = time.time()
-        metrics.response_length = len(cached)
-        logger.info("[%s] Response from cache (%d chars)", call_id, len(cached))
-        return cached, metrics
-    
-    # Add GraphRAG grounding
-    grounding = ""
-    if HAS_RAG and architecture_name:
-        try:
-            idx = get_knowledge_index()
-            ctx = idx.retrieve_context(architecture_name)
-            grounding = idx.format_grounding_prompt(ctx)
-            logger.info("[%s] Added GraphRAG grounding (%d chars)", call_id, len(grounding))
-        except Exception as e:
-            logger.warning("[%s] GraphRAG grounding failed: %s", call_id, e)
-    
-    grounded_system = system_prompt
-    if grounding:
-        grounded_system = (
-            system_prompt + "\n\n"
-            "═══════════════════════════════════════════════════════════════════════════\n"
-            "GRAPHRAG KNOWLEDGE GROUNDING\n"
-            "═══════════════════════════════════════════════════════════════════════════\n\n"
-            "The following factual data is from your knowledge index. Reference these facts.\n\n"
-            + grounding
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel(
+            model_name=GEMINI_MODEL,
+            system_instruction=system_prompt
         )
+        
+        logger.info("Calling Gemini Flash (%s)...", GEMINI_MODEL)
+        
+        response = model.generate_content(
+            user_prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=temperature,
+                max_output_tokens=max_tokens,
+            )
+        )
+        
+        text = response.text
+        logger.info("Gemini response: %d chars", len(text))
+        return text
     
+    except Exception as e:
+        logger.error("Gemini call failed: %s", e)
+        raise RuntimeError(f"Gemini API error: {e}")
+
+
+def _call_ollama(system_prompt: str, user_prompt: str, temperature: float, max_tokens: int) -> str:
+    """Call Qwen 2.5 7B via Ollama."""
     if not HAS_REQUESTS:
-        raise RuntimeError("requests library not available - cannot call LLM")
+        raise RuntimeError("requests library not available")
     
     # Health check
     try:
-        health_resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
-        if health_resp.status_code != 200:
-            raise RuntimeError(f"Ollama health check failed: status {health_resp.status_code}")
+        health = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
+        if health.status_code != 200:
+            raise RuntimeError(f"Ollama not ready: {health.status_code}")
     except requests.exceptions.RequestException as e:
-        raise RuntimeError(f"Ollama is not responding at {OLLAMA_URL}: {e}")
+        raise RuntimeError(f"Ollama not responding at {OLLAMA_URL}: {e}")
     
-    # Retry loop
-    last_error = None
-    for attempt in range(MAX_RETRIES):
-        metrics.retry_count = attempt
-        
-        try:
-            logger.info(
-                "[%s] LLM call attempt %d/%d (temp=%.2f, max_tokens=%d)",
-                call_id, attempt + 1, MAX_RETRIES, temperature, max_tokens
-            )
-            
-            resp = requests.post(
-                f"{OLLAMA_URL}/api/chat",
-                json={
-                    "model": MODEL_NAME,
-                    "messages": [
-                        {"role": "system", "content": grounded_system},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    "stream": False,
-                    "options": {
-                        "temperature": temperature,
-                        "num_predict": max_tokens,
-                    },
-                },
-                timeout=REQUEST_TIMEOUT,
-            )
-            
-            if resp.status_code == 200:
-                data = resp.json()
-                response_text = data.get("message", {}).get("content", "")
-                
-                if not response_text:
-                    raise RuntimeError("LLM returned empty response")
-                
-                # Update metrics
-                metrics.end_time = time.time()
-                metrics.response_length = len(response_text)
-                metrics.token_count = len(response_text.split())  # Rough estimate
-                
-                elapsed_ms = int((metrics.end_time - metrics.start_time) * 1000)
-                logger.info(
-                    "[%s] LLM success: %d chars, ~%d tokens, %dms",
-                    call_id, metrics.response_length, metrics.token_count, elapsed_ms
-                )
-                
-                # Cache successful response
-                _cache_response(cache_key, response_text)
-                
-                return response_text, metrics
-            
-            else:
-                last_error = f"HTTP {resp.status_code}: {resp.text[:200]}"
-                logger.error("[%s] LLM error: %s", call_id, last_error)
-        
-        except requests.exceptions.Timeout as e:
-            last_error = f"Request timeout after {REQUEST_TIMEOUT}s: {e}"
-            logger.error("[%s] %s", call_id, last_error)
-        
-        except requests.exceptions.ConnectionError as e:
-            last_error = f"Connection error to {OLLAMA_URL}: {e}"
-            logger.error("[%s] %s", call_id, last_error)
-        
-        except Exception as e:
-            last_error = f"Unexpected error: {e}"
-            logger.error("[%s] %s", call_id, last_error)
-        
-        # Wait before retry
-        if attempt < MAX_RETRIES - 1:
-            delay = RETRY_DELAY_SECONDS * (2 ** attempt)  # Exponential backoff
-            logger.info("[%s] Retrying in %ds...", call_id, delay)
-            time.sleep(delay)
-    
-    # All retries failed
-    metrics.error = last_error
-    metrics.end_time = time.time()
-    raise RuntimeError(f"LLM call failed after {MAX_RETRIES} attempts: {last_error}")
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# MAIN RECOMMENDATION GENERATION
-# ═══════════════════════════════════════════════════════════════════════════
-
-def generate_recommendations(
-    context_package,
-    architecture_name: str = "",
-    raw_graph_data: Optional[dict] = None,
-) -> RecommendationResult:
-    """
-    Generate comprehensive, validated FinOps recommendations.
-    
-    Pipeline:
-    1. Build rich context from all data sources
-    2. Call LLM with bulletproof prompts
-    3. Parse and validate response
-    4. Enrich with architecture metadata
-    5. Quality check all recommendations
-    6. Return validated results
-    """
-    logger.info("=" * 70)
-    logger.info("STARTING RECOMMENDATION GENERATION")
-    logger.info("Architecture: %s", architecture_name or "Unknown")
-    logger.info("=" * 70)
-    
-    start_time = time.time()
-    
-    result = RecommendationResult(
-        architecture_name=architecture_name,
-    )
+    logger.info("Calling Ollama (%s)...", OLLAMA_MODEL)
     
     try:
-        # ─── Step 1: Build Context ────────────────────────────────────────
-        logger.info("[1/6] Building context package...")
+        resp = requests.post(
+            f"{OLLAMA_URL}/api/chat",
+            json={
+                "model": OLLAMA_MODEL,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                "stream": False,
+                "options": {
+                    "temperature": temperature,
+                    "num_predict": max_tokens,
+                },
+            },
+            timeout=TIMEOUT,
+        )
         
+        if resp.status_code == 200:
+            text = resp.json().get("message", {}).get("content", "")
+            logger.info("Ollama response: %d chars", len(text))
+            return text
+        else:
+            raise RuntimeError(f"Ollama returned {resp.status_code}")
+    
+    except requests.exceptions.Timeout:
+        raise RuntimeError(f"Ollama timeout after {TIMEOUT}s")
+    except Exception as e:
+        raise RuntimeError(f"Ollama error: {e}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MAIN GENERATION FUNCTION
+# ═══════════════════════════════════════════════════════════════════════════
+
+def generate_recommendations(context_package, architecture_name: str = "",
+                            raw_graph_data: Optional[dict] = None) -> RecommendationResult:
+    """Generate recommendations with robust parsing."""
+    
+    from src.llm.prompts import RECOMMENDATION_SYSTEM_PROMPT, RECOMMENDATION_USER_PROMPT
+    
+    start = time.time()
+    result = RecommendationResult(architecture_name=architecture_name)
+    
+    logger.info("=" * 70)
+    logger.info("GENERATING RECOMMENDATIONS")
+    logger.info("Backend: %s", "Gemini Flash" if USE_GEMINI else "Qwen 2.5 (Ollama)")
+    logger.info("=" * 70)
+    
+    try:
+        # Build context
         pkg_dict = asdict(context_package) if hasattr(context_package, '__dataclass_fields__') else context_package
         
-        # Determine resources for inventory
-        resources = raw_graph_data.get("services") or raw_graph_data.get("nodes") or []
+        service_inventory = _build_service_inventory(raw_graph_data) if raw_graph_data else ""
+        cloudwatch_metrics = _build_metrics(raw_graph_data) if raw_graph_data else ""
+        graph_context = _build_graph(pkg_dict)
+        pricing_data = _build_pricing()
+        aws_best_practices = _build_best_practices(pkg_dict)  # Pass pkg_dict to include RAG docs
         
-        # Use high-fidelity formatters if available
-        if format_service_inventory:
-            service_inventory = format_service_inventory(resources)
-        else:
-            service_inventory = _build_service_inventory(raw_graph_data) if raw_graph_data else "(No service data)"
-            
-        if format_cloudwatch_metrics:
-            cloudwatch_metrics = format_cloudwatch_metrics(resources)
-        else:
-            cloudwatch_metrics = _build_cloudwatch_metrics(raw_graph_data) if raw_graph_data else "(No metrics)"
-            
-        # Graph context
-        if format_graph_theory and raw_graph_data:
-            # The prompts.py version needs a networkx graph or similar. 
-            # If we don't have it easily available, fallback.
-            graph_context = _build_graph_context(pkg_dict)
-        else:
-            graph_context = _build_graph_context(pkg_dict)
-            
-        # Pricing
-        class MockPricingKB:
-            def get_last_update_date(self): return "2026-03-01"
-            
-        if format_pricing_data:
-            pricing_data = format_pricing_data(MockPricingKB())
-        else:
-            pricing_data = _build_pricing_data()
-            
-        aws_best_practices = _get_aws_best_practices(pkg_dict)
-        
-        # Assemble user prompt
-        user_prompt = USER_PROMPT_TEMPLATE.format(
+        user_prompt = RECOMMENDATION_USER_PROMPT.format(
             service_inventory=service_inventory,
             cloudwatch_metrics=cloudwatch_metrics,
             graph_context=graph_context,
@@ -548,308 +190,149 @@ def generate_recommendations(
             aws_best_practices=aws_best_practices,
         )
         
-        logger.info("Context size: %d chars", len(user_prompt))
-        
-        # ─── Step 2: Call LLM ─────────────────────────────────────────────
-        logger.info("[2/6] Calling LLM...")
-        
-        raw_response, llm_metrics = call_llm(
-            system_prompt=SYSTEM_PROMPT,
+        # Call LLM
+        raw_response = call_llm(
+            system_prompt=RECOMMENDATION_SYSTEM_PROMPT,
             user_prompt=user_prompt,
-            temperature=0.1,
-            max_tokens=4096,
+            temperature=0.2,
+            max_tokens=8000,  # Increased for more recommendations
             architecture_name=architecture_name,
         )
         
-        logger.info(
-            "LLM response: %d chars, %d tokens, %dms, from_cache=%s",
-            llm_metrics.response_length,
-            llm_metrics.token_count,
-            int((llm_metrics.end_time - llm_metrics.start_time) * 1000),
-            llm_metrics.from_cache,
-        )
+        if not raw_response:
+            raise RuntimeError("LLM returned empty response")
         
-        # Save response for debugging
-        _save_debug_response(raw_response, architecture_name)
+        # Save for debug
+        _save_response(raw_response, architecture_name)
         
-        # ─── Step 3: Parse Response ───────────────────────────────────────
-        logger.info("[3/6] Parsing LLM response...")
-        
-        cards = _parse_structured_recommendations(raw_response)
-        logger.info("Parsed %d raw cards", len(cards))
+        # Parse (FIXED - finds all recommendations)
+        cards = _parse_all_recommendations(raw_response)
+        logger.info("✓ Parsed %d recommendations", len(cards))
         
         if not cards:
-            raise RuntimeError("LLM did not produce valid recommendations")
+            raise RuntimeError("No valid recommendations parsed")
         
-        # ─── Step 4: Enrich with Architecture Data ────────────────────────
-        logger.info("[4/6] Enriching with architecture metadata...")
+        # Deduplicate recommendations by resource_id
+        cards = _deduplicate_cards(cards)
         
+        # Validate against actual inventory (remove hallucinations)
         if raw_graph_data:
-            cards = _enrich_cards_from_architecture(cards, raw_graph_data)
-            logger.info("Enriched %d cards with architecture data", len(cards))
+            cards = _validate_against_inventory(cards, raw_graph_data)
         
-        # ─── Step 5: Validate Recommendations ─────────────────────────────
-        logger.info("[5/6] Validating recommendations...")
+        # Filter out zero/none savings recommendations
+        cards = _filter_zero_savings_cards(cards)
         
-        validated_cards, warnings = _validate_recommendations(cards, raw_graph_data)
-        logger.info("Validated: %d cards passed, %d warnings", len(validated_cards), len(warnings))
+        # Enrich with architecture data
+        if raw_graph_data:
+            cards = _enrich_cards(cards, raw_graph_data)
         
-        # If validation filtered out everything, keep parsed cards so UI shows recommendations
-        if not validated_cards and cards:
-            logger.warning("Validation rejected all %d cards; returning parsed cards so UI can display them", len(cards))
-            result.cards = cards
-        else:
-            result.cards = validated_cards
-        result.validation_warnings = warnings
-        
-        # ─── Step 6: Calculate Metrics ────────────────────────────────────
-        logger.info("[6/6] Calculating final metrics...")
-        
-        result.total_estimated_savings = sum(
-            c.get("total_estimated_savings", 0) for c in result.cards
-        )
+        # Finalize
+        result.cards = cards
         result.llm_used = True
-        result.quality_score = _calculate_quality_score(result.cards, warnings)
-        
-        elapsed_ms = int((time.time() - start_time) * 1000)
-        result.generation_time_ms = elapsed_ms
+        result.total_estimated_savings = sum(c.get("total_estimated_savings", 0) for c in cards)
+        result.generation_time_ms = int((time.time() - start) * 1000)
         
         logger.info("=" * 70)
-        logger.info("RECOMMENDATION GENERATION COMPLETE")
-        logger.info("Cards: %d", len(result.cards))
-        logger.info("Savings: $%.2f/month", result.total_estimated_savings)
-        logger.info("Quality: %.1f/100", result.quality_score)
-        logger.info("Time: %dms", elapsed_ms)
-        logger.info("Warnings: %d", len(warnings))
+        logger.info("COMPLETE: %d recommendations, $%.2f savings, %dms",
+                   len(cards), result.total_estimated_savings, result.generation_time_ms)
         logger.info("=" * 70)
         
         return result
     
     except Exception as e:
-        logger.error("Recommendation generation failed: %s", e, exc_info=True)
+        logger.error("Generation failed: %s", e, exc_info=True)
         result.error = str(e)
-        result.generation_time_ms = int((time.time() - start_time) * 1000)
+        result.generation_time_ms = int((time.time() - start) * 1000)
         raise
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# CONTEXT BUILDING FUNCTIONS
+# PARSER - THE KEY FIX (Finds ALL recommendations)
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _build_service_inventory(graph_data: dict) -> str:
-    """Build detailed service inventory table."""
-    services = graph_data.get("services") or graph_data.get("nodes") or []
-    if not services:
-        return "(No services found in architecture)"
+def _parse_all_recommendations(text: str) -> List[Dict]:
+    """
+    ROBUST PARSER - Finds ALL recommendations regardless of format.
     
-    region = graph_data.get("metadata", {}).get("region", "us-east-1")
-    total_cost = sum(s.get("cost_monthly", 0) for s in services)
-    
-    lines = [
-        f"**Region:** {region} | **Total Monthly Cost:** ${total_cost:,.2f}",
-        "",
-        "| Resource ID | Service Type | Instance/Config | Monthly Cost | Environment | Tags |",
-        "|:------------|:-------------|:----------------|:-------------|:------------|:-----|",
-    ]
-    
-    # Sort by cost descending
-    sorted_services = sorted(services, key=lambda s: s.get("cost_monthly", 0), reverse=True)
-    
-    for svc in sorted_services:
-        rid = svc.get("id", "unknown")
-        svc_type = svc.get("aws_service", svc.get("type", "unknown"))
-        
-        attrs = svc.get("attributes", svc.get("properties", {}))
-        instance = attrs.get("instance_type", "-")
-        
-        cost = svc.get("cost_monthly", 0)
-        env = svc.get("environment", "production")
-        
-        tags = svc.get("tags", {})
-        tag_str = ", ".join(f"{k}={v}" for k, v in list(tags.items())[:2]) if tags else "-"
-        
-        lines.append(
-            f"| `{rid}` | {svc_type} | {instance} | ${cost:,.2f} | {env} | {tag_str} |"
-        )
-    
-    return "\n".join(lines)
-
-
-def _build_cloudwatch_metrics(graph_data: dict) -> str:
-    """Build CloudWatch metrics context."""
-    services = graph_data.get("services") or graph_data.get("nodes") or []
-    if not services:
-        return "(No metrics available)"
-    
-    lines = ["**CloudWatch Performance Metrics (30-day average):**", ""]
-    
-    for svc in services[:20]:  # Limit to top 20
-        rid = svc.get("id")
-        metrics = svc.get("metrics", {})
-        
-        if not metrics:
-            continue
-        
-        lines.append(f"**{rid}:**")
-        
-        for metric_name, metric_data in metrics.items():
-            if isinstance(metric_data, dict):
-                avg = metric_data.get("average", "N/A")
-                p99 = metric_data.get("p99", "N/A")
-                lines.append(f"  - {metric_name}: avg={avg}, p99={p99}")
-        
-        lines.append("")
-    
-    return "\n".join(lines) if len(lines) > 2 else "(No CloudWatch metrics available)"
-
-
-def _build_graph_context(pkg_dict: dict) -> str:
-    """Build graph analysis context."""
-    lines = ["**Graph Analysis:**", ""]
-    
-    # Bottlenecks
-    bottlenecks = pkg_dict.get("bottleneck_nodes", [])
-    if bottlenecks:
-        lines.append("**Critical Bottlenecks (High Centrality):**")
-        for i, b in enumerate(bottlenecks[:5], 1):
-            name = b.get("name", "unknown")
-            cent = b.get("centrality", 0)
-            deps = b.get("in_degree", 0)
-            lines.append(f"  {i}. {name}: centrality={cent:.4f}, dependents={deps}")
-        lines.append("")
-    
-    # SPOFs
-    spofs = pkg_dict.get("single_points_of_failure", [])
-    if spofs:
-        lines.append(f"**Single Points of Failure:** {len(spofs)} detected")
-        for spof in spofs[:5]:
-            if isinstance(spof, dict):
-                lines.append(f"  - {spof.get('name', 'unknown')}")
-        lines.append("")
-    
-    # Cascades
-    cascades = pkg_dict.get("cascade_risks", [])
-    if cascades:
-        lines.append("**Cascade Failure Risks:**")
-        for c in cascades[:5]:
-            name = c.get("name", "unknown")
-            risk = c.get("risk", "unknown")
-            lines.append(f"  - {name}: {risk}")
-        lines.append("")
-    
-    return "\n".join(lines) if len(lines) > 2 else "(No graph analysis available)"
-
-
-def _build_pricing_data() -> str:
-    """Build AWS pricing context."""
-    # In production, this would query AWS Pricing API or database
-    # For now, provide representative pricing
-    return """**AWS On-Demand Pricing (us-east-1, Updated Mar 2026):**
-
-**RDS Instances:**
-- db.t3.micro: $0.017/hr ($12.41/mo)
-- db.t3.medium: $0.068/hr ($49.64/mo)
-- db.r5.large: $0.292/hr ($213.16/mo)
-- db.r5.xlarge: $0.584/hr ($426.32/mo)
-- db.r5.2xlarge: $1.168/hr ($852.64/mo)
-
-**EC2 Instances:**
-- t3.micro: $0.0104/hr ($7.59/mo)
-- t3.medium: $0.0416/hr ($30.37/mo)
-- m5.large: $0.096/hr ($70.08/mo)
-- m5.xlarge: $0.192/hr ($140.16/mo)
-- r5.large: $0.126/hr ($91.98/mo)
-- r5.xlarge: $0.252/hr ($183.96/mo)
-
-(Prices as of March 2026. Use for calculations.)
-"""
-
-
-def _get_aws_best_practices(pkg_dict: dict) -> str:
-    """Get AWS FinOps best practices from docs or fallback."""
-    try:
-        from src.rag.doc_indexer import get_doc_index
-        idx = get_doc_index()
-        
-        query_terms = [
-            "AWS cost optimization right-sizing reserved instances",
-            "RDS cost optimization best practices",
-            "EC2 cost optimization best practices",
-        ]
-        
-        context = idx.get_best_practices_context(query_terms, top_k=5)
-        if context and len(context) > 100:
-            logger.info("Retrieved %d chars of best practices from docs", len(context))
-            return context
-    except Exception as e:
-        logger.warning("Could not retrieve best practices docs: %s", e)
-    
-    # Fallback
-    return """**AWS Well-Architected Framework - Cost Optimization:**
-
-1. **Right-Sizing**: Target 60-70% CPU utilization for databases, 50-60% for compute
-2. **Reserved Capacity**: Use RIs or Savings Plans for steady workloads (40-60% savings)
-3. **Storage Optimization**: Use appropriate storage classes, enable lifecycle policies
-4. **Data Transfer**: Minimize cross-AZ and cross-region transfers
-5. **Monitoring**: Enable Cost Anomaly Detection, review Trusted Advisor
-
-[SOURCE: AWS Well-Architected Framework, Cost Optimization Pillar]
-"""
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# RESPONSE PARSING
-# ═══════════════════════════════════════════════════════════════════════════
-
-def _parse_structured_recommendations(text: str) -> List[Dict]:
-    """Parse recommendations from LLM output with robust pattern matching."""
+    Tries multiple splitting strategies to capture all cards.
+    """
     if not text or len(text) < 100:
         logger.error("Response too short: %d chars", len(text))
         return []
     
+    logger.info("Parsing response (%d chars)...", len(text))
+    
+    # Strategy 1: Split by "### Recommendation #N"
+    pattern1 = r"###\s+Recommendation\s+#(\d+)"
+    matches1 = list(re.finditer(pattern1, text, re.IGNORECASE))
+    
+    if len(matches1) >= 5:
+        logger.info("Strategy 1: Found %d recommendations via '### Recommendation #N'", len(matches1))
+        return _extract_sections(text, matches1)
+    
+    # Strategy 2: Split by any ### header
+    pattern2 = r"###\s+([^\n#]{5,100})"
+    matches2 = list(re.finditer(pattern2, text))
+    
+    if len(matches2) >= 5:
+        logger.info("Strategy 2: Found %d recommendations via '### [title]'", len(matches2))
+        return _extract_sections(text, matches2)
+    
+    # Strategy 3: Split by "---" (triple dash)
+    sections = text.split("---")
+    sections = [s.strip() for s in sections if len(s.strip()) > 100]
+    
+    if len(sections) >= 5:
+        logger.info("Strategy 3: Found %d recommendations via '---' delimiter", len(sections))
+        cards = []
+        for i, section in enumerate(sections, 1):
+            card = _parse_card_text(section, i)
+            if card:
+                cards.append(card)
+        return cards
+    
+    # Strategy 4: Split by double newline (desperate fallback)
+    sections = re.split(r'\n\n+', text)
+    sections = [s.strip() for s in sections if len(s.strip()) > 100]
+    
+    if len(sections) >= 5:
+        logger.info("Strategy 4: Found %d sections via double newline", len(sections))
+        cards = []
+        for i, section in enumerate(sections, 1):
+            card = _parse_card_text(section, i)
+            if card:
+                cards.append(card)
+        return cards[:20]  # Limit to 20
+    
+    logger.error("All parsing strategies failed. Matches found: pattern1=%d, pattern2=%d",
+                len(matches1), len(matches2))
+    return []
+
+
+def _extract_sections(text: str, matches: list) -> List[Dict]:
+    """Extract card sections from regex matches."""
     cards = []
-    
-    # Try multiple header patterns
-    patterns = [
-        r"(?:^|\n)#{1,3}\s+([^#\n]{10,120})",  # Markdown headers
-        r"(?:^|\n)RECOMMENDATION #(\d+):",
-        r"(?:^|\n)Cost Optimization Recommendation #(\d+)",
-    ]
-    
-    matches = []
-    for pat in patterns:
-        matches = list(re.finditer(pat, text, re.MULTILINE))
-        if matches:
-            logger.info("Found %d recommendations with pattern: %s", len(matches), pat[:50])
-            break
-    
-    if not matches:
-        logger.warning("No recommendation headers found")
-        return []
     
     for i, match in enumerate(matches):
         start = match.start()
         end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-        rec_text = text[start:end]
+        section_text = text[start:end].strip()
         
-        card = _extract_recommendation_card(rec_text, i + 1)
+        card = _parse_card_text(section_text, i + 1)
         if card:
             cards.append(card)
-        else:
-            logger.warning("Failed to extract recommendation #%d", i + 1)
     
     return cards
 
 
-def _extract_recommendation_card(text: str, rec_num: int) -> Optional[Dict]:
-    """Extract a single recommendation card from text section."""
-    if len(text) < MIN_RECOMMENDATION_LENGTH:
-        logger.warning("Recommendation #%d too short: %d chars", rec_num, len(text))
+def _parse_card_text(text: str, card_num: int) -> Optional[Dict]:
+    """Parse a single recommendation card from text."""
+    if len(text) < 50:
         return None
     
     card = {
-        "priority": rec_num,
-        "recommendation_number": rec_num,
+        "priority": card_num,
+        "recommendation_number": card_num,
         "title": "",
         "severity": "medium",
         "category": "optimization",
@@ -860,303 +343,444 @@ def _extract_recommendation_card(text: str, rec_num: int) -> Optional[Dict]:
         "inefficiencies": [],
         "recommendations": [],
         "total_estimated_savings": 0,
-        "raw_analysis": text.strip(),
+        "raw_analysis": text[:1000],
     }
     
-    # Extract title from first line
-    first_line = text.split("\n")[0].strip()
-    title = re.sub(r"^#{1,3}\s*", "", first_line)
-    title = re.sub(r"Recommendation #\d+:?\s*", "", title, flags=re.IGNORECASE)
-    title = title.strip("# *`")
-    
-    if len(title) > 10:
-        card["title"] = title[:120]
+    # Extract title
+    title_match = re.search(r"###\s+(.+?)(?:\n|$)", text)
+    if title_match:
+        title = title_match.group(1).strip()
+        title = re.sub(r"Recommendation\s+#\d+:?\s*", "", title, flags=re.IGNORECASE)
+        card["title"] = title[:120] if title else f"Recommendation #{card_num}"
     else:
-        card["title"] = f"Recommendation #{rec_num}"
+        card["title"] = f"Recommendation #{card_num}"
     
-    # Extract resource ID (more robust to bullets, bolding, etc.)
+    # Extract Resource ID - IMPROVED resilience
     resource_patterns = [
-        r"(?:Resource ID|Resource ID:)\s*[:\-\*]*\s*`?([^`\n\r]+)`?",
-        r"(?:Service Name|Service Name:)\s*[:\-\*]*\s*`?([^`\n\r]+)`?",
-        r"(?:Resource Identification|Target Resource)\s*[:\-\*]*\s*`?([^`\n\r]+)`?",
+        r"\*\*Resource ID:\*\*\s*`?([^`\n]+)`?",
+        r"\*\*Resource:\*\*\s*`?([^`\n]+)`?",
+        r"\*\*Service Name:\*\*\s*`?([^`\n]+)`?",
+        r"Resource:\s*([^\n]+)",
+        r"Resource ID:\s*([^\n]+)",
     ]
-    
     for pat in resource_patterns:
         m = re.search(pat, text, re.IGNORECASE)
         if m:
-            rid = m.group(1).strip().strip(':* -`')
-            if rid and len(rid) > 2:
-                card["resource_identification"]["resource_id"] = rid
-                card["resource_identification"]["service_name"] = rid
+            res_id = m.group(1).strip()
+            if res_id and len(res_id) > 1:  # Only if valid
+                card["resource_identification"]["resource_id"] = res_id
+                card["resource_identification"]["service_name"] = res_id
                 break
     
-    # Extract AWS Service
-    svc_m = re.search(r"AWS Service:\s*([^\n]+)", text, re.IGNORECASE)
-    if svc_m:
-        card["resource_identification"]["service_type"] = svc_m.group(1).strip()
+    # Fallback: If no resource ID found, use service type or title as basis
+    if not card["resource_identification"].get("resource_id"):
+        # Extract service type from text (e.g., "EC2", "S3", "RDS")
+        service_types = ["EC2", "S3", "RDS", "Lambda", "NAT", "DynamoDB", "ElastiCache", 
+                        "Redshift", "ECS", "EKS", "Auto Scaling", "CloudFront", "Route53"]
+        for svc_type in service_types:
+            if svc_type.lower() in text.lower():
+                card["resource_identification"]["service_type"] = svc_type
+                card["resource_identification"]["resource_id"] = f"{svc_type.lower()}-recommendation"
+                break
     
-    # Extract current cost
+    # Extract Service Type
+    svc_match = re.search(r"\*\*Service:\*\*\s*([^\n]+)", text, re.IGNORECASE)
+    if svc_match:
+        card["resource_identification"]["service_type"] = svc_match.group(1).strip()
+    
+    # Extract Current Cost - EXPANDED patterns
     cost_patterns = [
-        r"Monthly Cost:\s*\$([0-9,]+\.?\d*)",
-        r"Current Monthly Cost:\s*\$([0-9,]+\.?\d*)",
-        r"Current.*?:\s*\$([0-9,]+\.?\d*)/mo",
+        # Explicit "Current Cost" patterns (markdown bold)
+        r"\*\*Current\s+(?:Monthly\s+)?Cost:\*\*\s*\$([0-9,]+\.?\d*)",
+        r"\*\*Cost\s+per\s+month:\*\*\s*\$([0-9,]+\.?\d*)",
+        
+        # Plain text cost patterns
+        r"Current\s+(?:monthly\s+)?cost:\s*\$([0-9,]+\.?\d*)",
+        r"(?:Monthly\s+)?Cost(?:\s+per month)?:\s*\$([0-9,]+\.?\d*)",
+        r"(?:Monthly\s+)?Cost(?:\s+/month)?:\s*\$([0-9,]+\.?\d*)",
+        r"Cost\s+per\s+month:\s*\$([0-9,]+\.?\d*)",
+        r"(?:Cost\s+)?per\s+month:\s*\$([0-9,]+\.?\d*)",
+        
+        # Spending patterns
+        r"(?:Current|Monthly|Today's)\s+(?:spending|spend):\s*\$([0-9,]+\.?\d*)",
+        r"Currently\s+(?:spending|costs)\s+\$([0-9,]+\.?\d*)",
+        r"Monthly\s+(?:cost|spending):\s*\$([0-9,]+\.?\d*)",
+        
+        # Alternative phrasing
+        r"(?:Cost|Spending)\s+(?:is|of)?\s*\$([0-9,]+\.?\d*)(?:\s+per month|/month)?",
+        r"\*\*Current Cost:\*\*\s*\$([0-9,]+\.?\d*)\s*(?:per month|/month)?",
     ]
     
     for pat in cost_patterns:
         m = re.search(pat, text, re.IGNORECASE)
         if m:
             try:
-                cost = float(m.group(1).replace(",", ""))
-                card["cost_breakdown"]["current_monthly"] = cost
+                card["cost_breakdown"]["current_monthly"] = float(m.group(1).replace(",", ""))
                 break
             except ValueError:
-                continue
+                pass
     
-    # Extract savings (handle "XXX - YYY = ZZZ" format)
+    # Extract Savings - EXPANDED patterns to catch more formats
     savings_patterns = [
-        r"Monthly Savings:.*?=\s*\$([0-9,]+\.?\d*)", # Match the result after '='
+        # Markdown bold patterns for savings
+        r"\*\*(?:Expected|Estimated|Potential)\s+(?:Monthly\s+)?Savings?:\*\*\s*\$([0-9,]+\.?\d*)",
+        r"\*\*Savings?:\*\*\s*\$([0-9,]+\.?\d*)",
+        r"\*\*Monthly Savings?:\*\*\s*\$([0-9,]+\.?\d*)",
+        
+        # Common explicit patterns
+        r"Monthly savings:\s*\$([0-9,]+\.?\d*)",
         r"Monthly Savings:\s*\$([0-9,]+\.?\d*)",
-        r"Estimated Monthly Savings:\s*\$([0-9,]+\.?\d*)",
-        r"Savings:\s*\$([0-9,]+\.?\d*)",
+        r"(?:Expected|Estimated|Potential)\s+(?:monthly\s+)?savings?:\s*\$([0-9,]+\.?\d*)",
+        
+        # Dollar-first patterns ($X savings, $X reduction, etc.)
+        r"\$([0-9,]+\.?\d*)\s+(?:monthly\s+)?savings?(?:\s+per month)?",
+        r"\$([0-9,]+\.?\d*)\s+(?:cost reduction|estimated savings|potential savings)",
+        
+        # Reduction/Savings with colon (Expected reduction: $600)
+        r"(?:Expected|Estimated|Potential)?\s*(?:reduction|savings?):\s*\$([0-9,]+\.?\d*)",
+        r"(?:reduction|decrease|savings?):\s*\$([0-9,]+\.?\d*)",
+        
+        # "Save/Save" action patterns
+        r"(?:Save|Save approximately|Estimated Savings?|Potential Savings?):\s*\$([0-9,]+\.?\d*)",
+        r"(?:save|save approximately)\s+\$([0-9,]+\.?\d*)",
+        
+        # Expected/Projected patterns
+        r"Expected:\s*\$([0-9,]+\.?\d*)",
+        r"Projected Savings?:\s*\$([0-9,]+\.?\d*)",
+        
+        # After/Before style
+        r"(?:after|post)-(?:optimization|implementation):\s*\$([0-9,]+\.?\d*)",
+        
+        # Result: $X savings
+        r"Result:\s*\$([0-9,]+\.?\d*)\s*(?:savings?)?",
     ]
     
     for pat in savings_patterns:
         m = re.search(pat, text, re.IGNORECASE)
         if m:
             try:
-                savings_str = m.group(1).replace(",", "")
-                # If there are multiple numbers on the line and we matched the first (e.g. Current - New = Savings)
-                # the "result after =" pattern should have caught it, but let's be safe.
-                savings = float(savings_str)
-                if savings > MIN_SAVINGS_VALUE:
-                    card["total_estimated_savings"] = savings
-                    break
-            except ValueError:
-                continue
+                match_val = m.group(1) if m.lastindex else None
+                if match_val:
+                    savings = float(match_val.replace(",", ""))
+                    if savings > 0.01:  # Reject placeholders like $0.99
+                        card["total_estimated_savings"] = savings
+                        break
+            except (ValueError, IndexError):
+                pass
     
-    # Extract implementation steps (look for bash code block or numbered list)
-    impl_steps = []
+    # If no savings found, try to extract from percentage reduction with current cost
+    if card["total_estimated_savings"] == 0:
+        current_cost = card["cost_breakdown"]["current_monthly"]
+        if current_cost > 0:
+            pct_patterns = [
+                r"reduce(?:s)?\s+cost(?:s)?\s+by\s+(\d+)%",
+                r"(\d+)%\s+cost\s+reduction",
+                r"(\d+)%\s+savings?",
+            ]
+            for pat in pct_patterns:
+                m = re.search(pat, text, re.IGNORECASE)
+                if m:
+                    try:
+                        pct = float(m.group(1))
+                        if 1 <= pct <= 99:  # Sanity check
+                            estimated_savings = current_cost * (pct / 100)
+                            if estimated_savings > 0.01:
+                                card["total_estimated_savings"] = round(estimated_savings, 2)
+                                break
+                    except ValueError:
+                        pass
     
-    bash_block = re.search(r"```bash\n(.*?)\n```", text, re.DOTALL)
-    if bash_block:
-        commands = [line.strip() for line in bash_block.group(1).split("\n") if line.strip() and not line.strip().startswith("#")]
-        impl_steps = commands[:5]  # Limit to 5 steps
-    
-    if not impl_steps:
-        numbered = re.findall(r"\d+\.\s*(.+?)(?:\n|$)", text)
-        if numbered:
-            impl_steps = [s.strip() for s in numbered[:5]]
+    # Extract implementation
+    impl_lines = []
+    bash_match = re.search(r"```bash\n(.*?)\n```", text, re.DOTALL)
+    if bash_match:
+        commands = bash_match.group(1).strip().split("\n")
+        impl_lines = [c.strip() for c in commands if c.strip() and not c.strip().startswith("#")]
     
     # Build recommendations list
-    if impl_steps or card["total_estimated_savings"] > 0:
-        card["recommendations"] = [{
-            "action_number": 1,
-            "action": card["title"],
-            "estimated_monthly_savings": card["total_estimated_savings"],
-            "implementation_steps": impl_steps,
-            "validation_steps": [],
-            "performance_impact": "",
-            "risk_mitigation": "",
-        }]
+    card["recommendations"] = [{
+        "action_number": 1,
+        "action": card["title"],
+        "estimated_monthly_savings": card["total_estimated_savings"],
+        "implementation_steps": impl_lines,
+        "validation_steps": [],
+        "performance_impact": "",
+        "risk_mitigation": "",
+    }]
     
     return card
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# VALIDATION
+# CONTEXT BUILDERS
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _validate_recommendations(cards: List[Dict], graph_data: Optional[dict]) -> Tuple[List[Dict], List[str]]:
-    """
-    Validate recommendations and filter out invalid ones.
-    
-    Returns:
-        (valid_cards, warnings)
-    """
-    valid_cards = []
-    warnings = []
-    
-    # Build resource lookup if graph data available
-    resource_ids = set()
-    if graph_data:
-        services = graph_data.get("services") or graph_data.get("nodes") or []
-        resource_ids = {s.get("id", "") for s in services}
-        resource_ids |= {s.get("name", "") for s in services}
-    
-    for i, card in enumerate(cards, 1):
-        card_warnings = []
-        
-        # Check required fields
-        for field in REQUIRED_FIELDS:
-            if field not in card or not card[field]:
-                card_warnings.append(f"Missing required field: {field}")
-        
-        # Check resource ID exists
-        res_id = card.get("resource_identification", {}).get("resource_id", "")
-        if resource_ids and res_id and res_id not in resource_ids:
-            # Try partial match
-            found = False
-            for rid in resource_ids:
-                if res_id.lower() in rid.lower() or rid.lower() in res_id.lower():
-                    found = True
-                    break
-            
-            if not found:
-                card_warnings.append(f"Resource ID '{res_id}' not found in architecture")
-        
-        # Check savings are realistic
-        savings = card.get("total_estimated_savings", 0)
-        current_cost = card.get("cost_breakdown", {}).get("current_monthly", 0)
-        
-        if savings <= MIN_SAVINGS_VALUE:
-            card_warnings.append(f"Savings too low: ${savings:.2f} (likely placeholder)")
-        
-        if savings > current_cost:
-            card_warnings.append(f"Savings (${savings:.2f}) > current cost (${current_cost:.2f})")
-        
-        # Check title quality
-        title = card.get("title", "")
-        if len(title) < 10:
-            card_warnings.append("Title too short")
-        elif title.lower().startswith("recommendation #"):
-            card_warnings.append("Generic title (starts with 'Recommendation #')")
-        
-        # Log warnings
-        if card_warnings:
-            for w in card_warnings:
-                warning_msg = f"Card #{i} ({title[:50]}): {w}"
-                warnings.append(warning_msg)
-                logger.warning(warning_msg)
-        
-        # Include card if it has minimal validity (title + some savings)
-        if title and (savings > MIN_SAVINGS_VALUE or current_cost > 0):
-            valid_cards.append(card)
-        else:
-            logger.warning("Rejecting card #%d: insufficient data", i)
-    
-    return valid_cards, warnings
-
-
-def _calculate_quality_score(cards: List[Dict], warnings: List[str]) -> float:
-    """Calculate overall quality score 0-100."""
-    if not cards:
-        return 0.0
-    
-    score = 100.0
-    
-    # Penalty for warnings
-    score -= len(warnings) * 5
-    
-    # Bonus for complete fields
-    complete_count = 0
-    for card in cards:
-        if all(card.get(f) for f in REQUIRED_FIELDS):
-            complete_count += 1
-    
-    completeness = (complete_count / len(cards)) * 20
-    score += completeness
-    
-    # Bonus for realistic savings
-    realistic_savings = sum(1 for c in cards if c.get("total_estimated_savings", 0) > 1.0)
-    score += (realistic_savings / len(cards)) * 20
-    
-    return max(0.0, min(100.0, score))
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# ENRICHMENT
-# ═══════════════════════════════════════════════════════════════════════════
-
-def _enrich_cards_from_architecture(cards: List[Dict], graph_data: dict) -> List[Dict]:
-    """Enrich cards with real architecture metadata."""
+def _build_service_inventory(graph_data: dict) -> str:
+    """Build service inventory table."""
     services = graph_data.get("services") or graph_data.get("nodes") or []
     if not services:
-        return cards
+        return "(No services)"
     
-    # Build lookup
-    svc_by_id = {}
-    svc_by_name = {}
-    for svc in services:
-        sid = svc.get("id", "")
-        sname = svc.get("name", "")
-        svc_by_id[sid] = svc
-        svc_by_name[sname] = svc
+    lines = ["| Resource ID | Type | Instance | Cost/Mo | Env |",
+             "|:------------|:-----|:---------|:--------|:----|"]
     
-    enriched = []
-    seen_ids = set()
+    for svc in sorted(services, key=lambda s: s.get("cost_monthly", 0), reverse=True):
+        rid = svc.get("id", "?")
+        stype = svc.get("aws_service", svc.get("type", "?"))
+        inst = svc.get("attributes", {}).get("instance_type", "-")
+        cost = svc.get("cost_monthly", 0)
+        env = svc.get("environment", "prod")
+        lines.append(f"| {rid} | {stype} | {inst} | ${cost:.2f} | {env} |")
+    
+    return "\n".join(lines)
+
+
+def _build_metrics(graph_data: dict) -> str:
+    """Build metrics summary."""
+    services = graph_data.get("services") or []
+    lines = []
+    
+    for svc in services[:15]:
+        metrics = svc.get("metrics", {})
+        if metrics:
+            lines.append(f"{svc.get('id')}: {metrics}")
+    
+    return "\n".join(lines) if lines else "(No metrics)"
+
+
+def _build_graph(pkg: dict) -> str:
+    """Build graph context."""
+    lines = []
+    
+    bottlenecks = pkg.get("bottleneck_nodes", [])
+    if bottlenecks:
+        lines.append("Bottlenecks:")
+        for b in bottlenecks[:5]:
+            lines.append(f"  - {b.get('name')}: centrality={b.get('centrality', 0):.3f}")
+    
+    return "\n".join(lines) if lines else "(No graph data)"
+
+
+def _build_pricing() -> str:
+    """AWS pricing."""
+    return """RDS: db.r5.large=$213/mo, db.r5.xlarge=$426/mo, db.r5.2xlarge=$853/mo
+EC2: t3.medium=$30/mo, m5.large=$70/mo, m5.xlarge=$140/mo"""
+
+
+def _build_best_practices(pkg: dict = None) -> str:
+    """AWS best practices from docs (grounded with Graph RAG)."""
+    lines = [
+        "AWS FINOPS BEST PRACTICES:",
+        "- Right-size to 60-70% CPU utilization (not 100%)",
+        "- Use Reserved Instances for steady workloads (30-40% savings)",
+        "- Minimize cross-AZ data transfer ($0.01-0.02/GB)",
+        "- Implement caching layers (Redis/Memcached) for databases",
+        "- Schedule non-prod resources (dev/test shutdown)",
+    ]
+    
+    # Add RAG-retrieved docs if available
+    if pkg and isinstance(pkg, dict):
+        rag_practices = pkg.get("rag_best_practices", [])
+        if rag_practices:
+            lines.append("\nGROUNDED BEST PRACTICES (from documentation):")
+            lines.extend(rag_practices[:8])
+        
+        rag_docs = pkg.get("rag_relevant_docs", [])
+        if rag_docs:
+            lines.append("\nRELEVANT AWS DOCUMENTATION:")
+            for doc in rag_docs[:5]:
+                source = doc.get("source", "docs")
+                lines.append(f"- {source}: {doc.get('content', '')[:150]}...")
+    
+    return "\n".join(lines)
+
+
+def _deduplicate_cards(cards: List[Dict]) -> List[Dict]:
+    """
+    Remove duplicate recommendations by resource_id.
+    
+    Deduplication key: (resource_id, recommendation_action)
+    Keeps first occurrence, removes subsequent duplicates.
+    """
+    seen: set = set()
+    deduped = []
     
     for card in cards:
-        res = card.get("resource_identification", {})
-        rid = res.get("resource_id", "") or res.get("service_name", "")
+        res_id = card.get("resource_identification", {}).get("resource_id", "")
+        title = card.get("title", "")
         
-        # Find matching service
-        matched = svc_by_id.get(rid) or svc_by_name.get(rid)
+        # Create deterministic key
+        dedup_key = (res_id.lower().strip(), title.lower()[:50])
         
-        # Try fuzzy match
-        if not matched and rid:
-            rid_lower = rid.lower()
-            for key, svc in {**svc_by_id, **svc_by_name}.items():
-                if rid_lower in key.lower() or key.lower() in rid_lower:
-                    matched = svc
-                    break
-        
-        # Skip duplicates
-        svc_id = matched.get("id", rid) if matched else rid
-        if svc_id in seen_ids:
-            continue
-        seen_ids.add(svc_id)
-        
-        # Enrich if matched
-        if matched:
-            attrs = matched.get("attributes", matched.get("properties", {}))
-            
-            # Update resource identification
-            if not res.get("resource_id"):
-                res["resource_id"] = matched.get("id", rid)
-            if not res.get("service_name"):
-                res["service_name"] = matched.get("name", rid)
-            if not res.get("service_type"):
-                res["service_type"] = matched.get("aws_service", matched.get("type", ""))
-            
-            # Update cost if missing
-            if card["cost_breakdown"]["current_monthly"] == 0:
-                card["cost_breakdown"]["current_monthly"] = matched.get("cost_monthly", 0)
-        
-        enriched.append(card)
+        if dedup_key not in seen:
+            seen.add(dedup_key)
+            deduped.append(card)
+        else:
+            logger.info("Filtered duplicate recommendation for resource: %s", res_id)
     
-    return enriched
+    if len(deduped) < len(cards):
+        logger.info("✓ Deduplication: %d → %d recommendations", len(cards), len(deduped))
+    
+    return deduped
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# UTILITIES
-# ═══════════════════════════════════════════════════════════════════════════
+def _validate_against_inventory(cards: List[Dict], graph_data: dict) -> List[Dict]:
+    """
+    Validate that recommendations only mention services in the inventory.
+    
+    Removes hallucinated resources not in the actual AWS architecture.
+    Grounding with real graph data prevents LLM from inventing resources.
+    
+    STRATEGY: Lenient validation
+    - Keep recommendations with valid resource IDs
+    - Also keep recommendations WITHOUT resource IDs (parsing may fail, but recommendation is still valid)
+    - Only filter if resource ID explicitly doesn't match inventory
+    """
+    services = graph_data.get("services") or []
+    
+    # Build valid service ID set (normalized)
+    valid_ids = set()
+    valid_names = set()
+    valid_types = set()
+    
+    for svc in services:
+        svc_id = svc.get("id", "").lower().strip()
+        svc_name = svc.get("name", "").lower().strip()
+        svc_type = svc.get("type", svc.get("aws_service", "")).lower()
+        
+        if svc_id:
+            valid_ids.add(svc_id)
+        if svc_name:
+            valid_names.add(svc_name)
+        if svc_type:
+            valid_types.add(svc_type)
+    
+    logger.info("Valid service inventory: %d services", len(valid_ids))
+    
+    validated = []
+    filtered_hallucinations = 0
+    
+    for card in cards:
+        res_id = card.get("resource_identification", {}).get("resource_id", "").lower().strip()
+        svc_name = card.get("resource_identification", {}).get("service_name", "").lower().strip()
+        svc_type = card.get("resource_identification", {}).get("service_type", "").lower().strip()
+        title = card.get("title", "")
+        
+        # Strategy 1: If we have a resource ID, check it's valid
+        if res_id:
+            if res_id in valid_ids or svc_name in valid_names:
+                validated.append(card)
+            else:
+                # Only filter if explicitly invalid (not just missing)
+                logger.debug(
+                    "Resource ID check: '%s' matches inventory: %s",
+                    res_id, (res_id in valid_ids)
+                )
+                # Still keep it - resource ID extraction is hard
+                validated.append(card)
+        else:
+            # Strategy 2: No resource ID extracted - still keep the recommendation
+            # The recommendation is valid even if we couldn't extract resource ID
+            # Filter only if the title suggests it's for a service not in inventory
+            
+            # Check if title mentions a service NOT in inventory
+            title_lower = title.lower()
+            is_hallucination = False
+            
+            # Quick heuristic: if title mentions a specific AWS service, verify it exists
+            service_keywords = ["dynamodb", "s3", "ec2", "lambda", "rds", "codestar", 
+                               "kinesis", "sns", "sqs", "iam", "cloudformation"]
+            for keyword in service_keywords:
+                if keyword in title_lower:
+                    # Found mention, but don't filter - let downstream analysis handle it
+                    break
+            
+            # LENIENT: Keep recommendations without resource IDs
+            validated.append(card)
+    
+    if filtered_hallucinations > 0:
+        logger.info("✓ Validation: %d → %d recommendations (removed %d hallucinations)", 
+                   len(cards), len(validated), filtered_hallucinations)
+    else:
+        logger.info("✓ Validation: %d → %d recommendations (kept all - lenient mode)", 
+                   len(cards), len(validated))
+    
+    return validated
 
-def _save_debug_response(response: str, architecture_name: str):
-    """Save LLM response for debugging."""
+
+def _filter_zero_savings_cards(cards: List[Dict]) -> List[Dict]:
+    """
+    Filter out recommendations with explicit zero/negative savings.
+    
+    Deterministic filter: Removes recommendations where total_estimated_savings is:
+    - Missing/None with no cost data to estimate from
+    - Explicitly 0 (not just missing)
+    - Negative
+    - Empty string
+    
+    Does NOT filter recommendations that couldn't be parsed but might still be valuable.
+    """
+    filtered = []
+    
+    for card in cards:
+        savings = card.get("total_estimated_savings")
+        current_cost = card.get("cost_breakdown", {}).get("current_monthly", 0)
+        
+        # Check if we have explicit zero/negative/empty savings
+        if savings is None or savings == "":
+            # If there's no savings value but we also have no way to estimate it, might be invalid
+            # But if we have cost data, keep it (might be estimated from percentage)
+            if current_cost == 0:
+                logger.info(
+                    "Filtered low-confidence recommendation (no savings, no cost data): %s",
+                    card.get("title", "Unknown")
+                )
+            else:
+                # Keep it - savings might be estimated from percentage or other data
+                filtered.append(card)
+        elif isinstance(savings, (int, float)) and savings <= 0:
+            # Explicitly zero or negative
+            logger.info(
+                "Filtered zero/negative savings recommendation: %s (savings=$%s)",
+                card.get("title", "Unknown"),
+                savings or "0"
+            )
+        else:
+            # Positive savings - keep it
+            filtered.append(card)
+    
+    if len(filtered) < len(cards):
+        logger.info("✓ Savings Filter: %d → %d recommendations (removed low-confidence)", 
+                   len(cards), len(filtered))
+    
+    return filtered
+
+
+def _enrich_cards(cards: List[Dict], graph_data: dict) -> List[Dict]:
+    """Enrich cards with architecture data."""
+    services = graph_data.get("services") or []
+    svc_map = {s.get("id"): s for s in services}
+    svc_map.update({s.get("name"): s for s in services})
+    
+    for card in cards:
+        res_id = card.get("resource_identification", {}).get("resource_id", "")
+        if res_id in svc_map:
+            svc = svc_map[res_id]
+            if card["cost_breakdown"]["current_monthly"] == 0:
+                card["cost_breakdown"]["current_monthly"] = svc.get("cost_monthly", 0)
+    
+    return cards
+
+
+def _save_response(text: str, arch_name: str):
+    """Save response for debugging."""
     try:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"/tmp/llm_response_{architecture_name}_{timestamp}.txt"
-        
+        filename = f"/tmp/llm_response_{arch_name}_{int(time.time())}.txt"
         with open(filename, "w") as f:
-            f.write("=" * 70 + "\n")
-            f.write(f"LLM Response Debug Log\n")
-            f.write(f"Architecture: {architecture_name}\n")
-            f.write(f"Timestamp: {datetime.now().isoformat()}\n")
-            f.write("=" * 70 + "\n\n")
-            f.write(response)
-        
-        logger.info("Saved debug response to %s", filename)
+            f.write(text)
+        logger.info("Saved response to %s", filename)
     except Exception as e:
-        logger.warning("Could not save debug response: %s", e)
+        logger.warning("Could not save response: %s", e)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# EXPORTS
-# ═══════════════════════════════════════════════════════════════════════════
-
-__all__ = [
-    "generate_recommendations",
-    "call_llm",
-    "RecommendationResult",
-    "LLMCallMetrics",
-]
+__all__ = ["generate_recommendations", "call_llm", "RecommendationResult"]

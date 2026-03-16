@@ -83,3 +83,20 @@ class IngestionSnapshot(Base):
     raw_data = Column(JSON, nullable=True)
     llm_report = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class RecommendationResult(Base):
+    """Stored recommendation run for an architecture. Enables retry and loading last result."""
+    __tablename__ = "recommendation_results"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    architecture_id = Column(String, nullable=False, index=True)
+    architecture_file = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="completed")
+    error_message = Column(Text, nullable=True)
+    payload = Column(JSON, nullable=True)
+    generation_time_ms = Column(Integer, nullable=True)
+    total_estimated_savings = Column(Float, nullable=True, default=0.0)
+    card_count = Column(Integer, nullable=True, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)

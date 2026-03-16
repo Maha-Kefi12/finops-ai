@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import {
     listArchitectures, analyzeArchitecture, ingestFromAws,
     getAwsPipelineStatus, deepGraphAnalysis, generateRecommendations,
+    getLastRecommendations,
 } from '../api/client'
 import {
     BrainCircuit, Sparkles, AlertTriangle, Shield, TrendingUp,
@@ -170,6 +171,30 @@ function RecommendationCard({ text, index }) {
     )
 }
 
+/* ── Display text sanitizer (no LaTeX/symbols) ───────────── */
+function cleanDisplayText(str) {
+    if (str == null || typeof str !== 'string') return ''
+    let t = str
+
+    // 1. Remove LaTeX/math symbols but KEEP the content
+    t = t.replace(/\\text\s*\{([^}]*)\}/g, '$1')
+    t = t.replace(/\\times\s*/g, ' × ').replace(/\\cdot\s*/g, ' ')
+    t = t.replace(/\\\$/g, '$').replace(/\\,/g, ' ')
+
+    // 2. Remove LaTeX delimiters
+    t = t.replace(/\\\(|\\\)|\\\[|\\\]/g, '')
+
+    // 3. Remove Markdown bold/italic
+    t = t.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1')
+    t = t.replace(/`([^`]+)`/g, '$1')
+
+    // 4. Clean up whitespace but PRESERVE newlines
+    // Replace 2+ spaces with single space, but leave \n alone
+    t = t.replace(/[ \t]{2,}/g, ' ')
+
+    return t.trim()
+}
+
 /* ── Full Recommendation Card (with CUR breakdowns) ──────── */
 const CATEGORY_THEMES = {
     'right-sizing': { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', icon: Cpu, label: 'Right-Sizing' },
@@ -203,54 +228,55 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
     const recommendations = card.recommendations || []
     const sevClass = SEVERITY_BADGE[card.severity] || SEVERITY_BADGE.medium
     const complexClass = COMPLEXITY_BADGE[card.implementation_complexity] || COMPLEXITY_BADGE.medium
+    const titleDisplay = cleanDisplayText(card.title)
 
     return (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md">
-            {/* Color bar */}
-            <div className="h-1.5" style={{ background: `linear-gradient(90deg, ${theme.color}, ${theme.color}88)` }} />
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-gray-200">
+            {/* Accent bar */}
+            <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${theme.color}, ${theme.color}99, ${theme.color}44)` }} />
 
-            {/* Header — always visible */}
-            <div className="p-5 cursor-pointer" onClick={onToggle}>
-                <div className="flex items-start gap-4">
-                    <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: theme.bg, border: `1px solid ${theme.border}` }}>
-                        <Icon className="w-5 h-5" style={{ color: theme.color }} />
+            {/* Header */}
+            <div className="p-6 cursor-pointer" onClick={onToggle}>
+                <div className="flex items-start gap-5">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: theme.bg, border: `1px solid ${theme.border}` }}>
+                        <Icon className="w-6 h-6" style={{ color: theme.color }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${sevClass}`}>
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${sevClass}`}>
                                 {(card.severity || 'medium').toUpperCase()}
                             </span>
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: theme.bg, color: theme.color }}>
+                            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: theme.bg, color: theme.color }}>
                                 {theme.label}
                             </span>
-                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${complexClass}`}>
+                            <span className={`text-[10px] font-medium px-2.5 py-1 rounded-full ${complexClass}`}>
                                 {(card.implementation_complexity || 'medium').toUpperCase()} COMPLEXITY
                             </span>
                         </div>
-                        <h4 className="text-base font-bold text-gray-900 mb-1">{card.title}</h4>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                            {res.service_name && <span className="flex items-center gap-1"><Server className="w-3 h-3" />{res.service_name}</span>}
-                            {res.service_type && <span className="flex items-center gap-1"><Box className="w-3 h-3" />{res.service_type}</span>}
-                            {res.region && <span className="flex items-center gap-1"><Cloud className="w-3 h-3" />{res.region}</span>}
+                        <h4 className="text-lg font-bold text-gray-900 mb-2 tracking-tight">{titleDisplay}</h4>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                            {res.service_name && <span className="flex items-center gap-1.5"><Server className="w-3.5 h-3.5" />{cleanDisplayText(res.service_name)}</span>}
+                            {res.service_type && <span className="flex items-center gap-1.5"><Box className="w-3.5 h-3.5" />{cleanDisplayText(res.service_type)}</span>}
+                            {res.region && <span className="flex items-center gap-1.5"><Cloud className="w-3.5 h-3.5" />{res.region}</span>}
                         </div>
                     </div>
                     <div className="text-right flex-shrink-0">
                         {card.total_estimated_savings > 0 ? (
-                            <div>
-                                <p className="text-[10px] text-gray-400 uppercase font-semibold">Savings</p>
-                                <p className="text-xl font-black text-emerald-600">
+                            <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2.5">
+                                <p className="text-[10px] text-emerald-600 uppercase font-semibold tracking-wider">Savings</p>
+                                <p className="text-2xl font-black text-emerald-700">
                                     ${card.total_estimated_savings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </p>
-                                <p className="text-[10px] text-gray-400">per month</p>
+                                <p className="text-[10px] text-emerald-600">per month</p>
                             </div>
                         ) : (
-                            <div>
-                                <p className="text-[10px] text-gray-400 uppercase font-semibold">Type</p>
-                                <p className="text-sm font-bold text-blue-600">Reliability</p>
+                            <div className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5">
+                                <p className="text-[10px] text-slate-500 uppercase font-semibold">Type</p>
+                                <p className="text-sm font-bold text-slate-700">Reliability</p>
                             </div>
                         )}
-                        <div className="mt-2">
-                            {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400 ml-auto" /> : <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />}
+                        <div className="mt-3 flex justify-end">
+                            {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
                         </div>
                     </div>
                 </div>
@@ -258,21 +284,21 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
 
             {/* Expanded details */}
             {isExpanded && (
-                <div className="border-t border-gray-100 divide-y divide-gray-100">
+                <div className="border-t border-gray-100 bg-gradient-to-b from-gray-50/50 to-white">
                     {/* Resource Identification */}
                     {res.current_config && (
-                        <div className="px-5 py-4">
-                            <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        <div className="px-6 py-4">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2 flex items-center gap-2">
                                 <Server className="w-3.5 h-3.5 text-gray-400" /> Resource Identification
                             </h5>
-                            <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700">
-                                {res.current_config}
+                            <div className="bg-white rounded-xl p-4 text-sm text-gray-700 border border-gray-100 shadow-sm">
+                                {cleanDisplayText(res.current_config)}
                             </div>
                             {res.tags && Object.keys(res.tags).length > 0 && (
                                 <div className="flex gap-2 mt-2 flex-wrap">
                                     {Object.entries(res.tags).map(([k, v]) => (
-                                        <span key={k} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full border border-gray-200">
-                                            {k}: {v}
+                                        <span key={k} className="text-[10px] bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full border border-gray-200">
+                                            {k}: {String(v)}
                                         </span>
                                     ))}
                                 </div>
@@ -280,34 +306,34 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
                         </div>
                     )}
 
-                    {/* CUR Cost Breakdown table */}
+                    {/* CUR Cost Breakdown */}
                     {lineItems.length > 0 && (
-                        <div className="px-5 py-4">
-                            <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <div className="px-6 py-4">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 flex items-center gap-2">
                                 <DollarSign className="w-3.5 h-3.5 text-gray-400" /> CUR Cost Breakdown
                             </h5>
-                            <div className="overflow-hidden rounded-lg border border-gray-200">
+                            <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="bg-gray-50">
-                                            <th className="text-left px-3 py-2 text-[10px] font-bold text-gray-500 uppercase">Line Item</th>
-                                            <th className="text-right px-3 py-2 text-[10px] font-bold text-gray-500 uppercase">Usage</th>
-                                            <th className="text-right px-3 py-2 text-[10px] font-bold text-gray-500 uppercase">Cost</th>
+                                            <th className="text-left px-4 py-3 text-[10px] font-bold text-gray-500 uppercase">Line Item</th>
+                                            <th className="text-right px-4 py-3 text-[10px] font-bold text-gray-500 uppercase">Usage</th>
+                                            <th className="text-right px-4 py-3 text-[10px] font-bold text-gray-500 uppercase">Cost</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
+                                    <tbody className="divide-y divide-gray-100 bg-white">
                                         {lineItems.map((li, i) => (
-                                            <tr key={i} className="hover:bg-gray-50">
-                                                <td className="px-3 py-2 text-gray-700 font-medium">{li.item}</td>
-                                                <td className="px-3 py-2 text-gray-500 text-right font-mono text-xs">{li.usage}</td>
-                                                <td className="px-3 py-2 text-gray-900 text-right font-bold">${(li.cost || 0).toFixed(2)}</td>
+                                            <tr key={i} className="hover:bg-gray-50/80">
+                                                <td className="px-4 py-3 text-gray-700 font-medium">{cleanDisplayText(li.item)}</td>
+                                                <td className="px-4 py-3 text-gray-500 text-right font-mono text-xs">{li.usage}</td>
+                                                <td className="px-4 py-3 text-gray-900 text-right font-bold">${(li.cost || 0).toFixed(2)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                     <tfoot>
                                         <tr className="bg-gray-50 font-bold">
-                                            <td className="px-3 py-2 text-gray-700" colSpan={2}>Total Monthly</td>
-                                            <td className="px-3 py-2 text-gray-900 text-right">${(cost.current_monthly || 0).toFixed(2)}</td>
+                                            <td className="px-4 py-3 text-gray-700" colSpan={2}>Total Monthly</td>
+                                            <td className="px-4 py-3 text-gray-900 text-right">${(cost.current_monthly || 0).toFixed(2)}</td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -315,23 +341,23 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
                         </div>
                     )}
 
-                    {/* Inefficiencies Detected */}
+                    {/* Inefficiencies */}
                     {inefficiencies.length > 0 && (
-                        <div className="px-5 py-4">
-                            <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <div className="px-6 py-4">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 flex items-center gap-2">
                                 <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Inefficiencies Detected
                             </h5>
                             <div className="space-y-2">
                                 {inefficiencies.map((ineff, i) => {
                                     const isev = SEVERITY_BADGE[ineff.severity] || SEVERITY_BADGE.medium
                                     return (
-                                        <div key={i} className="flex items-start gap-3 bg-amber-50/50 rounded-lg p-3 border border-amber-100">
-                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border flex-shrink-0 mt-0.5 ${isev}`}>
+                                        <div key={i} className="flex items-start gap-3 bg-amber-50/60 rounded-xl p-4 border border-amber-100">
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border flex-shrink-0 mt-0.5 ${isev}`}>
                                                 #{ineff.id || i + 1}
                                             </span>
                                             <div>
-                                                <p className="text-sm text-gray-800 font-medium">{ineff.description}</p>
-                                                {ineff.evidence && <p className="text-xs text-gray-500 mt-1">{ineff.evidence}</p>}
+                                                <p className="text-sm text-gray-800 font-medium">{cleanDisplayText(ineff.description)}</p>
+                                                {ineff.evidence && <p className="text-xs text-gray-500 mt-1">{cleanDisplayText(ineff.evidence)}</p>}
                                             </div>
                                         </div>
                                     )
@@ -340,101 +366,118 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
                         </div>
                     )}
 
-                    {/* Comprehensive Recommendations */}
+                    {/* Recommendation content: full analysis or structured blocks */}
                     {recommendations.map((rec, i) => (
-                        <div key={i} className="px-5 py-4">
-                            <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                <Lightbulb className="w-3.5 h-3.5 text-purple-500" /> Recommendation {i + 1}
+                        <div key={i} className="px-6 py-5">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <Lightbulb className="w-4 h-4 text-indigo-500" /> Recommendation {i + 1}
                             </h5>
 
-                            {/* Action + Savings */}
-                            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-4 border border-purple-100 mb-4">
-                                <p className="text-sm font-semibold text-gray-900 mb-2">{rec.action}</p>
-                                <div className="flex items-center gap-4 flex-wrap">
-                                    {rec.estimated_monthly_savings > 0 && (
-                                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full font-bold border border-emerald-200">
-                                            Saves ${rec.estimated_monthly_savings.toFixed(2)}/mo
-                                        </span>
-                                    )}
-                                    {rec.confidence && (
-                                        <span className="text-xs bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-medium border border-blue-200">
-                                            {rec.confidence} confidence
-                                        </span>
-                                    )}
+                            {/* Full LLM analysis (clean, no symbols) */}
+                            {(rec.full_analysis || card.raw_analysis) && (
+                                <div className="mb-5 rounded-2xl bg-white border border-gray-100 p-5 shadow-sm">
+                                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap font-[inherit]">
+                                        {cleanDisplayText(rec.full_analysis || card.raw_analysis || '')}
+                                    </p>
                                 </div>
+                            )}
+
+                            {/* Action + Savings pill */}
+                            <div className="flex flex-wrap items-center gap-3 mb-4">
+                                <p className="text-sm font-semibold text-gray-900">{cleanDisplayText(rec.action)}</p>
+                                {Number(rec.estimated_monthly_savings) > 0 && (
+                                    <span className="text-xs bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full font-bold border border-emerald-200">
+                                        Saves ${Number(rec.estimated_monthly_savings).toFixed(2)}/mo
+                                    </span>
+                                )}
+                                {rec.confidence && (
+                                    <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full font-medium border border-blue-200">
+                                        {rec.confidence} confidence
+                                    </span>
+                                )}
                             </div>
 
                             {/* Implementation Steps */}
                             {rec.implementation_steps?.length > 0 && (
-                                <div className="mb-3">
+                                <div className="mb-4">
                                     <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">Implementation Steps</p>
-                                    <div className="space-y-1.5">
+                                    <div className="space-y-2">
                                         {rec.implementation_steps.map((step, si) => (
-                                            <div key={si} className="flex items-start gap-2.5">
-                                                <div className="w-5 h-5 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                    <span className="text-[10px] font-bold">{si + 1}</span>
+                                            <div key={si} className="flex items-start gap-3">
+                                                <div className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                                                    {si + 1}
                                                 </div>
-                                                <p className="text-sm text-gray-700">{step.replace(/^\d+\.\s*/, '')}</p>
+                                                <p className="text-sm text-gray-700 leading-relaxed pt-0.5">{cleanDisplayText(String(step).replace(/^\d+\.\s*/, ''))}</p>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             )}
 
-                            {/* Performance Impact + Risk Mitigation */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {/* Performance + Risk */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {rec.performance_impact && (
-                                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-                                        <p className="text-[10px] font-bold text-blue-600 uppercase mb-1 flex items-center gap-1">
+                                    <div className="bg-blue-50/80 rounded-xl p-4 border border-blue-100">
+                                        <p className="text-[10px] font-bold text-blue-600 uppercase mb-1.5 flex items-center gap-1">
                                             <Activity className="w-3 h-3" /> Performance Impact
                                         </p>
-                                        <p className="text-xs text-gray-700">{rec.performance_impact}</p>
+                                        <p className="text-xs text-gray-700 leading-relaxed">{cleanDisplayText(rec.performance_impact)}</p>
                                     </div>
                                 )}
                                 {rec.risk_mitigation && (
-                                    <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
-                                        <p className="text-[10px] font-bold text-amber-600 uppercase mb-1 flex items-center gap-1">
+                                    <div className="bg-amber-50/80 rounded-xl p-4 border border-amber-100">
+                                        <p className="text-[10px] font-bold text-amber-600 uppercase mb-1.5 flex items-center gap-1">
                                             <Shield className="w-3 h-3" /> Risk Mitigation
                                         </p>
-                                        <p className="text-xs text-gray-700">{rec.risk_mitigation}</p>
+                                        <p className="text-xs text-gray-700 leading-relaxed">{cleanDisplayText(rec.risk_mitigation)}</p>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Validation Steps */}
                             {rec.validation_steps?.length > 0 && (
-                                <div className="mt-3">
-                                    <p className="text-[10px] font-bold text-gray-500 uppercase mb-1.5">Validation Steps</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {rec.validation_steps.map((v, vi) => (
-                                            <span key={vi} className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full border border-gray-200 flex items-center gap-1">
-                                                <CheckCircle2 className="w-3 h-3 text-emerald-500" /> {v}
-                                            </span>
-                                        ))}
-                                    </div>
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    {rec.validation_steps.map((v, vi) => (
+                                        <span key={vi} className="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full border border-gray-200 inline-flex items-center gap-1.5">
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> {cleanDisplayText(String(v))}
+                                        </span>
+                                    ))}
                                 </div>
                             )}
                         </div>
                     ))}
 
+                    {/* Standalone raw analysis if no recommendations block */}
+                    {!recommendations.length && card.raw_analysis && (
+                        <div className="px-6 py-5">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-indigo-500" /> Full analysis
+                            </h5>
+                            <div className="rounded-2xl bg-white border border-gray-100 p-5 shadow-sm">
+                                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                                    {cleanDisplayText(card.raw_analysis)}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* FinOps Best Practice */}
                     {card.finops_best_practice && (
-                        <div className="px-5 py-4">
-                            <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        <div className="px-6 py-4">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2 flex items-center gap-2">
                                 <BookOpen className="w-3.5 h-3.5 text-emerald-500" /> AWS FinOps Best Practice
                             </h5>
-                            <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
-                                <p className="text-sm text-emerald-800 leading-relaxed">{card.finops_best_practice}</p>
+                            <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                                <p className="text-sm text-emerald-800 leading-relaxed">{cleanDisplayText(card.finops_best_practice)}</p>
                             </div>
                         </div>
                     )}
 
                     {/* Footer */}
-                    <div className="px-5 py-3 bg-gray-50">
-                        <div className="flex items-center gap-1.5">
-                            <BrainCircuit className="w-3 h-3 text-gray-300" />
-                            <span className="text-[10px] text-gray-400">
-                                Generated by FinOps AI — Priority #{card.priority} • Risk: {card.risk_level || 'medium'}
+                    <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100">
+                        <div className="flex items-center gap-2">
+                            <BrainCircuit className="w-4 h-4 text-gray-400" />
+                            <span className="text-xs text-gray-500">
+                                FinOps AI · Priority #{card.priority} · Risk: {card.risk_level || 'medium'}
                             </span>
                         </div>
                     </div>
@@ -1060,6 +1103,17 @@ export default function AnalysisPage() {
         setRecLoading(false)
     }
 
+    async function loadLastRecommendations() {
+        if (!selectedArch) return
+        setRecError(null)
+        try {
+            const res = await getLastRecommendations(selectedArch.architecture_id, selectedArch.filename)
+            setRecResult(res.data)
+        } catch (e) {
+            setRecError(e.response?.data?.detail || e.message || 'No stored result found')
+        }
+    }
+
     function handleSelectNode(nodeId) {
         // Check if the node exists in interesting nodes
         const found = deepReport?.interesting_nodes?.find(n => n.node_id === nodeId)
@@ -1277,7 +1331,10 @@ export default function AnalysisPage() {
                                 <span className="font-bold text-sm">Recommendation Generation Failed</span>
                             </div>
                             <p className="text-sm text-red-600">{recError}</p>
-                            <button onClick={runRecommendations} className="mt-3 text-sm text-red-700 underline hover:text-red-900">Retry</button>
+                            <div className="mt-3 flex items-center gap-3">
+                                <button onClick={runRecommendations} className="text-sm text-red-700 underline hover:text-red-900">Retry</button>
+                                <button onClick={loadLastRecommendations} className="text-sm text-blue-600 underline hover:text-blue-800">Load last result from DB</button>
+                            </div>
                         </div>
                     )}
 

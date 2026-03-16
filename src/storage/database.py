@@ -22,5 +22,5 @@ def get_db():
 
 
 def init_db():
-    from src.graph.models import Architecture, Service, Dependency  # noqa
+    from src.graph.models import Architecture, Service, Dependency, IngestionSnapshot, RecommendationResult  # noqa
     Base.metadata.create_all(bind=engine)

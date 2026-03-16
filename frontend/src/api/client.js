@@ -64,7 +64,15 @@ export const generateRecommendations = (architectureId, architectureFile) => {
     const body = {}
     if (architectureId) body.architecture_id = architectureId
     if (architectureFile) body.architecture_file = architectureFile
-    return api.post('/analyze/recommendations', body, { timeout: 300000 })
+    return api.post('/analyze/recommendations', body, { timeout: 600000 })
+}
+
+/** Load last stored recommendation result from DB (for retry after timeout/failure). */
+export const getLastRecommendations = (architectureId, architectureFile) => {
+    const params = {}
+    if (architectureId) params.architecture_id = architectureId
+    if (architectureFile) params.architecture_file = architectureFile
+    return api.get('/analyze/recommendations/last', { params })
 }
 
 // ── Topology ─────────────────────────────────────────────────────────
