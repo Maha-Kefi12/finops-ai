@@ -39,13 +39,13 @@ GEMINI_MODEL = "gemini-2.0-flash-exp"
 
 # Qwen via Ollama (primary)
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("FINOPS_MODEL", "qwen2.5:7b")
+OLLAMA_MODEL = os.getenv("FINOPS_MODEL", "mistral:latest")  # Use faster Mistral by default
 
 # Backend selection
 USE_GEMINI = os.getenv("USE_GEMINI", "false").lower() == "true" and GEMINI_API_KEY
 
 MAX_RETRIES = 3
-TIMEOUT = 600
+TIMEOUT = 120  # Reduced from 600 to prevent frontend from waiting 10 minutes
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -174,6 +174,8 @@ def generate_recommendations(context_package, architecture_name: str = "",
     
     try:
         # Build context
+        t1 = time.time()
+        logger.info("[TIMING] Starting context assembly...")
         pkg_dict = asdict(context_package) if hasattr(context_package, '__dataclass_fields__') else context_package
         
         service_inventory = _build_service_inventory(raw_graph_data) if raw_graph_data else ""
@@ -181,7 +183,10 @@ def generate_recommendations(context_package, architecture_name: str = "",
         graph_context = _build_graph(pkg_dict)
         pricing_data = _build_pricing()
         aws_best_practices = _build_best_practices(pkg_dict)  # Pass pkg_dict to include RAG docs
+        logger.info("[TIMING] Context assembly done in %.1fs", time.time() - t1)
         
+        t2 = time.time()
+        logger.info("[TIMING] Formatting user prompt...")
         user_prompt = RECOMMENDATION_USER_PROMPT.format(
             service_inventory=service_inventory,
             cloudwatch_metrics=cloudwatch_metrics,
@@ -189,8 +194,12 @@ def generate_recommendations(context_package, architecture_name: str = "",
             pricing_data=pricing_data,
             aws_best_practices=aws_best_practices,
         )
+        logger.info("[TIMING] User prompt formatted in %.1fs (%d chars)", 
+                   time.time() - t2, len(user_prompt))
         
         # Call LLM
+        t3 = time.time()
+        logger.info("[TIMING] Starting LLM call (timeout=%ds)...", TIMEOUT)
         raw_response = call_llm(
             system_prompt=RECOMMENDATION_SYSTEM_PROMPT,
             user_prompt=user_prompt,
@@ -198,6 +207,8 @@ def generate_recommendations(context_package, architecture_name: str = "",
             max_tokens=8000,  # Increased for more recommendations
             architecture_name=architecture_name,
         )
+        logger.info("[TIMING] LLM call completed in %.1fs (%d chars)",  
+                   time.time() - t3, len(raw_response) if raw_response else 0)
         
         if not raw_response:
             raise RuntimeError("LLM returned empty response")
