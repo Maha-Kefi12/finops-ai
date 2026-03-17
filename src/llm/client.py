@@ -45,7 +45,7 @@ OLLAMA_MODEL = os.getenv("FINOPS_MODEL", "mistral:latest")  # Use faster Mistral
 USE_GEMINI = os.getenv("USE_GEMINI", "false").lower() == "true" and GEMINI_API_KEY
 
 MAX_RETRIES = 3
-TIMEOUT = 120  # Reduced from 600 to prevent frontend from waiting 10 minutes
+TIMEOUT = 300  # Ollama sometimes needs 120-180s, set to 5 minutes for safety
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -204,7 +204,7 @@ def generate_recommendations(context_package, architecture_name: str = "",
             system_prompt=RECOMMENDATION_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             temperature=0.2,
-            max_tokens=8000,  # Increased for more recommendations
+            max_tokens=4000,  # Reduced for faster generation (still ~10-15 recommendations)
             architecture_name=architecture_name,
         )
         logger.info("[TIMING] LLM call completed in %.1fs (%d chars)",  
