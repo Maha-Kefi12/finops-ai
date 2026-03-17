@@ -66,7 +66,6 @@ IMPORTANT:
 
 RECOMMENDATION_USER_PROMPT = """Here is the AWS architecture to analyze:
 
-SERVICE INVENTORY:
 {service_inventory}
 
 METRICS:
@@ -81,8 +80,38 @@ PRICING:
 BEST PRACTICES:
 {aws_best_practices}
 
-Generate 10-20 cost optimization recommendations using the exact format above.
-Start each with "### Recommendation #N" and separate with "---".
+## CRITICAL REQUIREMENTS:
+✓ Generate 10-15 cost optimization recommendations across DIFFERENT service types
+✓ COVER MULTIPLE SERVICES (not just EC2):
+  - EC2 instances: right- sizing, reserved instances, spot instances
+  - S3 buckets: lifecycle policies, storage class optimization
+  - RDS databases: reserved instances, instance sizing review
+  - Lambda functions: memory/duration optimization
+  - NAT Gateways: consolidation
+✓ Select HIGHEST-IMPACT recommendations with realistic savings
+✓ Use resource IDs from SERVICE INVENTORY
+✓ Each recommendation must include: Problem, Solution, Monthly Savings, Resource ID
+
+## FORMAT (strict):
+### Recommendation #1: [brief title - action/change]
+**Resource ID:** [resource-id]
+**Service:** [service-type]
+**Current Monthly Cost:** $X.XX
+**Problem:** [explain inefficiency]
+**Solution:** [specific action]
+**Expected Monthly Savings:** $Y.YY
+---
+
+### Recommendation #2: [brief title]
+[repeat format]
+
+EXAMPLES OF GOOD TITLES:
+- Downsize t3.micro to t3.nano
+- Enable S3 Intelligent-Tiering for lifecycle management
+- Reserve 3-year RDS instances for dev database
+- Consolidate NAT Gateways
+
+IMPORTANT: ALWAYS include a brief action/change in the header, not just "Recommendation #N"
 """
 
 

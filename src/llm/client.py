@@ -45,7 +45,7 @@ OLLAMA_MODEL = os.getenv("FINOPS_MODEL", "mistral:latest")  # Use faster Mistral
 USE_GEMINI = os.getenv("USE_GEMINI", "false").lower() == "true" and GEMINI_API_KEY
 
 MAX_RETRIES = 3
-TIMEOUT = 300  # Ollama sometimes needs 120-180s, set to 5 minutes for safety
+TIMEOUT = 300  # Standard timeout for 4000 token generation
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -204,7 +204,7 @@ def generate_recommendations(context_package, architecture_name: str = "",
             system_prompt=RECOMMENDATION_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             temperature=0.2,
-            max_tokens=4000,  # Reduced for faster generation (still ~10-15 recommendations)
+            max_tokens=4000,  # Standard token budget for 10-15 recommendations that complete quickly
             architecture_name=architecture_name,
         )
         logger.info("[TIMING] LLM call completed in %.1fs (%d chars)",  
@@ -527,21 +527,51 @@ def _parse_card_text(text: str, card_num: int) -> Optional[Dict]:
 # ═══════════════════════════════════════════════════════════════════════════
 
 def _build_service_inventory(graph_data: dict) -> str:
-    """Build service inventory table."""
+    """Build comprehensive service inventory with optimization opportunities."""
     services = graph_data.get("services") or graph_data.get("nodes") or []
     if not services:
         return "(No services)"
     
-    lines = ["| Resource ID | Type | Instance | Cost/Mo | Env |",
-             "|:------------|:-----|:---------|:--------|:----|"]
+    lines = ["## SERVICE INVENTORY (sorted by cost)\n"]
     
+    # Create detailed inventory for each service
     for svc in sorted(services, key=lambda s: s.get("cost_monthly", 0), reverse=True):
         rid = svc.get("id", "?")
         stype = svc.get("aws_service", svc.get("type", "?"))
         inst = svc.get("attributes", {}).get("instance_type", "-")
         cost = svc.get("cost_monthly", 0)
         env = svc.get("environment", "prod")
-        lines.append(f"| {rid} | {stype} | {inst} | ${cost:.2f} | {env} |")
+        name = svc.get("name", rid)
+        
+        # Add potential optimization hints based on service type
+        optimization_hint = ""
+        if "ec2" in stype.lower():
+            optimization_hint = "(Consider: right-sizing, reserved instances, spot instances)"
+        elif "s3" in stype.lower():
+            optimization_hint = "(Consider: lifecycle policies, storage class analysis, intelligent tiering)"
+        elif "rds" in stype.lower():
+            optimization_hint = "(Consider: reserved instances, multi-az review, read replicas)"
+        elif "lambda" in stype.lower():
+            optimization_hint = "(Consider: consolidation, memory optimization, duration reduction)"
+        elif "nat" in stype.lower():
+            optimization_hint = "(Consider: consolidation, endpoint optimization)"
+        elif "elasticsearch" in stype.lower() or "opensearch" in stype.lower():
+            optimization_hint = "(Consider: instance type, storage optimization)"
+        
+        lines.append(f"- {name}: {stype} ({rid}) @ ${cost:.2f}/mo [Env: {env}] {optimization_hint}")
+        
+        # Add instance details if available
+        attrs = svc.get("attributes", {})
+        if attrs.get("instance_type"):
+            lines.append(f"  Instance type: {attrs['instance_type']}")
+        if attrs.get("storage_gb"):
+            lines.append(f"  Storage: {attrs['storage_gb']}GB")
+        if attrs.get("memory_gb"):
+            lines.append(f"  Memory: {attrs['memory_gb']}GB")
+    
+    total_cost = sum(s.get("cost_monthly", 0) for s in services)
+    lines.append(f"\n**TOTAL MONTHLY COST: ${total_cost:.2f}**")
+    lines.append(f"**ANALYZE ALL {len(services)} SERVICES ABOVE**")
     
     return "\n".join(lines)
 
