@@ -1003,6 +1003,7 @@ export default function AnalysisPage() {
     const [recLoading, setRecLoading] = useState(false)
     const [recError, setRecError] = useState(null)
     const [expandedCards, setExpandedCards] = useState({})
+    const [recRefreshing, setRecRefreshing] = useState(false)  // Background refresh state
 
     useEffect(() => {
         listArchitectures()
@@ -1011,10 +1012,14 @@ export default function AnalysisPage() {
         return () => cancelAwsDiscovery()
     }, [])
 
+    // Load last recommendations immediately when architecture is selected
+    // Then optionally trigger a fresh background analysis
     useEffect(() => {
         if (selectedArch) {
-            // Auto-run recommendations when architecture is selected
-            runRecommendations()
+            loadLastRecommendations()  // Load cached results instantly
+            // Trigger background generation (don't block display)
+            setRecRefreshing(true)
+            runRecommendationsInBackground()
         }
     }, [selectedArch])
 
@@ -1101,6 +1106,26 @@ export default function AnalysisPage() {
             setRecError(e.response?.data?.detail || e.message || 'Recommendation generation failed')
         }
         setRecLoading(false)
+    }
+
+    // Background refresh - doesn't block display, updates when done
+    async function runRecommendationsInBackground() {
+        if (!selectedArch) {
+            setRecRefreshing(false)
+            return
+        }
+        try {
+            const res = await generateRecommendations(selectedArch.architecture_id, selectedArch.filename)
+            setRecResult(res.data)  // Update with fresh data
+            setRecError(null)  // Clear any previous errors
+        } catch (e) {
+            console.error('Background recommendation refresh failed:', e)
+            // Don't override recResult if it already has data
+            if (!recResult) {
+                setRecError(e.response?.data?.detail || e.message || 'Background analysis failed')
+            }
+        }
+        setRecRefreshing(false)
     }
 
     async function loadLastRecommendations() {
@@ -1295,8 +1320,16 @@ export default function AnalysisPage() {
             {/* ═══ Recommendation Cards Tab ═══ */}
             {activeTab === 'recommendations' && selectedArch && (
                 <div className="space-y-6">
-                    {/* Loading */}
-                    {recLoading && (
+                    {/* Background refresh indicator - only show if refreshing and we have results */}
+                    {recRefreshing && recResult && (
+                        <div className="card p-3 bg-blue-50 border-blue-200 flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                            <span className="text-xs text-blue-700">Refreshing recommendations in the background...</span>
+                        </div>
+                    )}
+
+                    {/* Loading - only show if loading and no previous results */}
+                    {recLoading && !recResult && (
                         <div className="card p-10 flex flex-col items-center justify-center">
                             <div className="relative mb-6">
                                 <div className="w-16 h-16 rounded-full border-4 border-purple-100 border-t-purple-600 animate-spin" />

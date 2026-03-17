@@ -426,20 +426,45 @@ async def generate_recommendations(req: RecommendationRequest, db: Session = Dep
 
 
 @router.get("/analyze/recommendations/last")
-async def get_last_recommendation(db: Session = Depends(get_db)):
-    """Fetch the most recent recommendation result from the database."""
-    last = (
-        db.query(RecommendationResult)
-        .order_by(RecommendationResult.created_at.desc())
-        .first()
+async def get_last_recommendation(
+    architecture_id: Optional[str] = None,
+    architecture_file: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Fetch the most recent recommendation result from the database.
+    
+    Filters by architecture_id or architecture_file if provided.
+    Returns full recommendation data ready for display.
+    """
+    query = db.query(RecommendationResult).filter(
+        RecommendationResult.status == "completed"
     )
+    
+    if architecture_id:
+        query = query.filter(RecommendationResult.architecture_id == architecture_id)
+    elif architecture_file:
+        query = query.filter(RecommendationResult.architecture_file == architecture_file)
+    
+    last = query.order_by(RecommendationResult.created_at.desc()).first()
+    
     if not last:
-        return {"status": "none", "message": "No recommendations found in history"}
+        return {
+            "status": "none", 
+            "message": "No recommendations found in history",
+            "recommendations": []
+        }
+    
+    payload = last.payload if isinstance(last.payload, dict) else (json.loads(last.payload) if last.payload else {})
     
     return {
-        "id": last.id,
+        "id": str(last.id),
         "status": last.status,
-        "created_at": last.created_at,
-        "results": last.payload if last.status == "completed" else None,
+        "created_at": last.created_at.isoformat() if last.created_at else None,
+        "recommendations": payload.get("recommendations", []),
+        "total_estimated_savings": payload.get("total_estimated_savings", 0),
+        "llm_used": payload.get("llm_used", False),
+        "generation_time_ms": last.generation_time_ms,
+        "card_count": last.card_count,
+        "architecture_name": payload.get("architecture_name", ""),
         "error": last.error_message if last.status == "failed" else None
     }
