@@ -75,6 +75,41 @@ export const getLastRecommendations = (architectureId, architectureFile) => {
     return api.get('/analyze/recommendations/last', { params })
 }
 
+/** Load recommendation history for an architecture. */
+export const getRecommendationsHistory = (architectureId, architectureFile, limit = 10) => {
+    const params = { limit }
+    if (architectureId) params.architecture_id = architectureId
+    if (architectureFile) params.architecture_file = architectureFile
+    return api.get('/analyze/recommendations/history', { params })
+}
+
+/** Save LLM report from 5-agent pipeline. */
+export const saveLLMReport = (architectureId, architectureFile, agentNames, reportData, generationTimeMs) => {
+    return api.post('/analyze/llm-report/save', {
+        architecture_id: architectureId,
+        architecture_file: architectureFile,
+        agent_names: agentNames,
+        report_data: reportData,
+        generation_time_ms: generationTimeMs
+    })
+}
+
+/** Load latest LLM report for an architecture. */
+export const getLatestLLMReport = (architectureId, architectureFile) => {
+    const params = {}
+    if (architectureId) params.architecture_id = architectureId
+    if (architectureFile) params.architecture_file = architectureFile
+    return api.get('/analyze/llm-report/latest', { params })
+}
+
+/** Load LLM report history for an architecture. */
+export const getLLMReportHistory = (architectureId, architectureFile, limit = 10) => {
+    const params = { limit }
+    if (architectureId) params.architecture_id = architectureId
+    if (architectureFile) params.architecture_file = architectureFile
+    return api.get('/analyze/llm-report/history', { params })
+}
+
 // ── Topology ─────────────────────────────────────────────────────────
 export const analyzeTopology = (filename) =>
     api.post('/topology/analyze', { architecture_file: filename }, { timeout: 300000 })

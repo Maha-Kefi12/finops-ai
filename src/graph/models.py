@@ -100,3 +100,19 @@ class RecommendationResult(Base):
     total_estimated_savings = Column(Float, nullable=True, default=0.0)
     card_count = Column(Integer, nullable=True, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class LLMReport(Base):
+    """Stored LLM report from 5-agent AI pipeline analysis."""
+    __tablename__ = "llm_reports"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    architecture_id = Column(String, nullable=False, index=True)
+    architecture_file = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="completed")
+    error_message = Column(Text, nullable=True)
+    payload = Column(JSON, nullable=True)
+    generation_time_ms = Column(Integer, nullable=True)
+    agent_names = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

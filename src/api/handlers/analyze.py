@@ -13,7 +13,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from src.storage.database import get_db
-from src.graph.models import Architecture, Service, Dependency, IngestionSnapshot, RecommendationResult
+from src.graph.models import Architecture, Service, Dependency, IngestionSnapshot, RecommendationResult, LLMReport
 
 router = APIRouter(prefix="/api", tags=["analyze"])
 
@@ -467,4 +467,158 @@ async def get_last_recommendation(
         "card_count": last.card_count,
         "architecture_name": payload.get("architecture_name", ""),
         "error": last.error_message if last.status == "failed" else None
+    }
+
+
+@router.get("/analyze/recommendations/history")
+async def get_recommendations_history(
+    architecture_id: Optional[str] = None,
+    architecture_file: Optional[str] = None,
+    limit: int = 10,
+    db: Session = Depends(get_db)
+):
+    """Fetch recommendation history for an architecture.
+    
+    Returns multiple recommendation results ordered by most recent first.
+    """
+    query = db.query(RecommendationResult).filter(
+        RecommendationResult.status == "completed"
+    )
+    
+    if architecture_id:
+        query = query.filter(RecommendationResult.architecture_id == architecture_id)
+    elif architecture_file:
+        query = query.filter(RecommendationResult.architecture_file == architecture_file)
+    
+    # Order by most recent first and limit
+    results = query.order_by(RecommendationResult.created_at.desc()).limit(limit).all()
+    
+    history = []
+    for result in results:
+        payload = result.payload if isinstance(result.payload, dict) else (json.loads(result.payload) if result.payload else {})
+        history.append({
+            "id": str(result.id),
+            "status": result.status,
+            "created_at": result.created_at.isoformat() if result.created_at else None,
+            "recommendations": payload.get("recommendations", []),
+            "total_estimated_savings": payload.get("total_estimated_savings", 0),
+            "llm_used": payload.get("llm_used", False),
+            "generation_time_ms": result.generation_time_ms,
+            "card_count": result.card_count,
+            "architecture_name": payload.get("architecture_name", ""),
+            "error": result.error_message if result.status == "failed" else None
+        })
+    
+    return {
+        "history": history,
+        "total_count": len(history)
+    }
+
+
+@router.post("/analyze/llm-report/save")
+async def save_llm_report(
+    architecture_id: str,
+    architecture_file: Optional[str] = None,
+    agent_names: Optional[str] = None,
+    report_data: Optional[dict] = None,
+    generation_time_ms: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """Save LLM report from 5-agent pipeline to database."""
+    report = LLMReport(
+        architecture_id=architecture_id,
+        architecture_file=architecture_file,
+        agent_names=agent_names,
+        status="completed",
+        payload=report_data or {},
+        generation_time_ms=generation_time_ms
+    )
+    db.add(report)
+    db.commit()
+    db.refresh(report)
+    
+    return {
+        "id": str(report.id),
+        "status": report.status,
+        "created_at": report.created_at.isoformat()
+    }
+
+
+@router.get("/analyze/llm-report/latest")
+async def get_latest_llm_report(
+    architecture_id: Optional[str] = None,
+    architecture_file: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Fetch the most recent LLM report for an architecture."""
+    query = db.query(LLMReport).filter(
+        LLMReport.status == "completed"
+    )
+    
+    if architecture_id:
+        query = query.filter(LLMReport.architecture_id == architecture_id)
+    elif architecture_file:
+        query = query.filter(LLMReport.architecture_file == architecture_file)
+    
+    latest = query.order_by(LLMReport.created_at.desc()).first()
+    
+    if not latest:
+        return {
+            "status": "none",
+            "message": "No LLM reports found",
+            "agents": {}
+        }
+    
+    payload = latest.payload if isinstance(latest.payload, dict) else (json.loads(latest.payload) if latest.payload else {})
+    
+    return {
+        "id": str(latest.id),
+        "status": latest.status,
+        "created_at": latest.created_at.isoformat() if latest.created_at else None,
+        "agents": payload.get("agents", {}),
+        "all_findings": payload.get("all_findings", []),
+        "interesting_nodes": payload.get("interesting_nodes", []),
+        "generation_time_ms": latest.generation_time_ms,
+        "agent_names": latest.agent_names,
+        "error": latest.error_message if latest.status == "failed" else None
+    }
+
+
+@router.get("/analyze/llm-report/history")
+async def get_llm_report_history(
+    architecture_id: Optional[str] = None,
+    architecture_file: Optional[str] = None,
+    limit: int = 10,
+    db: Session = Depends(get_db)
+):
+    """Fetch LLM report history for an architecture."""
+    query = db.query(LLMReport).filter(
+        LLMReport.status == "completed"
+    )
+    
+    if architecture_id:
+        query = query.filter(LLMReport.architecture_id == architecture_id)
+    elif architecture_file:
+        query = query.filter(LLMReport.architecture_file == architecture_file)
+    
+    results = query.order_by(LLMReport.created_at.desc()).limit(limit).all()
+    
+    history = []
+    for result in results:
+        payload = result.payload if isinstance(result.payload, dict) else (json.loads(result.payload) if result.payload else {})
+        history.append({
+            "id": str(result.id),
+            "status": result.status,
+            "created_at": result.created_at.isoformat() if result.created_at else None,
+            "agents": payload.get("agents", {}),
+            "all_findings": payload.get("all_findings", []),
+            "interesting_nodes": payload.get("interesting_nodes", []),
+            "generation_time_ms": result.generation_time_ms,
+            "agent_names": result.agent_names,
+            "error": result.error_message if result.status == "failed" else None
+        })
+    
+    return {
+        "history": history,
+        "total_count": len(history)
     }
