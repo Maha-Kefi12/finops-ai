@@ -59,9 +59,10 @@ def health():
 
 @app.get("/api/llm-status")
 def llm_status():
-    """Check if the FinOps LLM (finops-aws) is connected and responding."""
+    """Check if the LLM is connected and responding."""
     import os, requests as req
     ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
+    active_model = os.getenv("FINOPS_MODEL", "qwen2.5:7b")
     try:
         # Check Ollama is running
         r = req.get(f"{ollama_url}/api/tags", timeout=5)
@@ -69,29 +70,29 @@ def llm_status():
         models = r.json().get("models", [])
         model_names = [m.get("name", "") for m in models]
 
-        # Check if finops-aws exists
-        finops_model = None
+        # Check if active model exists
+        active_model_info = None
         for m in models:
-            if "finops-aws" in m.get("name", ""):
-                finops_model = m
+            if active_model in m.get("name", ""):
+                active_model_info = m
                 break
 
-        if finops_model:
+        if active_model_info:
             return {
                 "connected": True,
-                "model_name": "finops-aws",
-                "base_model": "abocide/Qwen2.5-7B-Instruct-R1-forfinance",
-                "size_gb": round(finops_model.get("size", 0) / 1e9, 1),
-                "quantization": finops_model.get("details", {}).get("quantization_level", "Q4_K_M"),
-                "parameters": finops_model.get("details", {}).get("parameter_size", "7.6B"),
+                "model_name": active_model,
+                "base_model": "Qwen 2.5 7B Instruct",
+                "size_gb": round(active_model_info.get("size", 0) / 1e9, 1),
+                "quantization": active_model_info.get("details", {}).get("quantization_level", "Q4_K_M"),
+                "parameters": active_model_info.get("details", {}).get("parameter_size", "7.6B"),
                 "available_models": model_names,
                 "ollama_url": ollama_url,
             }
         else:
             return {
                 "connected": True,
-                "model_name": None,
-                "error": "finops-aws model not found. Run: ollama create finops-aws -f Modelfile",
+                "model_name": active_model,
+                "error": f"{active_model} model not found in Ollama",
                 "available_models": model_names,
                 "ollama_url": ollama_url,
             }

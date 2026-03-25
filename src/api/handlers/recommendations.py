@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from src.storage.database import get_db
-from src.graph.models import RecommendationResult, Architecture
+from src.graph.models import RecommendationResult
 from src.storage.recommendation_cache import get_cache
 from src.background.tasks import generate_recommendations_bg, get_task_status
 

@@ -16,8 +16,8 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from src.storage.database import get_db
-from src.graph.models import Architecture, Service, Dependency
 from src.graph.engine import GraphEngine
+from src.graph.neo4j_bridge import load_graph_from_neo4j
 from src.rag.traversal import GraphRAGTraversalEngine
 
 router = APIRouter(prefix="/api/graphrag", tags=["graphrag"])
@@ -63,45 +63,19 @@ class CombinedRequest(BaseModel):
 # ── Helper: rebuild graph from DB ────────────────────────────────────
 
 def _build_engine(arch_id: str, db: Session) -> GraphRAGTraversalEngine:
-    """Load architecture from DB, build graph, return traversal engine."""
-    arch = db.query(Architecture).filter(Architecture.id == arch_id).first()
-    if not arch:
-        raise HTTPException(status_code=404, detail=f"Architecture '{arch_id}' not found")
+    """Load architecture from Neo4j, build graph, return traversal engine."""
+    _ = db
+    arch_data = load_graph_from_neo4j(arch_id)
+    if not arch_data:
+        raise HTTPException(status_code=404, detail=f"Architecture '{arch_id}' not found in Neo4j")
 
-    services = db.query(Service).filter(Service.architecture_id == arch_id).all()
-    deps = db.query(Dependency).filter(Dependency.architecture_id == arch_id).all()
-
-    # Reconstruct architecture JSON
-    arch_data = {
-        "metadata": {
-            "name": arch.name,
-            "pattern": arch.pattern,
-            "complexity": arch.complexity,
-        },
-        "services": [
-            {
-                "id": svc.id.split("::", 1)[-1],
-                "name": svc.name,
-                "type": svc.service_type,
-                "owner": svc.owner,
-                "cost_monthly": svc.cost_monthly,
-                "environment": svc.environment,
-                "attributes": svc.attributes or {},
-            }
-            for svc in services
-        ],
-        "dependencies": [
-            {
-                "source": d.source.split("::", 1)[-1],
-                "target": d.target.split("::", 1)[-1],
-                "type": d.dep_type,
-                "weight": d.weight,
-            }
-            for d in deps
-        ],
+    arch_json = {
+        "metadata": arch_data.get("metadata", {}),
+        "services": arch_data.get("services", []),
+        "dependencies": arch_data.get("dependencies", []),
     }
 
-    engine = GraphEngine(arch_data)
+    engine = GraphEngine(arch_json)
     return GraphRAGTraversalEngine(engine.G)
 
 

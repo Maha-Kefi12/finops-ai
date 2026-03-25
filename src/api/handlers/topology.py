@@ -26,41 +26,16 @@ def _load_arch_data(req: dict):
             return json.load(f), req["architecture_file"]
 
     if "architecture_id" in req:
-        from src.storage.database import SessionLocal
-        from src.graph.models import Architecture, Service, Dependency
+        from src.graph.neo4j_bridge import load_graph_from_neo4j
 
-        db = SessionLocal()
-        try:
-            arch = db.query(Architecture).filter(
-                Architecture.id == req["architecture_id"]
-            ).first()
-            if not arch:
-                raise HTTPException(404, f"Architecture not found: {req['architecture_id']}")
-
-            services = db.query(Service).filter(Service.architecture_id == arch.id).all()
-            deps = db.query(Dependency).filter(Dependency.architecture_id == arch.id).all()
-
-            arch_data = {
-                "metadata": {
-                    "name": arch.name, "pattern": arch.pattern,
-                    "complexity": arch.complexity,
-                    "total_services": arch.total_services,
-                    "total_cost_monthly": arch.total_cost_monthly,
-                },
-                "services": [
-                    {"id": s.id, "name": s.name, "type": s.service_type,
-                     "cost_monthly": s.cost_monthly, "owner": s.owner or "unknown"}
-                    for s in services
-                ],
-                "dependencies": [
-                    {"source": d.source, "target": d.target,
-                     "type": d.dep_type, "weight": d.weight}
-                    for d in deps
-                ],
-            }
-            return arch_data, arch.name
-        finally:
-            db.close()
+        arch_data = load_graph_from_neo4j(req["architecture_id"])
+        if not arch_data:
+            raise HTTPException(404, f"Architecture not found in Neo4j: {req['architecture_id']}")
+        return {
+            "metadata": arch_data.get("metadata", {}),
+            "services": arch_data.get("services", []),
+            "dependencies": arch_data.get("dependencies", []),
+        }, arch_data.get("metadata", {}).get("name", req["architecture_id"])
 
     raise HTTPException(400, "Provide 'architecture_file' or 'architecture_id'")
 
@@ -137,7 +112,7 @@ async def analyze_topology(req: dict):
     import httpx
 
     ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
-    model_name = os.getenv("FINOPS_MODEL", "finops-aws")
+    model_name = os.getenv("FINOPS_MODEL", "qwen2.5:7b")
 
     system = (
         "You are a senior AWS Solutions Architect creating a 3D architecture topology visualization. "

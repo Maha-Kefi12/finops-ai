@@ -6,14 +6,17 @@ Supports both synthetic files and DB-stored architectures.
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Any, Dict, List, Optional
 import json
 import os
+import hashlib
 from pathlib import Path
 from sqlalchemy.orm import Session
 
 from src.storage.database import get_db
-from src.graph.models import Architecture, Service, Dependency, IngestionSnapshot, RecommendationResult, LLMReport
+from src.graph.models import IngestionSnapshot, RecommendationResult, LLMReport
+from src.graph.neo4j_bridge import load_graph_from_neo4j, list_architectures_neo4j
+from src.api.schemas.persistence import LLMReportPayloadSchema, RecommendationPayloadSchema, model_to_dict
 
 router = APIRouter(prefix="/api", tags=["analyze"])
 
@@ -39,6 +42,56 @@ def _strip_prefix(sid: str, arch_id: str) -> str:
     return sid[len(prefix):] if sid.startswith(prefix) else sid
 
 
+def _recommendation_fingerprint(card: Dict[str, Any]) -> str:
+    """Build a deterministic fingerprint for recommendation dedupe."""
+    resource = (card.get("resource_identification") or {}).get("resource_id", "")
+    title = card.get("title", "")
+    action = ""
+    recs = card.get("recommendations") or []
+    if recs and isinstance(recs[0], dict):
+        action = recs[0].get("action", "")
+    savings = round(float(card.get("total_estimated_savings", 0) or 0), 2)
+    key = f"{resource.strip().lower()}|{title.strip().lower()}|{action.strip().lower()}|{savings:.2f}"
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+
+def _existing_fingerprints(
+    db: Session,
+    architecture_id: Optional[str],
+    architecture_file: Optional[str],
+) -> set[str]:
+    """Load recommendation fingerprints already persisted for the same architecture."""
+    query = db.query(RecommendationResult).filter(RecommendationResult.status == "completed")
+    if architecture_id:
+        query = query.filter(RecommendationResult.architecture_id == architecture_id)
+    elif architecture_file:
+        query = query.filter(RecommendationResult.architecture_file == architecture_file)
+    else:
+        return set()
+
+    seen: set[str] = set()
+    rows = query.all()
+    for row in rows:
+        payload = row.payload if isinstance(row.payload, dict) else (json.loads(row.payload) if row.payload else {})
+        for card in payload.get("recommendations", []):
+            seen.add(_recommendation_fingerprint(card))
+    return seen
+
+
+def _filter_new_cards(cards: List[Dict[str, Any]], seen_fingerprints: set[str]) -> tuple[List[Dict[str, Any]], int]:
+    """Keep only recommendations that are not already stored in DB."""
+    fresh: List[Dict[str, Any]] = []
+    skipped = 0
+    for card in cards:
+        fp = _recommendation_fingerprint(card)
+        if fp in seen_fingerprints:
+            skipped += 1
+            continue
+        seen_fingerprints.add(fp)
+        fresh.append(card)
+    return fresh, skipped
+
+
 # ──────────────────────────────────────────────────────────────────────
 #  Analyze endpoint
 # ──────────────────────────────────────────────────────────────────────
@@ -56,45 +109,27 @@ async def analyze_architecture(req: AnalyzeRequest, db: Session = Depends(get_db
 
     # ── Load from database if architecture_id is provided ────────────
     if req.architecture_id:
-        arch = db.query(Architecture).filter(Architecture.id == req.architecture_id).first()
-        if not arch:
-            raise HTTPException(404, f"Architecture not found: {req.architecture_id}")
-
-        services = db.query(Service).filter(Service.architecture_id == req.architecture_id).all()
-        deps = db.query(Dependency).filter(Dependency.architecture_id == req.architecture_id).all()
-
-        arch_data = {
-            "metadata": {
-                "name": arch.name,
-                "pattern": arch.pattern,
-                "complexity": arch.complexity or "medium",
-                "environment": arch.environment or "production",
-                "region": arch.region or "us-east-1",
-                "total_services": arch.total_services,
-                "total_cost_monthly": arch.total_cost_monthly,
-            },
-            "services": [
-                {
-                    "id": _strip_prefix(s.id, req.architecture_id),
-                    "name": s.name,
-                    "type": s.service_type or "service",
-                    "environment": s.environment or "production",
-                    "owner": s.owner or "",
-                    "cost_monthly": s.cost_monthly or 0.0,
-                    "attributes": s.attributes or {},
+        arch_data = load_graph_from_neo4j(req.architecture_id)
+        if not arch_data:
+            # Recovery fallback: try latest completed snapshot raw graph.
+            snap = (
+                db.query(IngestionSnapshot)
+                .filter(
+                    IngestionSnapshot.architecture_id == req.architecture_id,
+                    IngestionSnapshot.status == "completed",
+                )
+                .order_by(IngestionSnapshot.created_at.desc())
+                .first()
+            )
+            if snap and snap.raw_data:
+                raw = snap.raw_data if isinstance(snap.raw_data, dict) else json.loads(snap.raw_data)
+                arch_data = {
+                    "metadata": raw.get("metadata", {}),
+                    "services": raw.get("services") or raw.get("nodes") or [],
+                    "dependencies": raw.get("dependencies") or raw.get("edges") or [],
                 }
-                for s in services
-            ],
-            "dependencies": [
-                {
-                    "source": _strip_prefix(d.source, req.architecture_id),
-                    "target": _strip_prefix(d.target, req.architecture_id),
-                    "type": d.dep_type or "calls",
-                    "weight": d.weight or 1.0,
-                }
-                for d in deps
-            ],
-        }
+            else:
+                raise HTTPException(404, f"Architecture not found in Neo4j: {req.architecture_id}")
 
     # ── Load from synthetic file ─────────────────────────────────────
     elif req.architecture_file:
@@ -137,22 +172,60 @@ async def list_architectures(db: Session = Depends(get_db)):
     """List available architecture files for analysis, including DB entries."""
     files = []
     seen_names = set()
+    seen_arch_ids = set()
 
-    # ── DB architectures first ───────────────────────────────────────
+    # ── Neo4j architectures first ────────────────────────────────────
     try:
-        db_archs = db.query(Architecture).order_by(Architecture.name).all()
-        for a in db_archs:
-            seen_names.add(a.name)
+        neo4j_archs = list_architectures_neo4j()
+        for a in neo4j_archs:
+            name = a.get("name") or f"arch:{str(a.get('id', ''))[:8]}"
+            seen_names.add(name)
+            seen_arch_ids.add(a.get("id"))
             files.append({
                 "filename": None,
-                "architecture_id": a.id,
-                "name": a.name,
-                "pattern": a.pattern or "unknown",
-                "complexity": a.complexity or "medium",
-                "services": a.total_services or 0,
-                "cost": a.total_cost_monthly or 0.0,
-                "source": a.source_file or "db",
+                "architecture_id": a.get("id"),
+                "name": name,
+                "pattern": a.get("pattern", "unknown"),
+                "complexity": a.get("complexity", "medium"),
+                "services": a.get("total_services") or a.get("node_count") or 0,
+                "cost": a.get("total_cost") or 0.0,
+                "source": "neo4j",
             })
+    except Exception:
+        pass
+
+    # ── Snapshot-backed architectures (recovery path) ───────────────
+    try:
+        snaps = (
+            db.query(IngestionSnapshot)
+            .filter(IngestionSnapshot.status == "completed")
+            .order_by(IngestionSnapshot.created_at.desc())
+            .all()
+        )
+        for s in snaps:
+            if not s.raw_data:
+                continue
+            if s.architecture_id and s.architecture_id in seen_arch_ids:
+                continue
+
+            raw = s.raw_data if isinstance(s.raw_data, dict) else json.loads(s.raw_data)
+            meta = raw.get("metadata", {})
+            services = raw.get("services") or raw.get("nodes") or []
+            name = meta.get("name") or f"snapshot:{(s.architecture_id or s.id)[:8]}"
+            if name in seen_names:
+                continue
+
+            files.append({
+                "filename": None,
+                "architecture_id": s.architecture_id or s.id,
+                "name": name,
+                "pattern": meta.get("pattern", "unknown"),
+                "complexity": meta.get("complexity", "medium"),
+                "services": s.total_services or len(services),
+                "cost": s.total_cost_monthly or meta.get("total_cost_monthly", 0.0),
+                "source": f"snapshot:{s.source}",
+            })
+            seen_names.add(name)
     except Exception:
         pass
 
@@ -218,44 +291,15 @@ async def deep_graph_analysis(req: DeepAnalysisRequest, db: Session = Depends(ge
         if snap and snap.raw_data:
             graph_data = snap.raw_data if isinstance(snap.raw_data, dict) else json.loads(snap.raw_data)
 
-        # Fallback: load from DB (architecture/services/dependencies)
+        # Fallback: load from Neo4j (architecture/services/dependencies)
         if not graph_data:
-            arch = db.query(Architecture).filter(Architecture.id == req.architecture_id).first()
-            if not arch:
-                raise HTTPException(404, f"Architecture not found: {req.architecture_id}")
-            services = db.query(Service).filter(Service.architecture_id == req.architecture_id).all()
-            deps = db.query(Dependency).filter(Dependency.architecture_id == req.architecture_id).all()
+            neo4j_graph = load_graph_from_neo4j(req.architecture_id)
+            if not neo4j_graph:
+                raise HTTPException(404, f"Architecture not found in Neo4j: {req.architecture_id}")
             graph_data = {
-                "metadata": {
-                    "name": arch.name,
-                    "pattern": arch.pattern,
-                    "complexity": arch.complexity or "medium",
-                    "environment": arch.environment or "production",
-                    "region": arch.region or "us-east-1",
-                    "total_services": arch.total_services,
-                    "total_cost_monthly": arch.total_cost_monthly,
-                },
-                "services": [
-                    {
-                        "id": _strip_prefix(s.id, req.architecture_id),
-                        "name": s.name,
-                        "type": s.service_type or "service",
-                        "cost_monthly": s.cost_monthly or 0.0,
-                        "environment": s.environment or "production",
-                        "owner": s.owner or "",
-                        "attributes": s.attributes or {},
-                    }
-                    for s in services
-                ],
-                "dependencies": [
-                    {
-                        "source": _strip_prefix(d.source, req.architecture_id),
-                        "target": _strip_prefix(d.target, req.architecture_id),
-                        "type": d.dep_type or "calls",
-                        "weight": d.weight or 1.0,
-                    }
-                    for d in deps
-                ],
+                "metadata": neo4j_graph.get("metadata", {}),
+                "services": neo4j_graph.get("services", []),
+                "dependencies": neo4j_graph.get("dependencies", []),
             }
 
     # ── Load from synthetic file ─────────────────────────────────────
@@ -313,42 +357,13 @@ async def generate_recommendations(req: RecommendationRequest, db: Session = Dep
             graph_data = snap.raw_data if isinstance(snap.raw_data, dict) else json.loads(snap.raw_data)
 
         if not graph_data:
-            arch = db.query(Architecture).filter(Architecture.id == req.architecture_id).first()
-            if not arch:
-                raise HTTPException(404, f"Architecture not found: {req.architecture_id}")
-            services = db.query(Service).filter(Service.architecture_id == req.architecture_id).all()
-            deps = db.query(Dependency).filter(Dependency.architecture_id == req.architecture_id).all()
+            neo4j_graph = load_graph_from_neo4j(req.architecture_id)
+            if not neo4j_graph:
+                raise HTTPException(404, f"Architecture not found in Neo4j: {req.architecture_id}")
             graph_data = {
-                "metadata": {
-                    "name": arch.name,
-                    "pattern": arch.pattern,
-                    "complexity": arch.complexity or "medium",
-                    "environment": arch.environment or "production",
-                    "region": arch.region or "us-east-1",
-                    "total_services": arch.total_services,
-                    "total_cost_monthly": arch.total_cost_monthly,
-                },
-                "services": [
-                    {
-                        "id": _strip_prefix(s.id, req.architecture_id),
-                        "name": s.name,
-                        "type": s.service_type or "service",
-                        "cost_monthly": s.cost_monthly or 0.0,
-                        "environment": s.environment or "production",
-                        "owner": s.owner or "",
-                        "attributes": s.attributes or {},
-                    }
-                    for s in services
-                ],
-                "dependencies": [
-                    {
-                        "source": _strip_prefix(d.source, req.architecture_id),
-                        "target": _strip_prefix(d.target, req.architecture_id),
-                        "type": d.dep_type or "calls",
-                        "weight": d.weight or 1.0,
-                    }
-                    for d in deps
-                ],
+                "metadata": neo4j_graph.get("metadata", {}),
+                "services": neo4j_graph.get("services", []),
+                "dependencies": neo4j_graph.get("dependencies", []),
             }
 
     elif req.architecture_file:
@@ -395,19 +410,29 @@ async def generate_recommendations(req: RecommendationRequest, db: Session = Dep
 
     try:
         result = await asyncio.to_thread(_run)
+        # Live response must reflect full fresh LLM output for this run.
+        # Keep per-run dedupe/filtering in src/llm/client.py, but do not suppress
+        # cards just because they existed in prior runs.
+        fresh_cards = result.get("recommendations", [])
+        result["recommendations"] = fresh_cards
+        result["total_estimated_savings"] = sum(float(c.get("total_estimated_savings", 0) or 0) for c in fresh_cards)
+        result["deduplicated_existing_count"] = 0
+
+        validated_payload = model_to_dict(RecommendationPayloadSchema, result)
+
         # Store successful result in PostgreSQL for retry / history
         row = RecommendationResult(
             architecture_id=req.architecture_id or "",
             architecture_file=req.architecture_file,
             status="completed",
-            payload=result,
-            generation_time_ms=result.get("generation_time_ms"),
-            total_estimated_savings=result.get("total_estimated_savings"),
-            card_count=len(result.get("recommendations", [])),
+            payload=validated_payload,
+            generation_time_ms=validated_payload.get("generation_time_ms"),
+            total_estimated_savings=validated_payload.get("total_estimated_savings"),
+            card_count=len(validated_payload.get("recommendations", [])),
         )
         db.add(row)
         db.commit()
-        return result
+        return validated_payload
     except HTTPException as e:
         # Store failed run so user can retry or inspect
         err_msg = e.detail if isinstance(e.detail, str) else str(e.detail) if e.detail else str(e)
@@ -525,12 +550,13 @@ async def save_llm_report(
     db: Session = Depends(get_db)
 ):
     """Save LLM report from 5-agent pipeline to database."""
+    validated_report = model_to_dict(LLMReportPayloadSchema, report_data or {})
     report = LLMReport(
         architecture_id=architecture_id,
         architecture_file=architecture_file,
         agent_names=agent_names,
         status="completed",
-        payload=report_data or {},
+        payload=validated_report,
         generation_time_ms=generation_time_ms
     )
     db.add(report)

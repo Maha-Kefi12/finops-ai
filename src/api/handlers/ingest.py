@@ -16,11 +16,12 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from src.storage.database import get_db, SessionLocal
-from src.graph.models import Architecture, Service, Dependency
+from src.graph.models import IngestionSnapshot
+from src.api.schemas.persistence import GraphDataSchema, LLMReportPayloadSchema, model_to_dict
 from src.graph.engine import GraphEngine
 from src.graph.builder import GraphBuilder
 from src.graph.metrics import MetricsCalculator
-from src.graph.storage import GraphStorage
+from src.graph.neo4j_store import Neo4jGraphStore
 import logging
 
 logger = logging.getLogger(__name__)
@@ -50,35 +51,30 @@ class IngestCurRequest(BaseModel):
     collect_cloudwatch: bool = True
 
 
-# ──────────────────────────────────────────────────────────────────────
-#  Ingestion snapshot model (for pipeline tracking)
-# ──────────────────────────────────────────────────────────────────────
-try:
-    from src.graph.models import IngestionSnapshot
-except ImportError:
-    from sqlalchemy import Column, String, Float, Integer, DateTime, JSON
-    from src.storage.database import Base
-    import datetime
+def _build_neo4j_graph_payload(data: dict) -> dict:
+    """Build a transformed graph payload (nodes/edges/metadata) from services/dependencies."""
+    engine = GraphEngine(data)
+    graph = engine.get_graph_json()
 
-    class IngestionSnapshot(Base):
-        __tablename__ = "ingestion_snapshots"
-        __table_args__ = {"extend_existing": True}
-
-        id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-        account_id = Column(String, nullable=True)
-        architecture_id = Column(String, nullable=True)
-        source = Column(String, nullable=False, default="file")
-        status = Column(String, nullable=False, default="pending")
-        pipeline_stage = Column(String, nullable=True)
-        pipeline_detail = Column(String, nullable=True)
-        region = Column(String, nullable=True)
-        total_services = Column(Integer, nullable=True, default=0)
-        total_cost_monthly = Column(Float, nullable=True, default=0.0)
-        duration_seconds = Column(Float, nullable=True, default=0.0)
-        error_message = Column(String, nullable=True)
-        raw_data = Column(JSON, nullable=True)
-        llm_report = Column(JSON, nullable=True)
-        created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    return {
+        "metadata": {
+            **(data.get("metadata", {}) or {}),
+            "total_services": graph.get("metrics", {}).get("total_services", len(graph.get("nodes", []))),
+            "total_cost_monthly": graph.get("metrics", {}).get("total_cost_monthly", 0.0),
+        },
+        "nodes": graph.get("nodes", []),
+        "edges": [
+            {
+                "source": e.get("source"),
+                "target": e.get("target"),
+                "type": e.get("type", "depends_on"),
+                "weight": e.get("weight", 1.0),
+            }
+            for e in graph.get("links", [])
+        ],
+        "services": data.get("services", []),
+        "dependencies": data.get("dependencies", []),
+    }
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -146,68 +142,39 @@ async def ingest_uploaded_file(file: UploadFile = File(...), db: Session = Depen
 
 
 def _ingest_architecture(data: dict, source_file: str, db: Session) -> dict:
-    """Common ingestion logic: build graph, compute metrics, persist."""
-    engine = GraphEngine(data)
-    graph_data = engine.get_graph_json()
-    metrics_map = engine.compute_metrics()
-
-    meta = data.get("metadata", {})
+    """Common ingestion logic: transform graph and persist topology in Neo4j."""
+    graph_payload = _build_neo4j_graph_payload(data)
+    meta = graph_payload.get("metadata", {})
     arch_id = str(uuid.uuid4())
 
-    arch = Architecture(
-        id=arch_id,
-        name=meta.get("name", source_file),
-        pattern=meta.get("pattern", "unknown"),
-        complexity=meta.get("complexity", "medium"),
-        environment=meta.get("environment", "production"),
+    neo4j = Neo4jGraphStore()
+    try:
+        neo4j.store_graph(graph_payload, arch_id)
+    finally:
+        neo4j.close()
+
+    # File/manual ingestion still writes a completed snapshot for history.
+    snap = IngestionSnapshot(
+        architecture_id=arch_id,
+        source="file",
+        status="completed",
+        pipeline_stage="completed",
+        pipeline_detail=f"File ingestion complete for {source_file}",
         region=meta.get("region", "us-east-1"),
-        total_services=len(data.get("services", [])),
-        total_cost_monthly=meta.get("total_cost_monthly", graph_data["metrics"]["total_cost_monthly"]),
-        source_file=source_file,
-        metadata_json=meta,
+        total_services=len(graph_payload.get("nodes", [])),
+        total_cost_monthly=float(meta.get("total_cost_monthly", 0.0) or 0.0),
+        raw_data=model_to_dict(GraphDataSchema, graph_payload),
+        duration_seconds=0.0,
     )
-    db.add(arch)
-    db.flush()
-
-    for svc in data.get("services", []):
-        m = metrics_map.get(svc["id"], {})
-        service = Service(
-            id=f"{arch_id}::{svc['id']}",
-            architecture_id=arch_id,
-            name=svc.get("name", svc["id"]),
-            service_type=svc.get("type", "service"),
-            environment=svc.get("environment", "production"),
-            owner=svc.get("owner", ""),
-            cost_monthly=svc.get("cost_monthly", 0.0),
-            attributes=svc.get("attributes", {}),
-            degree_centrality=m.get("degree_centrality", 0.0),
-            betweenness_centrality=m.get("betweenness_centrality", 0.0),
-            in_degree=m.get("in_degree", 0),
-            out_degree=m.get("out_degree", 0),
-        )
-        db.add(service)
-
-    db.flush()
-
-    for dep in data.get("dependencies", []):
-        dependency = Dependency(
-            id=str(uuid.uuid4()),
-            architecture_id=arch_id,
-            source=f"{arch_id}::{dep['source']}",
-            target=f"{arch_id}::{dep['target']}",
-            dep_type=dep.get("type", "calls"),
-            weight=dep.get("weight", 1.0),
-        )
-        db.add(dependency)
-
+    db.add(snap)
     db.commit()
 
     return {
         "id": arch_id,
-        "name": arch.name,
-        "pattern": arch.pattern,
-        "total_services": arch.total_services,
-        "total_cost_monthly": arch.total_cost_monthly,
+        "name": meta.get("name", source_file),
+        "pattern": meta.get("pattern", "unknown"),
+        "total_services": len(graph_payload.get("nodes", [])),
+        "total_cost_monthly": float(meta.get("total_cost_monthly", 0.0) or 0.0),
     }
 
 
@@ -219,7 +186,7 @@ def _generate_ingestion_report(arch_data, arch_id, arch_name):
     import httpx, networkx as nx
 
     ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
-    model_name = os.getenv("FINOPS_MODEL", "finops-aws")
+    model_name = os.getenv("FINOPS_MODEL", "qwen2.5:7b")
 
     G = nx.DiGraph()
     for svc in arch_data.get("services", []):
@@ -353,15 +320,16 @@ def _run_aws_ingestion_background(snap_id: str, region: str, account_id: Optiona
         _update_pipeline_stage(snap_id, "graph_done",
                                f"Graph built: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
 
-        # ── Stage 3: Database Storage ─────────────────────────────────
-        _update_pipeline_stage(snap_id, "storing", "Persisting to PostgreSQL...")
-        storage = GraphStorage(db)
-        arch_id = storage.persist(
-            raw_data=arch_data, graph=G,
-            metrics=metrics_result,
-            source_file=f"aws:{region}",
-        )
-        _update_pipeline_stage(snap_id, "stored", "Graph persisted to database")
+        # ── Stage 3: Neo4j Storage ────────────────────────────────────
+        _update_pipeline_stage(snap_id, "neo4j_store", "Persisting graph to Neo4j...")
+        arch_id = str(uuid.uuid4())
+        neo4j_graph = _build_neo4j_graph_payload(arch_data)
+        neo4j = Neo4jGraphStore()
+        try:
+            neo4j.store_graph(neo4j_graph, arch_id)
+        finally:
+            neo4j.close()
+        _update_pipeline_stage(snap_id, "neo4j_done", "Graph persisted to Neo4j")
 
         meta = arch_data.get("metadata", {})
 
@@ -382,10 +350,23 @@ def _run_aws_ingestion_background(snap_id: str, region: str, account_id: Optiona
         )
 
         try:
-            storage.save_snapshot(
-                arch_id=arch_id, raw_data=arch_data, source="aws",
-                llm_report=report, duration_seconds=elapsed,
+            validated_report = model_to_dict(LLMReportPayloadSchema, report or {})
+            validated_raw = model_to_dict(GraphDataSchema, arch_data)
+            snap_row = IngestionSnapshot(
+                architecture_id=arch_id,
+                source="aws",
+                status="completed",
+                pipeline_stage="completed",
+                pipeline_detail=f"AWS ingestion complete for {region}",
+                region=region,
+                total_services=G.number_of_nodes(),
+                total_cost_monthly=total_cost,
+                raw_data=validated_raw,
+                llm_report=validated_report,
+                duration_seconds=round(elapsed, 2),
             )
+            db.add(snap_row)
+            db.commit()
         except Exception:
             pass
 
@@ -397,8 +378,8 @@ def _run_aws_ingestion_background(snap_id: str, region: str, account_id: Optiona
             snap.architecture_id = arch_id
             snap.total_services = G.number_of_nodes()
             snap.total_cost_monthly = total_cost
-            snap.raw_data = arch_data
-            snap.llm_report = report
+            snap.raw_data = model_to_dict(GraphDataSchema, arch_data)
+            snap.llm_report = model_to_dict(LLMReportPayloadSchema, report or {})
             snap.duration_seconds = round(elapsed, 2)
             db.commit()
 
@@ -657,78 +638,7 @@ def _run_cur_ingestion_background(
             _update_pipeline_stage(snap_id, "neo4j_done",
                                    f"Neo4j skipped: {neo4j_err}")
 
-        # ── Stage 6: PostgreSQL Storage (architecture record) ─────────
-        _update_pipeline_stage(snap_id, "pg_store",
-                               "Persisting to PostgreSQL...")
-
-        # Build services/dependencies from graph_data for PG compat
-        arch_data = {
-            "metadata": graph_data.get("metadata", {}),
-            "services": [
-                {
-                    "id": n["id"],
-                    "name": n.get("name", n["id"]),
-                    "type": n.get("type", "service"),
-                    "environment": n.get("environment", "production"),
-                    "owner": n.get("owner", ""),
-                    "cost_monthly": n.get("cost_monthly", 0),
-                    "attributes": n.get("attributes", {}),
-                }
-                for n in graph_data.get("nodes", [])
-            ],
-            "dependencies": [
-                {
-                    "source": e["source"],
-                    "target": e["target"],
-                    "type": e.get("type", "depends_on"),
-                    "weight": e.get("weight", 1.0),
-                }
-                for e in graph_data.get("edges", [])
-            ],
-        }
-
-        meta = graph_data.get("metadata", {})
-        arch = Architecture(
-            id=arch_id,
-            name=meta.get("name", f"CUR:{region}"),
-            pattern=meta.get("pattern", "cur_discovered"),
-            complexity=meta.get("complexity", "medium"),
-            environment=meta.get("environment", "production"),
-            region=meta.get("region", region),
-            total_services=n_nodes,
-            total_cost_monthly=meta.get("total_cost_monthly", total_cost),
-            source_file=f"cur:{region}",
-            metadata_json=meta,
-        )
-        db.add(arch)
-        db.flush()
-
-        for svc in arch_data["services"]:
-            service = Service(
-                id=f"{arch_id}::{svc['id']}",
-                architecture_id=arch_id,
-                name=svc.get("name", svc["id"]),
-                service_type=svc.get("type", "service"),
-                environment=svc.get("environment", "production"),
-                owner=svc.get("owner", ""),
-                cost_monthly=svc.get("cost_monthly", 0.0),
-                attributes=svc.get("attributes", {}),
-            )
-            db.add(service)
-        db.flush()
-
-        for dep in arch_data["dependencies"]:
-            dependency = Dependency(
-                id=str(uuid.uuid4()),
-                architecture_id=arch_id,
-                source=f"{arch_id}::{dep['source']}",
-                target=f"{arch_id}::{dep['target']}",
-                dep_type=dep.get("type", "depends_on"),
-                weight=dep.get("weight", 1.0),
-            )
-            db.add(dependency)
-        db.commit()
-        _update_pipeline_stage(snap_id, "pg_done", "PostgreSQL storage complete")
+        _update_pipeline_stage(snap_id, "neo4j_done", "Neo4j storage complete")
 
         # ── Stage 7: Finalize ─────────────────────────────────────────
         elapsed = _time.time() - t0
@@ -737,6 +647,7 @@ def _run_cur_ingestion_background(
             IngestionSnapshot.id == snap_id
         ).first()
         if snap:
+            validated_graph = model_to_dict(GraphDataSchema, graph_data)
             snap.status = "completed"
             snap.pipeline_stage = "completed"
             snap.pipeline_detail = (
@@ -746,7 +657,7 @@ def _run_cur_ingestion_background(
             snap.architecture_id = arch_id
             snap.total_services = n_nodes
             snap.total_cost_monthly = round(total_cost, 2)
-            snap.raw_data = graph_data
+            snap.raw_data = validated_graph
             snap.duration_seconds = round(elapsed, 2)
             db.commit()
 
@@ -778,7 +689,7 @@ def _run_cur_ingestion_background(
 def ingest_from_cur(req: IngestCurRequest, db: Session = Depends(get_db)):
     """Start CUR-based ingestion pipeline. Returns snapshot_id for polling.
 
-    Pipeline: CUR Fetch → Parse → CloudWatch → Transform → Neo4j → PostgreSQL
+    Pipeline: CUR Fetch → Parse → CloudWatch → Transform → Neo4j (graph) → PostgreSQL snapshot
     """
     import threading
     import datetime

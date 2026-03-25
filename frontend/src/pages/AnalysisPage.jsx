@@ -290,6 +290,106 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
             {/* Expanded details */}
             {isExpanded && (
                 <div className="border-t border-gray-100 bg-gradient-to-b from-gray-50/50 to-white">
+
+                    {/* ━━━ GRAPH CONTEXT: Business Impact ━━━ */}
+                    {card.graph_context && (card.graph_context.dependency_count > 0 || card.graph_context.blast_radius_pct > 0 || card.graph_context.narrative) && (
+                        <div className="px-6 py-5">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <Target className="w-4 h-4 text-red-500" /> Why This Matters — Business Impact
+                            </h5>
+
+                            {/* Narrative (the graph-analyzer's rich description) */}
+                            {card.graph_context.narrative && (
+                                <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl p-5 mb-4 shadow-sm">
+                                    <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
+                                        {cleanDisplayText(card.graph_context.narrative)}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Stats row: Blast Radius + Dependency Count + Cascade Risk */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                {card.graph_context.blast_radius_pct > 0 && (
+                                    <div className={`rounded-xl p-4 border ${card.graph_context.blast_radius_pct > 50 ? 'bg-red-50 border-red-200' : card.graph_context.blast_radius_pct > 25 ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200'}`}>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Blast Radius</p>
+                                        <p className={`text-2xl font-black ${card.graph_context.blast_radius_pct > 50 ? 'text-red-600' : card.graph_context.blast_radius_pct > 25 ? 'text-amber-600' : 'text-gray-700'}`}>
+                                            {card.graph_context.blast_radius_pct}%
+                                        </p>
+                                        <p className="text-[10px] text-gray-500">{card.graph_context.blast_radius_services} services affected</p>
+                                    </div>
+                                )}
+                                {card.graph_context.dependency_count > 0 && (
+                                    <div className="rounded-xl p-4 bg-blue-50 border border-blue-200">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Depends On It</p>
+                                        <p className="text-2xl font-black text-blue-700">{card.graph_context.dependency_count}</p>
+                                        <p className="text-[10px] text-gray-500">upstream services</p>
+                                    </div>
+                                )}
+                                {card.graph_context.centrality > 0 && (
+                                    <div className="rounded-xl p-4 bg-violet-50 border border-violet-200">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Centrality</p>
+                                        <p className="text-2xl font-black text-violet-700">{card.graph_context.centrality.toFixed(4)}</p>
+                                        <p className="text-[10px] text-gray-500">{card.graph_context.severity_label || 'architectural importance'}</p>
+                                    </div>
+                                )}
+                                {card.graph_context.depends_on_count > 0 && (
+                                    <div className="rounded-xl p-4 bg-slate-50 border border-slate-200">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Depends On</p>
+                                        <p className="text-2xl font-black text-slate-700">{card.graph_context.depends_on_count}</p>
+                                        <p className="text-[10px] text-gray-500">downstream deps</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Alert badges: SPOF + Cascade + Cross-AZ */}
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {card.graph_context.is_spof && (
+                                    <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-red-100 text-red-700 border border-red-300">
+                                        <AlertTriangle className="w-3.5 h-3.5" /> SINGLE POINT OF FAILURE
+                                    </span>
+                                )}
+                                {(card.graph_context.cascading_failure_risk === 'critical' || card.graph_context.cascading_failure_risk === 'high') && (
+                                    <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border ${card.graph_context.cascading_failure_risk === 'critical' ? 'bg-red-100 text-red-700 border-red-300' : 'bg-amber-100 text-amber-700 border-amber-300'}`}>
+                                        <Zap className="w-3.5 h-3.5" /> CASCADE RISK: {card.graph_context.cascading_failure_risk.toUpperCase()}
+                                    </span>
+                                )}
+                                {card.graph_context.cross_az_count > 0 && (
+                                    <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 border border-orange-300">
+                                        <Cloud className="w-3.5 h-3.5" /> {card.graph_context.cross_az_count} CROSS-AZ DEPS (extra transfer costs)
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Dependent services tree */}
+                            {card.graph_context.dependent_services?.length > 0 && (
+                                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                                    <p className="text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-2">Services that depend on this resource:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {card.graph_context.dependent_services.map((svc, i) => (
+                                            <span key={i} className="text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200 font-medium">
+                                                {svc}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Cross-AZ dependency details */}
+                            {card.graph_context.cross_az_dependencies?.length > 0 && (
+                                <div className="mt-3 bg-orange-50 rounded-xl p-4 border border-orange-100">
+                                    <p className="text-[10px] font-bold text-orange-700 uppercase tracking-wider mb-2">Cross-AZ Dependencies (generating transfer costs):</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {card.graph_context.cross_az_dependencies.map((svc, i) => (
+                                            <span key={i} className="text-xs bg-orange-100 text-orange-800 px-3 py-1.5 rounded-full border border-orange-200 font-medium">
+                                                {svc}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Resource Identification */}
                     {res.current_config && (
                         <div className="px-6 py-4">

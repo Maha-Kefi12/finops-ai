@@ -45,6 +45,8 @@ export function StyledRecommendationCard({ recommendation, onViewDetails }) {
     features.push(`${recommendation.implementation_complexity} Effort`);
   }
 
+  const graphCtx = recommendation.graph_context || {};
+
   return (
     <div className="plan">
       <div className="inner">
@@ -73,6 +75,46 @@ export function StyledRecommendationCard({ recommendation, onViewDetails }) {
             </li>
           ))}
         </ul>
+
+        {/* Graph context badges */}
+        {(graphCtx.blast_radius_pct > 0 || graphCtx.is_spof || graphCtx.dependency_count > 0) && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.75rem', width: '100%' }}>
+            {graphCtx.blast_radius_pct > 0 && (
+              <span style={{
+                fontSize: '0.65rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: '9999px',
+                backgroundColor: graphCtx.blast_radius_pct > 50 ? '#fef2f2' : '#fffbeb',
+                color: graphCtx.blast_radius_pct > 50 ? '#dc2626' : '#d97706',
+                border: `1px solid ${graphCtx.blast_radius_pct > 50 ? '#fecaca' : '#fde68a'}`,
+              }}>
+                💥 {graphCtx.blast_radius_pct}% blast radius
+              </span>
+            )}
+            {graphCtx.is_spof && (
+              <span style={{
+                fontSize: '0.65rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: '9999px',
+                backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca',
+              }}>
+                ⚠ SPOF
+              </span>
+            )}
+            {graphCtx.dependency_count > 0 && (
+              <span style={{
+                fontSize: '0.65rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: '9999px',
+                backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe',
+              }}>
+                🔗 {graphCtx.dependency_count} deps
+              </span>
+            )}
+            {graphCtx.cross_az_count > 0 && (
+              <span style={{
+                fontSize: '0.65rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: '9999px',
+                backgroundColor: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa',
+              }}>
+                🌐 {graphCtx.cross_az_count} cross-AZ
+              </span>
+            )}
+          </div>
+        )}
         
         <div className="action">
           <a className="button" href="#" onClick={handleViewDetails}>

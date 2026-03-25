@@ -7,6 +7,8 @@ Uses Celery Beat for hourly scheduling.
 
 import logging
 import os
+import json
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -14,6 +16,145 @@ from celery import Celery, Task
 from celery.schedules import crontab
 
 logger = logging.getLogger(__name__)
+
+
+def _recommendation_fingerprint(card: dict) -> str:
+    """Create stable recommendation fingerprint for dedupe against DB history."""
+    import hashlib
+
+    resource = (card.get("resource_identification") or {}).get("resource_id", "")
+    title = card.get("title", "")
+    action = ""
+    recs = card.get("recommendations") or []
+    if recs and isinstance(recs[0], dict):
+        action = recs[0].get("action", "")
+    savings = round(float(card.get("total_estimated_savings", 0) or 0), 2)
+    key = f"{resource.strip().lower()}|{title.strip().lower()}|{action.strip().lower()}|{savings:.2f}"
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+
+def _load_graph_data_for_architecture(db, architecture_id: str) -> dict:
+    """Load graph data from latest completed snapshot, fallback to Neo4j graph store."""
+    from src.graph.models import IngestionSnapshot
+    from src.graph.neo4j_bridge import load_graph_from_neo4j
+
+    snap = (
+        db.query(IngestionSnapshot)
+        .filter(
+            IngestionSnapshot.architecture_id == architecture_id,
+            IngestionSnapshot.status == "completed",
+        )
+        .order_by(IngestionSnapshot.created_at.desc())
+        .first()
+    )
+    if snap and snap.raw_data:
+        return snap.raw_data if isinstance(snap.raw_data, dict) else json.loads(snap.raw_data)
+
+    neo4j_graph = load_graph_from_neo4j(architecture_id)
+    if not neo4j_graph:
+        raise RuntimeError(f"Architecture graph not found in Neo4j: {architecture_id}")
+    return neo4j_graph
+
+
+def _generate_and_store_recommendations(db, architecture_id: str) -> dict:
+    """Generate recommendations and persist only cards not already present in DB."""
+    from dataclasses import asdict
+    from src.analysis.graph_analyzer import GraphAnalyzer
+    from src.analysis.context_assembler import ContextAssembler
+    from src.llm.client import generate_recommendations
+    from src.graph.models import RecommendationResult
+    from src.api.schemas.persistence import RecommendationPayloadSchema, model_to_dict
+
+    try:
+        graph_data = _load_graph_data_for_architecture(db, architecture_id)
+        analyzer = GraphAnalyzer(graph_data)
+        report = analyzer.analyze()
+        assembler = ContextAssembler(graph_data, report)
+        ctx_pkg = assembler.assemble()
+
+        arch_name = graph_data.get("metadata", {}).get("name", "")
+        rec_result = generate_recommendations(
+            context_package=ctx_pkg,
+            architecture_name=arch_name,
+            raw_graph_data=graph_data,
+        )
+
+        # Build dedupe set from prior completed results
+        existing_rows = db.query(RecommendationResult).filter(
+            RecommendationResult.architecture_id == architecture_id,
+            RecommendationResult.status == "completed",
+        ).all()
+        fingerprints = set()
+        for row in existing_rows:
+            payload = row.payload if isinstance(row.payload, dict) else (json.loads(row.payload) if row.payload else {})
+            for card in payload.get("recommendations", []):
+                fingerprints.add(_recommendation_fingerprint(card))
+
+        fresh_cards = []
+        skipped = 0
+        for card in rec_result.cards:
+            fp = _recommendation_fingerprint(card)
+            if fp in fingerprints:
+                skipped += 1
+                continue
+            fingerprints.add(fp)
+            fresh_cards.append(card)
+
+        payload = {
+            "recommendations": fresh_cards,
+            "total_estimated_savings": sum(float(c.get("total_estimated_savings", 0) or 0) for c in fresh_cards),
+            "llm_used": rec_result.llm_used,
+            "generation_time_ms": rec_result.generation_time_ms,
+            "context_package": asdict(ctx_pkg),
+            "architecture_name": rec_result.architecture_name or arch_name,
+            "deduplicated_existing_count": skipped,
+        }
+        validated_payload = model_to_dict(RecommendationPayloadSchema, payload)
+
+        row = RecommendationResult(
+            architecture_id=architecture_id,
+            architecture_file=None,
+            status="completed",
+            payload=validated_payload,
+            generation_time_ms=validated_payload.get("generation_time_ms"),
+            total_estimated_savings=validated_payload.get("total_estimated_savings"),
+            card_count=len(validated_payload.get("recommendations", [])),
+        )
+        db.add(row)
+        db.commit()
+
+        return {
+            "architecture_id": architecture_id,
+            "generated_cards": len(fresh_cards),
+            "skipped_existing_cards": skipped,
+            "total_estimated_savings": validated_payload.get("total_estimated_savings", 0.0),
+            "status": "completed",
+        }
+    except Exception as exc:
+        fail_payload = model_to_dict(
+            RecommendationPayloadSchema,
+            {
+                "recommendations": [],
+                "total_estimated_savings": 0.0,
+                "llm_used": False,
+                "generation_time_ms": 0,
+                "architecture_name": "",
+                "deduplicated_existing_count": 0,
+            },
+        )
+        row = RecommendationResult(
+            architecture_id=architecture_id,
+            architecture_file=None,
+            status="failed",
+            error_message=str(exc)[:4096],
+            payload=fail_payload,
+            generation_time_ms=0,
+            total_estimated_savings=0.0,
+            card_count=0,
+        )
+        db.add(row)
+        db.commit()
+        raise
 
 # ─── Celery Configuration ─────────────────────────────────────────
 
@@ -98,18 +239,13 @@ def generate_recommendations_bg(
         # Load graph data
         graph_data = None
         if architecture_id:
-            # Load from DB
-            from src.storage.database import get_db
-            from src.graph.models import IngestionSnapshot, Architecture, Service, Dependency
-            
-            db = next(get_db())
-            snap = db.query(IngestionSnapshot).filter(
-                IngestionSnapshot.architecture_id == architecture_id,
-                IngestionSnapshot.status == "completed",
-            ).order_by(IngestionSnapshot.created_at.desc()).first()
-            
-            if snap and snap.raw_data:
-                graph_data = snap.raw_data if isinstance(snap.raw_data, dict) else json.loads(snap.raw_data)
+            from src.storage.database import SessionLocal
+
+            db = SessionLocal()
+            try:
+                graph_data = _load_graph_data_for_architecture(db, architecture_id)
+            finally:
+                db.close()
         
         elif architecture_file:
             # Load from synthetic file
@@ -195,30 +331,65 @@ def collect_cur_data() -> dict:
     3. Create/update IngestionSnapshot
     4. Trigger recommendation generation if new data
     """
-    from src.ingestion.aws_client import AWSResourceCollector
-    from src.ingestion.cur_parser import parse_cur
-    from src.ingestion.cur_transformer import CURTransformer
+    from src.storage.database import SessionLocal
+    from src.graph.models import IngestionSnapshot
+    from src.api.handlers.ingest import _run_cur_ingestion_background
     
     try:
-        logger.info("Starting hourly CUR collection...")
-        
-        # Collect AWS resources
-        collector = AWSResourceCollector()
-        services, dependencies = collector.discover()
-        
-        # Parse CUR
-        cur_data = parse_cur()
-        
-        # Transform to architecture
-        transformer = CURTransformer()
-        arch = transformer.transform(services, cur_data)
-        
-        logger.info("✓ CUR collection complete: %d services, %d dependencies",
-                   len(services), len(dependencies))
-        
+        logger.info("Starting hourly CUR pipeline (collect -> snapshot -> LLM recommendations)...")
+
+        db = SessionLocal()
+        try:
+            region = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+            snap = IngestionSnapshot(
+                id=str(uuid.uuid4()),
+                source="cur-hourly",
+                status="running",
+                pipeline_stage="queued",
+                pipeline_detail="Scheduled hourly CUR ingestion started",
+                region=region,
+            )
+            db.add(snap)
+            db.commit()
+            snap_id = snap.id
+
+            _run_cur_ingestion_background(
+                snap_id=snap_id,
+                region=region,
+                cur_bucket=os.getenv("CUR_BUCKET"),
+                cur_prefix=os.getenv("CUR_PREFIX"),
+                collect_cloudwatch=True,
+            )
+
+            db.expire_all()
+            completed = db.query(IngestionSnapshot).filter(IngestionSnapshot.id == snap_id).first()
+            if not completed or completed.status != "completed" or not completed.architecture_id:
+                raise RuntimeError("Hourly CUR pipeline failed before recommendation stage")
+
+            rec_summary = _generate_and_store_recommendations(db, completed.architecture_id)
+
+            logger.info(
+                "✓ Hourly CUR pipeline complete: snapshot=%s architecture=%s new_cards=%d skipped=%d",
+                snap_id,
+                completed.architecture_id,
+                rec_summary["generated_cards"],
+                rec_summary["skipped_existing_cards"],
+            )
+
+            return {
+                "snapshot_id": snap_id,
+                "architecture_id": completed.architecture_id,
+                "services_count": completed.total_services or 0,
+                "dependencies_count": len((completed.raw_data or {}).get("edges", [])) if isinstance(completed.raw_data, dict) else 0,
+                "generated_recommendations": rec_summary["generated_cards"],
+                "skipped_existing_recommendations": rec_summary["skipped_existing_cards"],
+                "status": "completed",
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        finally:
+            db.close()
+
         return {
-            "services_count": len(services),
-            "dependencies_count": len(dependencies),
             "timestamp": datetime.utcnow().isoformat(),
             "status": "completed",
         }

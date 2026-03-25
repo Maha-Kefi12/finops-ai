@@ -16,6 +16,20 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   neo4j:
     image: neo4j:5.18-community
     restart: unless-stopped
@@ -45,13 +59,17 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://finops:finops_secret@postgres:5432/finops_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_USER: neo4j
       NEO4J_PASSWORD: finops_neo4j
       ENVIRONMENT: development
       DATA_DIR: /app/data/synthetic
       OLLAMA_URL: http://host.docker.internal:11434
-      FINOPS_MODEL: finops-aws
+      FINOPS_MODEL: qwen2.5:7b
       PYTHONPATH: /app
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
@@ -68,9 +86,86 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       neo4j:
         condition: service_healthy
     command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://finops:finops_secret@postgres:5432/finops_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      OLLAMA_URL: http://host.docker.internal:11434
+      FINOPS_MODEL: qwen2.5:7b
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      PYTHONPATH: /app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data/synthetic:/app/data/synthetic:ro
+      - ./data/behavioral:/app/data/behavioral:ro
+      - ./data/rag_index:/app/data/rag_index
+      - ./data/cur_exports:/app/data/cur_exports
+      - ./src:/app/src
+      - ./docs:/app/docs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    command: celery -A src.background.tasks worker --loglevel=info --concurrency=2
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://finops:finops_secret@postgres:5432/finops_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      OLLAMA_URL: http://host.docker.internal:11434
+      FINOPS_MODEL: qwen2.5:7b
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      PYTHONPATH: /app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data/synthetic:/app/data/synthetic:ro
+      - ./data/behavioral:/app/data/behavioral:ro
+      - ./data/rag_index:/app/data/rag_index
+      - ./data/cur_exports:/app/data/cur_exports
+      - ./src:/app/src
+      - ./docs:/app/docs:ro
+      - celerybeat_data:/app/celerybeat
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    command: celery -A src.background.tasks beat --loglevel=info --schedule /app/celerybeat/celerybeat-schedule
 
   frontend:
     build:
@@ -91,3 +186,5 @@ services:
 volumes:
   postgres_data:
   neo4j_data:
+  redis_data:
+  celerybeat_data:

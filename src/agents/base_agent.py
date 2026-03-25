@@ -50,7 +50,7 @@ class BaseAgent(ABC):
     """Abstract base for all pipeline agents."""
 
     OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-    MODEL_NAME = os.getenv("FINOPS_MODEL", "finops-aws")
+    MODEL_NAME = os.getenv("FINOPS_MODEL", "qwen2.5:7b")
 
     def __init__(self):
         self.name = self.__class__.__name__
