@@ -75,49 +75,42 @@ RECOMMENDATION CATEGORIES (generate from ALL)
    - Move workloads to serverless where appropriate
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FORMATTING (strict)
+OUTPUT FORMAT (strict JSON only)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-### Recommendation #N: [SPECIFIC action — mention exact resource + change]
+Return ONLY valid JSON (no markdown, no prose outside JSON):
 
-**Resource ID:** `exact-resource-id-from-inventory`
-**Service:** EC2 | RDS | S3 | Lambda | VPC | EBS | ElastiCache | etc
-**Current Monthly Cost:** $XXX.XX
-**Risk:** LOW | MEDIUM | HIGH
-
-**Why This Matters:**
-[Graph context: dependency count, blast radius, SPOF status, cross-AZ impact]
-
-**Problem:**
-[SPECIFIC: "db.m5.xlarge averaging 22% CPU over 30 days" not "underutilized database"]
-
-**Solution:**
-[SPECIFIC: "Migrate to db.m6g.large (Graviton2)" not "right-size the database"]
-
-**Savings Calculation:**
-Current: $XXX.XX/mo (db.m5.xlarge On-Demand)
-After: $YYY.YY/mo (db.m6g.large On-Demand)
-**Monthly Savings:** $ZZZ.ZZ/mo
-**Annual Impact:** $W,WWW.WW/yr
-
-**Implementation:**
-```bash
-aws rds modify-db-instance --db-instance-id [id] --db-instance-class db.m6g.large --apply-immediately
-```
-
-**Risk Mitigation:**
-[How to safely implement: snapshot first, test in staging, rollback plan]
-
----
+{
+   "recommendations": [
+      {
+         "title": "Specific action with resource and change",
+         "resource_id": "exact-resource-id-from-inventory",
+         "service_type": "ec2|rds|s3|lambda|...",
+         "environment": "production|development|staging|...",
+         "category": "right-sizing|storage|network|architecture|waste-elimination|reserved-capacity",
+         "risk_level": "low|medium|high",
+         "confidence": 0.00,
+         "current_monthly_cost": 0.0,
+         "projected_monthly_cost": 0.0,
+         "monthly_savings": 0.0,
+         "why_this_matters": "Graph context, dependency/blast-radius rationale",
+         "problem": "Specific measurable problem",
+         "solution": "Specific AWS-native solution",
+         "implementation_steps": ["step 1", "step 2", "step 3"],
+         "risk_mitigation": "Concrete safeguards and rollback notes"
+      }
+   ]
+}
 
 RULES:
 - Generate 8-12 recommendations across AT LEAST 4 different service families
 - At most 2 recommendations per service family (force diversity)
 - Reserved Instances/Savings Plans may be at most 1-2 of the total (not the majority)
 - EVERY recommendation must cite specific instance types, sizes, thresholds
-- EVERY recommendation must have non-zero savings with math shown
+- EVERY recommendation must have non-zero monthly_savings with valid cost math
 - Use the EXACT resource IDs from SERVICE INVENTORY
-- Include graph context (blast radius, dependency count) in Why This Matters
+- Include graph context (blast radius, dependency count) in why_this_matters
+- Do NOT output placeholders (no 0.0 savings unless truly zero and then omit that recommendation)
 """
 
 
@@ -153,10 +146,22 @@ RECOMMENDATION_USER_PROMPT = """## GRAPH ARCHITECTURE ANALYSIS (use for dependen
 GENERATE RECOMMENDATIONS NOW
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+IMPORTANT:
+You will receive ENGINE_FACTS below. Treat ENGINE_FACTS as factual grounding,
+not as a formatting template. You are the primary reasoning engine.
+Use graph context + metrics + engine facts to produce final recommendations.
+
+For NEW opportunities, apply your knowledge of AWS best practices, common anti-patterns,
+and the architecture context provided above. Look for:
+- Unused/idle resources not flagged by the engine
+- Architectural inefficiencies (cross-AZ waste, missing caches, chatty services)
+- Configuration anti-patterns (wrong replication settings, suboptimal tiers)
+- Consolidation opportunities (multiple small instances instead of one large)
+
 Requirements:
-1. Generate 8-12 HIGH-CONFIDENCE recommendations
-2. Cover AT LEAST 4 different AWS service families from the inventory
-3. Maximum 2 recommendations per service family
+1. Generate 8-12 final recommendations
+2. Cover AT LEAST 5 different AWS service families from the inventory
+3. Maximum 2-3 recommendations per service family
 4. Maximum 2 "Reserved Instance / Savings Plan" recommendations total
 5. Prioritize these optimization types (in order):
    a. CONFIGURATION changes (instance type migration, storage class change, memory tuning)
@@ -164,12 +169,11 @@ Requirements:
    c. WASTE elimination (unused resources, idle capacity, dev scheduling)
    d. PURCHASING optimization (reserved instances — only for proven steady-state)
 6. Use SPECIFIC numbers: exact instance types, GB amounts, % utilization, $/mo
-7. Reference graph context in "Why This Matters" (blast radius, dependency count)
+7. Reference graph context in why_this_matters (blast radius, dependency count)
 8. Use EXACT resource IDs from SERVICE INVENTORY above
-9. Include AWS CLI commands in Implementation section
-10. Show complete savings math: current - new = savings
-
-START with "### Recommendation #1:" and separate each with "---"
+9. Include concise implementation_steps (CLI allowed)
+10. Show complete savings math: current_monthly_cost - projected_monthly_cost = monthly_savings
+11. Return STRICT JSON only; no markdown sections or headings
 """
 
 

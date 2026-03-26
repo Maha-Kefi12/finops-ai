@@ -4,7 +4,7 @@ import {
     listArchitectures, analyzeArchitecture, ingestFromAws,
     getAwsPipelineStatus, deepGraphAnalysis, generateRecommendations,
     getLastRecommendations, getRecommendationsHistory, 
-    saveLLMReport, getLatestLLMReport, getLLMReportHistory,
+    getLatestLLMReport, getLLMReportHistory,
 } from '../api/client'
 import { RecommendationCarousel } from '../components/StyledRecommendationCard'
 import {
@@ -196,6 +196,15 @@ function cleanDisplayText(str) {
     // 5. Clean up whitespace but PRESERVE newlines
     // Replace 2+ spaces with single space, but leave \n alone
     t = t.replace(/[ \t]{2,}/g, ' ')
+
+    // 6. Remove internal prompt artifacts that can leak into rendered cards.
+    t = t.replace(/^\s*ENGINE\s*SIGNAL\s*#\d+\s*:.*$/gim, '')
+    t = t.replace(/^\s*PRE-ANALYZED\s+RECOMMENDATIONS.*$/gim, '')
+    t = t.replace(/^\s*#\s*signal\s*\d+.*$/gim, '')
+    t = t.replace(/^\s*Signal\s*#\d+\s*:.*$/gim, '')
+
+    // 7. Normalize extra blank lines introduced by stripping artifacts.
+    t = t.replace(/\n{3,}/g, '\n\n')
 
     return t.trim()
 }
@@ -1133,14 +1142,11 @@ export default function AnalysisPage() {
         return () => cancelAwsDiscovery()
     }, [])
 
-    // Load last recommendations immediately when architecture is selected
-    // Then optionally trigger a fresh background analysis
+    // Load latest stored recommendations immediately when architecture is selected.
+    // Do NOT trigger background refresh on page open; cron pipeline owns refresh cadence.
     useEffect(() => {
         if (selectedArch) {
-            loadLastRecommendations()  // Load cached results instantly
-            // Trigger background generation (don't block display)
-            setRecRefreshing(true)
-            runRecommendationsInBackground()
+            loadLastRecommendations()
         }
     }, [selectedArch])
 
@@ -1212,20 +1218,8 @@ export default function AnalysisPage() {
         try {
             const res = await analyzeArchitecture(selectedArch.filename, selectedArch.architecture_id)
             setResult(res.data)
-            
-            // Save LLM report to database
-            const startTime = Date.now()
-            try {
-                await saveLLMReport(
-                    selectedArch.architecture_id,
-                    selectedArch.filename,
-                    Object.keys(res.data.agents || {}).join(','),
-                    res.data,
-                    Date.now() - startTime
-                )
-            } catch (saveErr) {
-                console.warn('Failed to save LLM report:', saveErr)
-            }
+            setLlmReport(res.data)
+            loadLLMReportHistory()
         } catch (e) { console.error('Analysis failed:', e) }
         setLoading(false)
     }
@@ -1241,26 +1235,6 @@ export default function AnalysisPage() {
             setRecError(e.response?.data?.detail || e.message || 'Recommendation generation failed')
         }
         setRecLoading(false)
-    }
-
-    // Background refresh - doesn't block display, updates when done
-    async function runRecommendationsInBackground() {
-        if (!selectedArch) {
-            setRecRefreshing(false)
-            return
-        }
-        try {
-            const res = await generateRecommendations(selectedArch.architecture_id, selectedArch.filename)
-            setRecResult(res.data)  // Update with fresh data
-            setRecError(null)  // Clear any previous errors
-        } catch (e) {
-            console.error('Background recommendation refresh failed:', e)
-            // Don't override recResult if it already has data
-            if (!recResult) {
-                setRecError(e.response?.data?.detail || e.message || 'Background analysis failed')
-            }
-        }
-        setRecRefreshing(false)
     }
 
     async function loadLastRecommendations() {
@@ -1347,6 +1321,67 @@ export default function AnalysisPage() {
         { key: 'deep', label: 'Deep Metrics', icon: Network },
         { key: 'agents', label: '5-Agent Pipeline', icon: BrainCircuit },
     ]
+
+    const recommendationItems = recResult?.recommendations || []
+
+    const isSummaryRecommendation = (rec) => {
+        if (!rec) return false
+        const title = String(rec.title || '').trim().toLowerCase()
+        const description = String(rec.description || '').trim().toLowerCase()
+        return title.startsWith('summary of recommendations') ||
+            description.startsWith('summary of recommendations')
+    }
+
+    const parseMoneyValue = (value) => {
+        if (typeof value === 'number') return Number.isFinite(value) ? value : 0
+        if (typeof value !== 'string') return 0
+
+        let normalized = value.replace(/[$\s]/g, '')
+        if (!normalized) return 0
+
+        if (normalized.includes(',') && normalized.includes('.')) {
+            normalized = normalized.replace(/,/g, '')
+        } else if (normalized.includes(',') && !normalized.includes('.')) {
+            normalized = /,\d{1,2}$/.test(normalized)
+                ? normalized.replace(',', '.')
+                : normalized.replace(/,/g, '')
+        }
+
+        const parsed = Number(normalized)
+        return Number.isFinite(parsed) ? parsed : 0
+    }
+
+    const summaryRecommendation = recommendationItems.find(isSummaryRecommendation) || null
+    const displayRecommendations = recommendationItems.filter(rec => !isSummaryRecommendation(rec))
+
+    const computedTotalSavings = displayRecommendations.reduce((sum, rec) => {
+        const cardSavings = rec?.total_estimated_savings ?? rec?.estimated_monthly_savings ?? 0
+        return sum + parseMoneyValue(cardSavings)
+    }, 0)
+
+    const displayedTotalSavings = computedTotalSavings > 0
+        ? computedTotalSavings
+        : parseMoneyValue(recResult?.total_estimated_savings)
+
+    const summaryTextRaw = summaryRecommendation?.description ||
+        summaryRecommendation?.recommendations?.[0]?.recommendation ||
+        summaryRecommendation?.recommendations?.[0]?.reasoning ||
+        ''
+
+    const summaryLines = summaryTextRaw
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line && !/^summary of recommendations:?$/i.test(line))
+
+    const fallbackSummaryLines = displayRecommendations.slice(0, 10).map((rec, idx) => {
+        const label = rec?.title || rec?.recommendations?.[0]?.action || 'Optimization action'
+        const recSavings = parseMoneyValue(rec?.total_estimated_savings ?? rec?.estimated_monthly_savings ?? 0)
+        return recSavings > 0
+            ? `${idx + 1}. ${label} — Estimated savings: $${recSavings.toFixed(2)}/mo`
+            : `${idx + 1}. ${label}`
+    })
+
+    const summaryDisplayLines = summaryLines.length > 0 ? summaryLines : fallbackSummaryLines
 
     return (
         <div className="max-w-7xl mx-auto px-6 py-10">
@@ -1569,31 +1604,39 @@ export default function AnalysisPage() {
                         <div className="space-y-6">
                             {/* Summary bar */}
                             <div className="card p-5 bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
-                                <div className="flex items-center justify-between flex-wrap gap-4">
-                                    <div className="flex items-center gap-3">
+                                <div className="flex flex-col items-center justify-center gap-4 text-center">
+                                    <div className="flex items-center gap-3 justify-center">
                                         <div className="w-10 h-10 rounded-lg bg-purple-100 border border-purple-200 flex items-center justify-center">
                                             <Lightbulb className="w-5 h-5 text-purple-600" />
                                         </div>
                                         <div>
-                                            <h3 className="text-base font-bold text-gray-900">
-                                                {recResult.recommendations?.length || 0} Optimization Recommendations
-                                            </h3>
-                                            <p className="text-xs text-gray-500">
-                                                {recResult.architecture_name} &middot;
-                                                {recResult.llm_used ? ' Graph Theory + Graph RAG → LLM' : ' Deterministic analysis'} &middot;
-                                                {((recResult.generation_time_ms || 0) / 1000).toFixed(1)}s
+                                            <div className="flex items-center gap-2 flex-wrap justify-center">
+                                                <h3 className="text-base font-bold text-gray-900">
+                                                    Optimization Recommendations
+                                                </h3>
+                                                <span className="inline-flex items-center justify-center min-w-9 h-9 px-3 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 text-white text-sm font-black shadow-sm">
+                                                    {displayRecommendations.length}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-500">Action-ready AWS cost and risk optimization plan</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-center">
+                                        <div className="text-center">
+                                            <p className="text-[10px] text-gray-400 uppercase font-semibold">Total Potential Savings</p>
+                                            <p className="text-2xl font-black text-emerald-600">
+                                                ${displayedTotalSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span className="text-sm text-gray-400 font-normal">/mo</span>
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-right">
-                                            <p className="text-[10px] text-gray-400 uppercase font-semibold">Total Potential Savings</p>
-                                            <p className="text-2xl font-black text-emerald-600">
-                                                ${(recResult.total_estimated_savings || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span className="text-sm text-gray-400 font-normal">/mo</span>
-                                            </p>
-                                        </div>
-                                        <button onClick={runRecommendations} className="btn-secondary text-xs">
-                                            <Zap className="w-3.5 h-3.5" /> Regenerate
+                                    <div className="flex items-center justify-center">
+                                        <button
+                                            onClick={runRecommendations}
+                                            disabled={recLoading}
+                                            className="btn-secondary text-xs"
+                                            title="Run a fresh Engine + LLM recommendation pipeline"
+                                        >
+                                            {recLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} Run Fresh Engine + LLM
                                         </button>
                                     </div>
                                 </div>
@@ -1601,9 +1644,9 @@ export default function AnalysisPage() {
 
                             {/* Recommendation Cards */}
                             <RecommendationCarousel 
-                                recommendations={recResult.recommendations || []}
+                                recommendations={displayRecommendations}
                                 onViewDetails={(rec) => {
-                                    const recIdx = (recResult.recommendations || []).findIndex(r => r === rec);
+                                    const recIdx = (displayRecommendations || []).findIndex(r => r === rec);
                                     if (recIdx >= 0) {
                                         setExpandedCards(prev => ({ ...prev, [recIdx]: true }));
                                         setTimeout(() => {
@@ -1613,9 +1656,28 @@ export default function AnalysisPage() {
                                 }}
                             />
 
+                            {/* Recommendation Summary */}
+                            {summaryDisplayLines.length > 0 && (
+                                <div className="card p-6 border-indigo-200 bg-gradient-to-br from-slate-50 via-indigo-50/60 to-violet-50/70">
+                                    <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+                                        <h4 className="text-sm font-bold text-gray-900">Recommendations Summary</h4>
+                                        <span className="text-[11px] font-semibold text-indigo-700 bg-white border border-indigo-100 rounded-full px-2.5 py-1">
+                                            {summaryDisplayLines.length} key actions
+                                        </span>
+                                    </div>
+                                    <div className="rounded-xl border border-indigo-100 bg-white/70 backdrop-blur-sm p-4">
+                                        <ol className="space-y-2">
+                                            {summaryDisplayLines.map((line, idx) => (
+                                                <li key={idx} className="text-sm text-gray-700 leading-relaxed">{line}</li>
+                                            ))}
+                                        </ol>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Expanded Recommendation Details */}
-                            {Object.keys(expandedCards).map(idx => expandedCards[idx] && (recResult.recommendations || [])[idx]).filter(Boolean).map((card, cardIdx) => {
-                                const originalIdx = (recResult.recommendations || []).findIndex(r => r === card);
+                            {Object.keys(expandedCards).map(idx => expandedCards[idx] && (displayRecommendations || [])[idx]).filter(Boolean).map((card, cardIdx) => {
+                                const originalIdx = (displayRecommendations || []).findIndex(r => r === card);
                                 return (
                                     <div key={cardIdx} data-rec-id={originalIdx} className="mt-8">
                                         <div className="mb-4 flex items-center gap-2">
@@ -1666,7 +1728,7 @@ export default function AnalysisPage() {
                             </div>
                             <p className="text-gray-900 font-semibold mb-1">Running FinOps-R1 Analysis Pipeline</p>
                             <p className="text-sm text-gray-400 text-center max-w-md">
-                                Monte Carlo simulation → 5-agent analysis → GraphRAG-grounded recommendations
+                                Monte Carlo simulation → 5-agent analysis → GraphRAG-grounded reliable LLM report
                             </p>
                             <div className="mt-5 flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-blue-600 animate-bounce" style={{ animationDelay: '0ms' }} />

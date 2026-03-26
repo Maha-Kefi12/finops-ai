@@ -92,6 +92,50 @@ def _filter_new_cards(cards: List[Dict[str, Any]], seen_fingerprints: set[str]) 
     return fresh, skipped
 
 
+def _prune_recommendation_history_keep_latest(
+    db: Session,
+    architecture_id: Optional[str],
+    architecture_file: Optional[str],
+) -> int:
+    """Keep only latest completed non-empty recommendation row for one architecture selector."""
+    if not architecture_id and not architecture_file:
+        return 0
+
+    query = db.query(RecommendationResult).filter(
+        RecommendationResult.status == "completed",
+        RecommendationResult.card_count > 0,
+    )
+
+    if architecture_id:
+        query = query.filter(RecommendationResult.architecture_id == architecture_id)
+    else:
+        query = query.filter(RecommendationResult.architecture_file == architecture_file)
+
+    latest = query.order_by(RecommendationResult.created_at.desc()).first()
+    if not latest:
+        return 0
+
+    old_query = db.query(RecommendationResult).filter(
+        RecommendationResult.status == "completed",
+        RecommendationResult.card_count > 0,
+        RecommendationResult.id != latest.id,
+    )
+
+    if architecture_id:
+        old_query = old_query.filter(RecommendationResult.architecture_id == architecture_id)
+    else:
+        old_query = old_query.filter(RecommendationResult.architecture_file == architecture_file)
+
+    old_rows = old_query.all()
+    for row in old_rows:
+        db.delete(row)
+
+    if old_rows:
+        db.commit()
+
+    return len(old_rows)
+
+
 # ──────────────────────────────────────────────────────────────────────
 #  Analyze endpoint
 # ──────────────────────────────────────────────────────────────────────
@@ -160,6 +204,26 @@ async def analyze_architecture(req: AnalyzeRequest, db: Session = Depends(get_db
     # ── Agent pipeline (run in thread to avoid blocking event loop) ────
     orch = AgentOrchestrator()
     result = await asyncio.to_thread(orch.run, arch_data, asdict(cascade), asdict(mc_report))
+
+    # Persist LLM report from the same successful pipeline run so history is reliable.
+    try:
+        validated_report = model_to_dict(LLMReportPayloadSchema, result or {})
+        run_time_ms = result.get("timings", {}).get("total_ms")
+        if not isinstance(run_time_ms, int):
+            run_time_ms = None
+
+        report_row = LLMReport(
+            architecture_id=req.architecture_id or "",
+            architecture_file=req.architecture_file,
+            agent_names=",".join((result.get("agents") or {}).keys()),
+            status="completed",
+            payload=validated_report,
+            generation_time_ms=run_time_ms,
+        )
+        db.add(report_row)
+        db.commit()
+    except Exception:
+        db.rollback()
 
     return result
 
@@ -239,18 +303,22 @@ async def list_architectures(db: Session = Depends(get_db)):
                     data = json.load(fh)
                 meta = data.get("metadata", {})
                 name = meta.get("name", f.stem)
-                if name in seen_names:
-                    continue
+                display_name = name
+                # Keep all synthetic variants selectable, even if names overlap with
+                # Neo4j/snapshot entries or other synthetic versions.
+                if display_name in seen_names:
+                    display_name = f"{name} [{f.stem}]"
                 files.append({
                     "filename": f.name,
                     "architecture_id": None,
-                    "name": name,
+                    "name": display_name,
                     "pattern": meta.get("pattern", "unknown"),
                     "complexity": meta.get("complexity", "medium"),
                     "services": meta.get("total_services", len(data.get("services", []))),
                     "cost": meta.get("total_cost_monthly", sum(s.get("cost_monthly", 0) for s in data.get("services", []))),
                     "source": "synthetic",
                 })
+                seen_names.add(display_name)
             except Exception:
                 pass
 
@@ -432,6 +500,11 @@ async def generate_recommendations(req: RecommendationRequest, db: Session = Dep
         )
         db.add(row)
         db.commit()
+        _prune_recommendation_history_keep_latest(
+            db,
+            architecture_id=req.architecture_id,
+            architecture_file=req.architecture_file,
+        )
         return validated_payload
     except HTTPException as e:
         # Store failed run so user can retry or inspect
@@ -462,7 +535,8 @@ async def get_last_recommendation(
     Returns full recommendation data ready for display.
     """
     query = db.query(RecommendationResult).filter(
-        RecommendationResult.status == "completed"
+        RecommendationResult.status == "completed",
+        RecommendationResult.card_count > 0,
     )
     
     if architecture_id:
@@ -507,7 +581,8 @@ async def get_recommendations_history(
     Returns multiple recommendation results ordered by most recent first.
     """
     query = db.query(RecommendationResult).filter(
-        RecommendationResult.status == "completed"
+        RecommendationResult.status == "completed",
+        RecommendationResult.card_count > 0,
     )
     
     if architecture_id:
@@ -542,7 +617,7 @@ async def get_recommendations_history(
 
 @router.post("/analyze/llm-report/save")
 async def save_llm_report(
-    architecture_id: str,
+    architecture_id: Optional[str] = None,
     architecture_file: Optional[str] = None,
     agent_names: Optional[str] = None,
     report_data: Optional[dict] = None,
@@ -550,11 +625,22 @@ async def save_llm_report(
     db: Session = Depends(get_db)
 ):
     """Save LLM report from 5-agent pipeline to database."""
+    if not architecture_id and not architecture_file:
+        raise HTTPException(400, "Provide architecture_id or architecture_file")
+
     validated_report = model_to_dict(LLMReportPayloadSchema, report_data or {})
+    if generation_time_ms is None:
+        total_ms = (report_data or {}).get("timings", {}).get("total_ms")
+        generation_time_ms = total_ms if isinstance(total_ms, int) else None
+
+    resolved_agent_names = agent_names
+    if not resolved_agent_names:
+        resolved_agent_names = ",".join((validated_report.get("agents") or {}).keys())
+
     report = LLMReport(
-        architecture_id=architecture_id,
+        architecture_id=architecture_id or "",
         architecture_file=architecture_file,
-        agent_names=agent_names,
+        agent_names=resolved_agent_names,
         status="completed",
         payload=validated_report,
         generation_time_ms=generation_time_ms

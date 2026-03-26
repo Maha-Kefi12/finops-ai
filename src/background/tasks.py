@@ -56,6 +56,76 @@ def _load_graph_data_for_architecture(db, architecture_id: str) -> dict:
     return neo4j_graph
 
 
+def _cleanup_redundant_recommendation_rows(db, architecture_id: str) -> dict:
+    """Remove redundant completed recommendation rows for an architecture.
+
+    Rules:
+    - Delete completed rows with zero cards.
+    - Deduplicate identical completed payload signatures, keep newest row.
+    """
+    from src.graph.models import RecommendationResult
+
+    removed_empty = 0
+    removed_dupe = 0
+    removed_old = 0
+
+    # 1) Remove empty completed rows.
+    empty_rows = db.query(RecommendationResult).filter(
+        RecommendationResult.architecture_id == architecture_id,
+        RecommendationResult.status == "completed",
+        RecommendationResult.card_count <= 0,
+    ).all()
+    for row in empty_rows:
+        db.delete(row)
+        removed_empty += 1
+
+    # 2) Remove duplicate completed rows by card fingerprint set.
+    rows = db.query(RecommendationResult).filter(
+        RecommendationResult.architecture_id == architecture_id,
+        RecommendationResult.status == "completed",
+        RecommendationResult.card_count > 0,
+    ).order_by(RecommendationResult.created_at.desc()).all()
+
+    seen_signatures = set()
+    for row in rows:
+        payload = row.payload if isinstance(row.payload, dict) else (json.loads(row.payload) if row.payload else {})
+        cards = payload.get("recommendations", [])
+        card_fps = sorted(_recommendation_fingerprint(c) for c in cards)
+        signature = "|".join(card_fps)
+        if signature in seen_signatures:
+            db.delete(row)
+            removed_dupe += 1
+        else:
+            seen_signatures.add(signature)
+
+    # 3) Keep only the latest completed non-empty row for this architecture.
+    latest_completed = db.query(RecommendationResult).filter(
+        RecommendationResult.architecture_id == architecture_id,
+        RecommendationResult.status == "completed",
+        RecommendationResult.card_count > 0,
+    ).order_by(RecommendationResult.created_at.desc()).first()
+
+    if latest_completed:
+        old_rows = db.query(RecommendationResult).filter(
+            RecommendationResult.architecture_id == architecture_id,
+            RecommendationResult.status == "completed",
+            RecommendationResult.card_count > 0,
+            RecommendationResult.id != latest_completed.id,
+        ).all()
+        for row in old_rows:
+            db.delete(row)
+            removed_old += 1
+
+    if removed_empty or removed_dupe or removed_old:
+        db.commit()
+
+    return {
+        "removed_empty_rows": removed_empty,
+        "removed_duplicate_rows": removed_dupe,
+        "removed_old_rows": removed_old,
+    }
+
+
 def _generate_and_store_recommendations(db, architecture_id: str) -> dict:
     """Generate recommendations and persist only cards not already present in DB."""
     from dataclasses import asdict
@@ -111,6 +181,18 @@ def _generate_and_store_recommendations(db, architecture_id: str) -> dict:
         }
         validated_payload = model_to_dict(RecommendationPayloadSchema, payload)
 
+        # If nothing new was generated, do not create a redundant completed row.
+        if not fresh_cards:
+            cleanup_stats = _cleanup_redundant_recommendation_rows(db, architecture_id)
+            return {
+                "architecture_id": architecture_id,
+                "generated_cards": 0,
+                "skipped_existing_cards": skipped,
+                "total_estimated_savings": 0.0,
+                "status": "no_changes",
+                "cleanup": cleanup_stats,
+            }
+
         row = RecommendationResult(
             architecture_id=architecture_id,
             architecture_file=None,
@@ -123,12 +205,15 @@ def _generate_and_store_recommendations(db, architecture_id: str) -> dict:
         db.add(row)
         db.commit()
 
+        cleanup_stats = _cleanup_redundant_recommendation_rows(db, architecture_id)
+
         return {
             "architecture_id": architecture_id,
             "generated_cards": len(fresh_cards),
             "skipped_existing_cards": skipped,
             "total_estimated_savings": validated_payload.get("total_estimated_savings", 0.0),
             "status": "completed",
+            "cleanup": cleanup_stats,
         }
     except Exception as exc:
         fail_payload = model_to_dict(

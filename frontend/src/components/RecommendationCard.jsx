@@ -16,23 +16,22 @@ export function RecommendationCard({
   const savingsPerMonth = recommendation.total_estimated_savings || 0;
   const savingsPerYear = savingsPerMonth * 12;
   
-  const severityColor = {
-    critical: '#ED4B4B',
-    high: '#F66B35',
-    medium: '#FFC045',
-    low: '#4CAF50',
-  };
-  
-  const severityBg = {
-    critical: '#FFE5E5',
-    high: '#FFE8D6',
-    medium: '#FFF8DC',
-    low: '#E8F5E9',
-  };
-  
   const complexity = recommendation.implementation_complexity || 'medium';
   const category = recommendation.category || 'optimization';
   const severity = recommendation.severity || 'medium';
+  const serviceType = recommendation.resource_identification?.service_type || 'AWS Service';
+  const resourceId = recommendation.resource_identification?.resource_id || 'N/A';
+  const summary = recommendation.recommendations?.[0]?.description
+    || recommendation.recommendations?.[0]?.action
+    || 'Optimization opportunity identified for this resource.';
+
+  const listItems = [
+    `Service: ${serviceType}`,
+    `Resource: ${resourceId}`,
+    `Potential savings: $${savingsPerMonth.toFixed(0)}/mo`,
+    `Priority: ${String(recommendation.priority || 'N/A')}`,
+    `Risk: ${String(severity).toUpperCase()}`,
+  ];
   
   const handleExpand = () => {
     setShowDetails(!showDetails);
@@ -40,150 +39,76 @@ export function RecommendationCard({
   };
 
   return (
-    <div className="recommendation-plan">
-      <div className="plan-inner">
-        {/* Savings Badge */}
-        <div className="plan-savings">
-          <span className="savings-amount">
-            ${savingsPerMonth.toFixed(0)}
-            <small>/mo</small>
-          </span>
-          <span className="savings-year">${savingsPerYear.toFixed(0)}/year</span>
+    <div className={`rec-card-shell ${showDetails ? 'is-pinned' : ''}`}>
+      <article className="rec-card">
+        <div className="rec-card__border" />
+
+        <div className="rec-card__header">
+          <span className="rec-card__title">{recommendation.title || `Recommendation #${recommendation.priority}`}</span>
+          <p className="rec-card__paragraph">{summary}</p>
         </div>
 
-        {/* Severity & Category Badges */}
-        <div className="plan-badges">
-          <span 
-            className="badge severity" 
-            style={{ 
-              backgroundColor: severityColor[severity],
-              color: '#fff',
-              fontSize: '0.75rem'
-            }}
-          >
-            {severity.toUpperCase()}
-          </span>
-          <span className="badge category">{category.replace(/-/g, ' ').toUpperCase()}</span>
-          <span className="badge complexity">{complexity}</span>
+        <hr className="rec-card__line" />
+
+        <div className="rec-card__chips">
+          <span className={`chip severity ${String(severity).toLowerCase()}`}>{String(severity).toUpperCase()}</span>
+          <span className="chip category">{category.replace(/-/g, ' ')}</span>
+          <span className="chip complexity">{complexity}</span>
         </div>
 
-        {/* Main Title & Resource */}
-        <h3 className="plan-title">
-          {recommendation.title || `Recommendation #${recommendation.priority}`}
-        </h3>
-        
-        <p className="plan-resource">
-          <strong>Resource:</strong>{' '}
-          {recommendation.resource_identification?.resource_id || 'N/A'}
-        </p>
+        <ul className="rec-card__list">
+          {listItems.map((item, idx) => (
+            <li key={idx} className="rec-card__list_item">
+              <span className="rec-card__check">✓</span>
+              <span className="rec-card__list_text">{item}</span>
+            </li>
+          ))}
+        </ul>
 
-        {/* Quick Info */}
-        {!showDetails && (
-          <p className="plan-summary">
-            {recommendation.resource_identification?.service_type && 
-              `${recommendation.resource_identification.service_type} - `
-            }
-            Optimize for cost efficiency
-          </p>
-        )}
+        <div className="rec-card__savings">
+          <span className="monthly">${savingsPerMonth.toFixed(0)} / month</span>
+          <span className="yearly">${savingsPerYear.toFixed(0)} / year</span>
+        </div>
 
-        {/* Expanded Details */}
-        {showDetails && (
-          <div className="plan-details">
-            <div className="detail-section">
-              <h4>Resource Details</h4>
-              <ul>
-                <li><strong>Service Type:</strong> {recommendation.resource_identification?.service_type || 'N/A'}</li>
-                <li><strong>Region:</strong> {recommendation.resource_identification?.region || 'N/A'}</li>
-                <li><strong>Environment:</strong> {recommendation.resource_identification?.environment || 'prod'}</li>
-              </ul>
-            </div>
+        <button className="rec-card__button" onClick={handleExpand}>
+          {showDetails ? 'Pin Off' : 'Pin Details'}
+        </button>
+      </article>
 
-            {/* Cost Breakdown */}
-            {recommendation.cost_breakdown && (
-              <div className="detail-section">
-                <h4>Cost Breakdown</h4>
-                <div className="cost-items">
-                  <div className="cost-row">
-                    <span>Current Monthly Cost:</span>
-                    <strong>${(recommendation.cost_breakdown.current_monthly || 0).toFixed(2)}</strong>
-                  </div>
-                  {recommendation.cost_breakdown.line_items?.length > 0 && (
-                    <div className="line-items">
-                      {recommendation.cost_breakdown.line_items.slice(0, 3).map((item, idx) => (
-                        <div key={idx} className="line-item">
-                          <span>{item.description}</span>
-                          <span className="amount">${item.cost?.toFixed(2) || '0.00'}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+      <aside className="rec-card-drawer">
+        <div className="rec-card-drawer__border" />
+        <div className="rec-card-drawer__body">
+          <h4 className="drawer-title">Recommendation Details</h4>
+          <p className="drawer-sub">{serviceType} · {resourceId}</p>
 
-            {/* Inefficiencies */}
-            {recommendation.inefficiencies?.length > 0 && (
-              <div className="detail-section">
-                <h4>Issues Detected</h4>
-                <ul>
-                  {recommendation.inefficiencies.slice(0, 3).map((issue, idx) => (
-                    <li key={idx}>
-                      <strong>{issue.title}:</strong> {issue.root_cause}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Implementation Steps */}
-            {recommendation.recommendations?.length > 0 && (
-              <div className="detail-section">
-                <h4>Action Plan</h4>
-                <ol>
-                  {recommendation.recommendations[0]?.implementation_steps?.slice(0, 4).map((step, idx) => (
-                    <li key={idx}>{step}</li>
-                  ))}
-                </ol>
-              </div>
-            )}
-
-            {/* Performance & Risk */}
-            <div className="detail-row">
-              {recommendation.recommendations?.[0]?.performance_impact && (
-                <div className="detail-box">
-                  <strong>Performance Impact:</strong>
-                  <p>{recommendation.recommendations[0].performance_impact}</p>
-                </div>
-              )}
-              {recommendation.risk_level && (
-                <div className="detail-box">
-                  <strong>Risk Level:</strong>
-                  <p>{recommendation.risk_level}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Best Practice */}
-            {recommendation.finops_best_practice && (
-              <div className="detail-section bg-info">
-                <h4>💡 AWS FinOps Best Practice</h4>
-                <p>{recommendation.finops_best_practice}</p>
-              </div>
-            )}
+          <div className="drawer-section">
+            <h5>Resource</h5>
+            <ul>
+              <li><strong>Region:</strong> {recommendation.resource_identification?.region || 'N/A'}</li>
+              <li><strong>Environment:</strong> {recommendation.resource_identification?.environment || 'prod'}</li>
+              <li><strong>Current Cost:</strong> ${(recommendation.cost_breakdown?.current_monthly || 0).toFixed(2)}/mo</li>
+            </ul>
           </div>
-        )}
 
-        {/* Action Button */}
-        <div className="plan-action">
-          <button 
-            className="plan-button"
-            onClick={handleExpand}
-          >
-            {showDetails ? 'Hide Details' : 'View Details'} →
-          </button>
+          {recommendation.recommendations?.length > 0 && (
+            <div className="drawer-section">
+              <h5>Action Plan</h5>
+              <ol>
+                {recommendation.recommendations[0]?.implementation_steps?.slice(0, 4).map((step, idx) => (
+                  <li key={idx}>{step}</li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {recommendation.finops_best_practice && (
+            <div className="drawer-section drawer-highlight">
+              <h5>Best Practice</h5>
+              <p>{recommendation.finops_best_practice}</p>
+            </div>
+          )}
         </div>
-      </div>
+      </aside>
     </div>
   );
 }

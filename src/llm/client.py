@@ -237,7 +237,7 @@ def generate_recommendations(context_package, architecture_name: str = "",
         pricing_data = _build_pricing()
         aws_best_practices = _build_best_practices(pkg_dict, raw_graph_data)
         
-        # Add engine results as structured context for LLM
+        # Add engine results as factual grounding for LLM (source-of-truth facts)
         engine_context = _format_engine_context(engine_cards) if engine_cards else ""
         
         user_prompt = RECOMMENDATION_USER_PROMPT.format(
@@ -249,15 +249,15 @@ def generate_recommendations(context_package, architecture_name: str = "",
             aws_best_practices=aws_best_practices,
         )
         
-        # Append engine context so LLM enhances rather than invents
+        # Append engine context as factual JSON/text so LLM reasons from facts.
         if engine_context:
-            user_prompt += f"\n\n## PRE-ANALYZED RECOMMENDATIONS (enhance these with detailed AWS-native language)\n\n{engine_context}"
+            user_prompt += f"\n\n## ENGINE_FACTS (source of truth from deterministic engine)\n\n{engine_context}"
         
         prompt_chars = len(RECOMMENDATION_SYSTEM_PROMPT) + len(user_prompt)
         logger.info("[PROMPT SIZE] system=%d, user=%d, total=%d chars (~%d tokens)",
                    len(RECOMMENDATION_SYSTEM_PROMPT), len(user_prompt), prompt_chars, prompt_chars // 4)
         
-        # ═══ STAGE 3: LLM call (polisher) ═══
+        # ═══ STAGE 3: LLM call (primary recommender) ═══
         llm_cards = []
         try:
             t3 = time.time()
@@ -273,25 +273,30 @@ def generate_recommendations(context_package, architecture_name: str = "",
             
             if raw_response:
                 _save_response(raw_response, architecture_name)
-                llm_cards = _parse_all_recommendations(raw_response)
+                llm_cards = _parse_structured_json_recommendations(raw_response)
+                if not llm_cards:
+                    llm_cards = _parse_all_recommendations(raw_response)
                 logger.info("[PIPELINE] LLM parsed: %d recommendations", len(llm_cards))
                 
                 if llm_cards:
                     llm_cards = _deduplicate_cards(llm_cards)
                     if raw_graph_data:
-                        llm_cards = _validate_against_inventory(llm_cards, raw_graph_data)
-                    llm_cards = _filter_zero_savings_cards(llm_cards)
-                    if raw_graph_data:
                         llm_cards = _enrich_cards(llm_cards, raw_graph_data, pkg_dict)
-                    llm_cards = _validate_recommendation_fiability(llm_cards, raw_graph_data)
+                    llm_cards = _apply_deterministic_quality_gates(
+                        llm_cards,
+                        raw_graph_data,
+                        min_monthly_savings=50.0,
+                    )
         except Exception as e:
             logger.warning("[LLM] Call failed: %s — using engine cards only", e)
         
-        # ═══ STAGE 4: Merge engine + LLM cards ═══
-        # Engine cards are always the base; LLM cards supplement
-        cards = _merge_engine_and_llm_cards(engine_cards, llm_cards)
-        logger.info("[PIPELINE] Final: %d cards (engine=%d, llm=%d)",
-                   len(cards), len(engine_cards), len(llm_cards))
+        # ═══ STAGE 4: LLM-primary selection with deterministic fallback ═══
+        if llm_cards:
+            cards = llm_cards
+            logger.info("[PIPELINE] Final: %d cards (primary=llm, fallback=engine)", len(cards))
+        else:
+            cards = engine_cards
+            logger.info("[PIPELINE] Final: %d cards (llm empty/failed, using engine fallback)", len(cards))
         
         if not cards:
             logger.warning("⚠️  No recommendations generated from engine or LLM — returning empty set")
@@ -528,7 +533,7 @@ def _format_engine_context(engine_cards: List[Dict]) -> str:
         cost = card.get("cost_breakdown", {})
         graph = card.get("graph_context", {})
         
-        lines.append(f"### Pre-analyzed #{i}: {card.get('title', 'N/A')}")
+        lines.append(f"ENGINE SIGNAL #{i}: {card.get('title', 'N/A')}")
         lines.append(f"- Resource: `{rid.get('resource_id', 'N/A')}` ({rid.get('resource_name', '')})")
         lines.append(f"- Service: {card.get('service_type', 'N/A')} | Env: {rid.get('environment', '?')} | Region: {rid.get('region', '?')}")
         lines.append(f"- Current: {rid.get('current_instance_type', '?')} → Recommended: {rid.get('recommended_instance_type', '?')}")
@@ -544,34 +549,105 @@ def _format_engine_context(engine_cards: List[Dict]) -> str:
 def _merge_engine_and_llm_cards(engine_cards: List[Dict], llm_cards: List[Dict]) -> List[Dict]:
     """Merge engine cards (base) with LLM cards (supplements).
     
-    Engine cards are always included. LLM cards that cover NEW resources 
-    (not already in engine results) are appended.
+    Behavior:
+    1) Engine cards are always included (deterministic baseline).
+    2) If an LLM card matches an engine resource/title, it ENHANCES the existing
+       engine card instead of being dropped.
+    3) LLM cards for truly new opportunities are appended.
+    4) Cards explicitly tagged as [NEW DISCOVERY] are preserved as LLM cards,
+       even when they target an existing resource.
     """
     if not engine_cards:
         return llm_cards or []
     if not llm_cards:
         return engine_cards
-    
-    # Track engine resource names to avoid duplicates
-    engine_resources = set()
-    for c in engine_cards:
-        rid = c.get("resource_identification", {})
-        engine_resources.add(rid.get("resource_name", "").lower())
-        engine_resources.add(c.get("title", "").lower()[:40])
-    
+
     merged = list(engine_cards)
-    
+
+    # Build lookup for engine cards by resource and title prefix.
+    engine_by_resource: Dict[str, int] = {}
+    engine_title_prefixes: Dict[str, int] = {}
+    for idx, card in enumerate(merged):
+        rid = card.get("resource_identification", {}) or {}
+        resource_id = str(rid.get("resource_id", "") or "").strip().lower()
+        resource_name = str(rid.get("resource_name", "") or "").strip().lower()
+        title_prefix = str(card.get("title", "") or "").strip().lower()[:40]
+
+        if resource_id:
+            engine_by_resource[resource_id] = idx
+        if resource_name:
+            engine_by_resource[resource_name] = idx
+        if title_prefix:
+            engine_title_prefixes[title_prefix] = idx
+
+    appended = 0
+    enhanced = 0
+
     for llm_card in llm_cards:
-        llm_rid = llm_card.get("resource_identification", {})
-        llm_name = llm_rid.get("resource_name", "").lower()
-        llm_title = llm_card.get("title", "").lower()[:40]
-        
-        # Only add if not duplicate
-        if llm_name not in engine_resources and llm_title not in engine_resources:
-            llm_card["source"] = "llm"
-            merged.append(llm_card)
-            engine_resources.add(llm_name)
-    
+        llm_card = dict(llm_card)
+        llm_card["source"] = "llm"
+
+        llm_rid = llm_card.get("resource_identification", {}) or {}
+        llm_resource_id = str(llm_rid.get("resource_id", "") or "").strip().lower()
+        llm_resource_name = str(llm_rid.get("resource_name", "") or "").strip().lower()
+        llm_title = str(llm_card.get("title", "") or "").strip()
+        llm_title_prefix = llm_title.lower()[:40]
+        is_new_discovery = "[new discovery]" in llm_title.lower()
+
+        match_idx = None
+        for key in (llm_resource_id, llm_resource_name):
+            if key and key in engine_by_resource:
+                match_idx = engine_by_resource[key]
+                break
+        if match_idx is None and llm_title_prefix and llm_title_prefix in engine_title_prefixes:
+            match_idx = engine_title_prefixes[llm_title_prefix]
+
+        if match_idx is not None and not is_new_discovery:
+            base = merged[match_idx]
+            # Keep deterministic numeric/scope fields from engine, but replace
+            # narrative-heavy fields with LLM enrichment when present.
+            if llm_card.get("title"):
+                base["title"] = llm_card.get("title")
+
+            # Replace recommendation details only when LLM content has
+            # meaningful savings context; otherwise preserve engine details.
+            llm_recs = llm_card.get("recommendations") or []
+            if llm_recs:
+                llm_rec0 = llm_recs[0] if isinstance(llm_recs[0], dict) else {}
+                llm_rec_savings = llm_rec0.get("estimated_monthly_savings", 0)
+                try:
+                    llm_rec_savings = float(llm_rec_savings or 0)
+                except Exception:
+                    llm_rec_savings = 0.0
+
+                base_savings = base.get("total_estimated_savings", 0)
+                try:
+                    base_savings = float(base_savings or 0)
+                except Exception:
+                    base_savings = 0.0
+
+                if llm_rec_savings > 0 or base_savings <= 0:
+                    base["recommendations"] = llm_recs
+            if llm_card.get("raw_analysis"):
+                base["raw_analysis"] = llm_card.get("raw_analysis")
+            if llm_card.get("why_it_matters"):
+                base["why_it_matters"] = llm_card.get("why_it_matters")
+            if llm_card.get("linked_best_practice"):
+                base["linked_best_practice"] = llm_card.get("linked_best_practice")
+            if llm_card.get("finops_best_practice"):
+                base["finops_best_practice"] = llm_card.get("finops_best_practice")
+
+            # Provenance markers for UI/debugging.
+            base["source"] = "engine+llm"
+            base["llm_enhanced"] = True
+            enhanced += 1
+            continue
+
+        merged.append(llm_card)
+        appended += 1
+
+    logger.info("[MERGE] engine=%d llm=%d => final=%d (enhanced=%d appended=%d)",
+                len(engine_cards), len(llm_cards), len(merged), enhanced, appended)
     return merged
 
 
@@ -638,6 +714,197 @@ def _parse_all_recommendations(text: str) -> List[Dict]:
     return []
 
 
+def _parse_structured_json_recommendations(text: str) -> List[Dict]:
+    """Parse strict JSON recommendation output from LLM.
+
+    Expected shape:
+    {
+      "recommendations": [
+        {
+          "title": "...",
+          "resource_id": "...",
+          "service_type": "...",
+          "environment": "production|development|...",
+          "current_monthly_cost": 120.0,
+          "projected_monthly_cost": 70.0,
+          "monthly_savings": 50.0,
+          "category": "...",
+          "risk_level": "low|medium|high",
+          "confidence": 0.86,
+          "why_this_matters": "...",
+          "problem": "...",
+          "solution": "...",
+          "implementation_steps": ["..."],
+          "risk_mitigation": "..."
+        }
+      ]
+    }
+    """
+    if not text:
+        return []
+
+    payload_str = text.strip()
+    fence_match = re.search(r"```json\s*(\{[\s\S]*\}|\[[\s\S]*\])\s*```", text, re.IGNORECASE)
+    if fence_match:
+        payload_str = fence_match.group(1).strip()
+    else:
+        brace_start = text.find("{")
+        bracket_start = text.find("[")
+        candidates = [x for x in (brace_start, bracket_start) if x >= 0]
+        if candidates:
+            payload_str = text[min(candidates):].strip()
+
+    try:
+        parsed = json.loads(payload_str)
+    except Exception:
+        return []
+
+    if isinstance(parsed, dict):
+        items = parsed.get("recommendations") or parsed.get("cards") or []
+    elif isinstance(parsed, list):
+        items = parsed
+    else:
+        items = []
+
+    if not isinstance(items, list) or not items:
+        return []
+
+    def _pick(item: Dict[str, Any], keys: List[str], default: Any = "") -> Any:
+        for k in keys:
+            if k in item and item.get(k) not in (None, ""):
+                return item.get(k)
+        return default
+
+    def _to_float(v: Any, default: float = 0.0) -> float:
+        try:
+            return float(str(v).replace(",", "").replace("$", "").strip())
+        except Exception:
+            return default
+
+    def _extract_savings(item: Dict[str, Any], current: float, projected: float) -> float:
+        # Primary numeric fields
+        direct = _pick(item, [
+            "monthly_savings",
+            "total_estimated_savings",
+            "estimated_monthly_savings",
+            "savings",
+        ], None)
+        if direct is not None:
+            val = _to_float(direct, 0.0)
+            if val > 0:
+                return val
+
+        # Text fields like "$2718.19/mo (95.0%)"
+        for key in ["costSavings", "cost_savings", "savings_text", "estimatedSavings"]:
+            txt = _pick(item, [key], "")
+            if txt:
+                m = re.search(r"\$\s*([0-9][0-9,]*\.?[0-9]*)", str(txt))
+                if m:
+                    try:
+                        return float(m.group(1).replace(",", ""))
+                    except Exception:
+                        pass
+
+        # Derive from cost math if possible
+        if current > 0 and projected >= 0:
+            return round(max(0.0, current - projected), 2)
+        return 0.0
+
+    cards: List[Dict[str, Any]] = []
+    for i, item in enumerate(items, 1):
+        if not isinstance(item, dict):
+            continue
+
+        resource_id = str(_pick(item, ["resource_id", "resource", "resourceId", "id"], "") or "").strip()
+        service_type = str(_pick(item, ["service_type", "service", "aws_service", "type"], "") or "").strip()
+        environment = str(_pick(item, ["environment", "env"], "production") or "production").strip()
+        risk_level = str(_pick(item, ["risk_level", "severity", "risk"], "medium") or "medium").lower()
+        category = str(_pick(item, ["category", "optimization_type"], "optimization") or "optimization")
+
+        current = _to_float(_pick(item, ["current_monthly_cost", "current_monthly", "currentCost", "current_cost"], 0.0), 0.0)
+        projected = _to_float(_pick(item, ["projected_monthly_cost", "projected_monthly", "newCost", "projected_cost"], 0.0), 0.0)
+        savings = _extract_savings(item, current, projected)
+        if savings <= 0 and current > 0 and projected >= 0:
+            savings = round(max(0.0, current - projected), 2)
+        if projected <= 0 and current > 0 and savings > 0:
+            projected = round(max(0.0, current - savings), 2)
+
+        current_type = str(_pick(item, ["currentInstanceType", "current_instance_type"], "") or "").strip()
+        recommended_type = str(_pick(item, ["recommendedInstanceType", "recommended_instance_type"], "") or "").strip()
+        base_title = str(_pick(item, ["title", "recommendation", "action"], "") or "").strip()
+        if not base_title:
+            if resource_id and recommended_type:
+                base_title = f"Optimize {resource_id} to {recommended_type}"
+            elif resource_id:
+                base_title = f"Optimize {resource_id}"
+            else:
+                base_title = f"Recommendation #{i}"
+        title = base_title
+
+        why = str(_pick(item, ["why_this_matters", "narrative", "why"], "") or "").strip()
+        problem = str(_pick(item, ["problem", "issue"], "") or "").strip()
+        solution = str(_pick(item, ["solution", "action", "recommendation"], title) or title).strip()
+        risk_mitigation = str(_pick(item, ["risk_mitigation", "mitigation", "safety_notes"], f"Risk level: {risk_level}"))
+        impl = _pick(item, ["implementation_steps", "steps", "implementation"], [])
+        if not isinstance(impl, list):
+            impl = [str(impl)] if impl else []
+
+        conf = _pick(item, ["confidence", "confidence_score"], "medium")
+        if isinstance(conf, (int, float)):
+            confidence = max(0.0, min(1.0, float(conf)))
+            conf_label = "high" if confidence >= 0.8 else ("medium" if confidence >= 0.6 else "low")
+        else:
+            conf_label = str(conf)
+
+        card = {
+            "priority": i,
+            "recommendation_number": i,
+            "title": title,
+            "severity": risk_level,
+            "category": category,
+            "risk_level": risk_level,
+            "implementation_complexity": "medium",
+            "resource_identification": {
+                "resource_id": resource_id,
+                "resource_name": resource_id,
+                "service_name": resource_id,
+                "service_type": service_type,
+                "environment": environment,
+                "current_instance_type": current_type,
+                "recommended_instance_type": recommended_type,
+            },
+            "service_type": service_type,
+            "cost_breakdown": {
+                "current_monthly": current,
+                "projected_monthly": projected,
+                "annual_impact": round(savings * 12, 2),
+                "line_items": [],
+            },
+            "recommendations": [{
+                "action_number": 1,
+                "title": solution,
+                "description": solution,
+                "action": solution,
+                "estimated_monthly_savings": savings,
+                "implementation_steps": [str(x) for x in impl if str(x).strip()],
+                "validation_steps": [],
+                "performance_impact": f"Estimated savings: ${savings:.2f}/mo",
+                "risk_mitigation": risk_mitigation,
+                "full_analysis": "\n".join([x for x in [why, problem, solution] if x])[:1200],
+                "confidence": conf_label,
+            }],
+            "why_it_matters": why,
+            "raw_analysis": json.dumps(item, ensure_ascii=True),
+            "total_estimated_savings": savings,
+            "source": "llm",
+        }
+        cards.append(_normalize_llm_card_shape(card))
+
+    if cards:
+        logger.info("[PARSER] JSON parse produced %d recommendation cards", len(cards))
+    return cards
+
+
 def _extract_sections(text: str, matches: list) -> List[Dict]:
     """Extract card sections from regex matches."""
     cards = []
@@ -680,6 +947,8 @@ def _parse_card_text(text: str, card_num: int) -> Optional[Dict]:
     if title_match:
         title = title_match.group(1).strip()
         title = re.sub(r"Recommendation\s+#\d+:?\s*", "", title, flags=re.IGNORECASE)
+        title = re.sub(r"Pre-?analyzed\s*#\d+:?\s*", "", title, flags=re.IGNORECASE)
+        title = re.sub(r"Engine\s*Signal\s*#\d+:?\s*", "", title, flags=re.IGNORECASE)
         card["title"] = title[:120] if title else f"Recommendation #{card_num}"
     else:
         card["title"] = f"Recommendation #{card_num}"
@@ -699,6 +968,7 @@ def _parse_card_text(text: str, card_num: int) -> Optional[Dict]:
             if res_id and len(res_id) > 1:  # Only if valid
                 card["resource_identification"]["resource_id"] = res_id
                 card["resource_identification"]["service_name"] = res_id
+                card["resource_identification"]["resource_name"] = res_id
                 break
     
     # Fallback: If no resource ID found, use service type or title as basis
@@ -713,9 +983,11 @@ def _parse_card_text(text: str, card_num: int) -> Optional[Dict]:
                 break
     
     # Extract Service Type
-    svc_match = re.search(r"\*\*Service:\*\*\s*([^\n]+)", text, re.IGNORECASE)
+    svc_match = re.search(r"(?:\*\*)?Service(?:\*\*)?:\s*([^\n|]+)", text, re.IGNORECASE)
     if svc_match:
-        card["resource_identification"]["service_type"] = svc_match.group(1).strip()
+        svc_value = svc_match.group(1).strip()
+        card["resource_identification"]["service_type"] = svc_value
+        card["service_type"] = svc_value
 
     # Extract Risk / Priority -> severity
     risk_match = re.search(r"\*\*(?:Risk|Priority):\*\*\s*(LOW|MEDIUM|HIGH)", text, re.IGNORECASE)
@@ -851,14 +1123,121 @@ def _parse_card_text(text: str, card_num: int) -> Optional[Dict]:
     # Build recommendations list
     card["recommendations"] = [{
         "action_number": 1,
+        "title": action_text,
+        "description": action_text,
         "action": action_text,
         "estimated_monthly_savings": card["total_estimated_savings"],
         "implementation_steps": impl_lines,
         "validation_steps": [],
-        "performance_impact": "",
-        "risk_mitigation": "",
+        "performance_impact": f"Estimated savings: ${card['total_estimated_savings']:.2f}/mo",
+        "risk_mitigation": f"Risk level: {card.get('risk_level', 'medium')}",
+        "full_analysis": text[:1200],
+        "confidence": "medium",
     }]
-    
+
+    return _normalize_llm_card_shape(card)
+
+
+def _normalize_llm_card_shape(card: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize parsed LLM cards to the same structural shape as engine cards."""
+    rid = card.setdefault("resource_identification", {})
+    cost = card.setdefault("cost_breakdown", {})
+    graph = card.setdefault("graph_context", {})
+    recs = card.setdefault("recommendations", [])
+
+    title = str(card.get("title", "") or "").strip()
+    title = re.sub(r"^Pre-?analyzed\s*#\d+:?\s*", "", title, flags=re.IGNORECASE)
+    title = re.sub(r"^Engine\s*Signal\s*#\d+:?\s*", "", title, flags=re.IGNORECASE)
+    card["title"] = title or "Optimization Recommendation"
+
+    # Keep top-level parity with engine cards.
+    card.setdefault("source", "llm")
+    card.setdefault("implementation_complexity", "medium")
+    card.setdefault("category", "optimization")
+    card.setdefault("risk_level", card.get("severity", "medium"))
+    card.setdefault("linked_best_practice", "")
+    card.setdefault("finops_best_practice", card.get("linked_best_practice", ""))
+    card.setdefault("why_it_matters", card.get("why_it_matters", ""))
+    if not card.get("service_type") and rid.get("service_type"):
+        card["service_type"] = rid.get("service_type")
+
+    # Resource shape parity.
+    res_id = rid.get("resource_id", "")
+    rid.setdefault("resource_name", rid.get("service_name", res_id))
+    rid.setdefault("service_name", rid.get("resource_name", res_id))
+    rid.setdefault("environment", "production")
+    rid.setdefault("region", "us-east-1")
+    rid.setdefault("current_config", "")
+    rid.setdefault("tags", {})
+
+    # Cost shape parity.
+    current = float(cost.get("current_monthly", 0) or 0)
+    savings = float(card.get("total_estimated_savings", 0) or 0)
+    cost.setdefault("projected_monthly", max(0.0, current - savings))
+    cost.setdefault("line_items", [
+        {
+            "item": "Estimated current monthly cost",
+            "usage": f"{rid.get('environment', 'production')} ({rid.get('region', 'us-east-1')})",
+            "cost": round(current, 2),
+        }
+    ])
+    cost.setdefault("annual_impact", round(savings * 12, 2))
+
+    # Graph shape parity defaults.
+    graph.setdefault("dependency_count", 0)
+    graph.setdefault("dependent_services", [])
+    graph.setdefault("depends_on_count", 0)
+    graph.setdefault("blast_radius_pct", 0)
+    graph.setdefault("blast_radius_services", 0)
+    graph.setdefault("is_spof", False)
+    graph.setdefault("cascading_failure_risk", "low")
+    graph.setdefault("centrality", 0)
+    graph.setdefault("narrative", "")
+
+    # Recommendation item shape parity.
+    if not recs:
+        recs.append({
+            "action_number": 1,
+            "title": card["title"],
+            "description": card["title"],
+            "action": card["title"],
+            "estimated_monthly_savings": savings,
+            "implementation_steps": [],
+            "validation_steps": [],
+            "performance_impact": f"Estimated savings: ${savings:.2f}/mo",
+            "risk_mitigation": f"Risk level: {card.get('risk_level', 'medium')}",
+            "full_analysis": str(card.get("raw_analysis", ""))[:1200],
+            "confidence": "medium",
+        })
+    else:
+        rec0 = recs[0]
+        rec0.setdefault("title", rec0.get("action", card["title"]))
+        rec0.setdefault("description", rec0.get("action", card["title"]))
+        rec0.setdefault("full_analysis", str(card.get("raw_analysis", ""))[:1200])
+        rec0.setdefault("estimated_monthly_savings", savings)
+        rec0.setdefault("implementation_steps", [])
+        if not isinstance(rec0.get("implementation_steps"), list):
+            rec0["implementation_steps"] = [str(rec0.get("implementation_steps"))]
+        rec0.setdefault("performance_impact", f"Estimated savings: ${savings:.2f}/mo")
+        rec0.setdefault("risk_mitigation", f"Risk level: {card.get('risk_level', 'medium')}")
+        rec0.setdefault("confidence", "medium")
+        rec0.setdefault("validation_steps", [])
+
+        # Keep nested rec fields coherent with top-level parsed savings.
+        try:
+            rec_savings = float(rec0.get("estimated_monthly_savings", 0) or 0)
+        except Exception:
+            rec_savings = 0.0
+        if savings > 0 and rec_savings <= 0:
+            rec0["estimated_monthly_savings"] = savings
+
+        perf_text = str(rec0.get("performance_impact", "") or "")
+        if savings > 0 and (not perf_text or "$0.00" in perf_text or "$0/mo" in perf_text):
+            rec0["performance_impact"] = f"Estimated savings: ${savings:.2f}/mo"
+
+    if not card.get("finops_best_practice") and card.get("linked_best_practice"):
+        card["finops_best_practice"] = card.get("linked_best_practice")
+
     return card
 
 
@@ -1601,9 +1980,7 @@ def _filter_zero_savings_cards(cards: List[Dict]) -> List[Dict]:
     """
     Filter out recommendations with explicit zero/negative savings.
     
-    LENIENT: Keeps recommendations with actionable titles even if savings
-    couldn't be parsed. Assigns minimum $5/mo savings to prevent downstream
-    filters from killing actionable recs.
+    Strict: remove recommendations with zero/negative savings.
     """
     filtered = []
     
@@ -1635,14 +2012,17 @@ def _filter_zero_savings_cards(cards: List[Dict]) -> List[Dict]:
         if isinstance(effective_savings, (int, float)) and effective_savings > 0:
             # Positive savings — always keep
             filtered.append(card)
-        elif len(title) >= 12 or current_cost > 0:
-            # No savings parsed, but has actionable title or cost data.
-            # Assign minimum savings to avoid being killed by downstream filters.
-            if not (isinstance(effective_savings, (int, float)) and effective_savings > 0):
-                card["total_estimated_savings"] = max(current_cost * 0.1, 5.0)  # 10% of cost or $5 min
-                logger.debug("Assigned estimated savings $%.2f to '%s' (no parsed savings)", 
-                           card["total_estimated_savings"], title[:50])
-            filtered.append(card)
+        elif len(title) >= 12 and current_cost > 0:
+            # If current cost exists, infer from projected where possible.
+            projected = card.get("cost_breakdown", {}).get("projected_monthly", 0)
+            try:
+                projected = float(projected or 0)
+            except Exception:
+                projected = 0.0
+            inferred = round(max(0.0, float(current_cost) - projected), 2) if projected > 0 else 0.0
+            if inferred > 0:
+                card["total_estimated_savings"] = inferred
+                filtered.append(card)
         else:
             logger.info(
                 "Filtered low-confidence recommendation (no savings, no cost, short title): %s",
@@ -1774,6 +2154,250 @@ def _compute_blast_radius(node_id: str, dependents_of: Dict[str, List[str]], vis
         if dep not in visited:
             visited.add(dep)
             _compute_blast_radius(dep, dependents_of, visited)
+
+
+def _apply_deterministic_quality_gates(
+    cards: List[Dict[str, Any]],
+    graph_data: Optional[dict],
+    min_monthly_savings: float = 50.0,
+) -> List[Dict[str, Any]]:
+    """Deterministic gate after LLM generation.
+
+    Enforces:
+    - Resource ID exists in inventory
+    - Savings math is valid
+    - Reject dangerous recommendations (e.g., RI/Savings Plan for non-prod)
+    - Minimum savings threshold
+    - Basic implementation feasibility by service/action compatibility
+    """
+    if not cards:
+        return cards
+    if not graph_data:
+        return cards
+
+    services = list(graph_data.get("services") or graph_data.get("nodes") or [])
+    inv_by_id: Dict[str, Dict[str, Any]] = {}
+    for s in services:
+        sid = str(s.get("id", "") or "").strip()
+        if sid:
+            inv_by_id[sid] = s
+
+    kept: List[Dict[str, Any]] = []
+    rejected = {
+        "missing_resource": 0,
+        "math_invalid": 0,
+        "dangerous": 0,
+        "low_savings": 0,
+        "infeasible": 0,
+        "generic_title": 0,
+    }
+
+    for card in cards:
+        rid = str((card.get("resource_identification") or {}).get("resource_id", "") or "").strip()
+        if not rid or rid not in inv_by_id:
+            rejected["missing_resource"] += 1
+            continue
+
+        svc = inv_by_id[rid]
+        svc_type = str(svc.get("type", svc.get("aws_service", "service")) or "service").lower()
+        env = str(svc.get("environment", "production") or "production").lower()
+
+        card.setdefault("resource_identification", {})["environment"] = env
+        if not card["resource_identification"].get("service_type"):
+            card["resource_identification"]["service_type"] = svc_type
+        if not card.get("service_type"):
+            card["service_type"] = svc_type
+
+        title = str(card.get("title", "") or "")
+        rec0 = (card.get("recommendations") or [{}])[0]
+        action_text = str(rec0.get("action", "") or title).lower()
+
+        # Deterministically rewrite generic titles into specific ones.
+        if _is_generic_title(title):
+            rewritten = _rewrite_generic_title(card, svc_type, action_text)
+            if rewritten:
+                card["title"] = rewritten
+                title = rewritten
+                rec0["title"] = rewritten
+                if rec0.get("description") in (None, "", rec0.get("action"), "optimize this service"):
+                    rec0["description"] = rewritten
+
+        # Reject generic titles unless action text has concrete change details.
+        if _is_generic_title(title) and not _has_concrete_action_target(action_text):
+            rejected["generic_title"] += 1
+            continue
+
+        current = card.get("cost_breakdown", {}).get("current_monthly", 0)
+        projected = card.get("cost_breakdown", {}).get("projected_monthly", 0)
+        savings = card.get("total_estimated_savings", 0)
+        try:
+            current = float(current or 0)
+            projected = float(projected or 0)
+            savings = float(savings or 0)
+        except Exception:
+            rejected["math_invalid"] += 1
+            continue
+
+        if savings <= 0 and current > 0 and projected >= 0:
+            savings = round(max(0.0, current - projected), 2)
+            card["total_estimated_savings"] = savings
+        if projected <= 0 and current > 0 and savings > 0:
+            projected = round(max(0.0, current - savings), 2)
+            card.setdefault("cost_breakdown", {})["projected_monthly"] = projected
+
+        if current > 0 and projected >= 0 and savings > 0:
+            expected = round(max(0.0, current - projected), 2)
+            if abs(expected - savings) > max(5.0, savings * 0.15):
+                rejected["math_invalid"] += 1
+                continue
+
+        # Reject risky purchasing guidance for non-production environments.
+        if env in {"development", "dev", "test", "staging", "sandbox", "qa"} and (
+            "reserved" in action_text or "savings plan" in action_text
+        ):
+            rejected["dangerous"] += 1
+            continue
+
+        if savings < min_monthly_savings:
+            rejected["low_savings"] += 1
+            continue
+
+        if not _is_action_feasible_for_service(action_text, svc_type):
+            rejected["infeasible"] += 1
+            continue
+
+        # Keep nested rec summary coherent.
+        rec0["estimated_monthly_savings"] = savings
+        rec0["performance_impact"] = f"Estimated savings: ${savings:.2f}/mo"
+        card.setdefault("recommendations", [rec0])[0] = rec0
+        kept.append(card)
+
+    logger.info(
+        "[QUALITY GATE] in=%d out=%d rejected=%s",
+        len(cards),
+        len(kept),
+        rejected,
+    )
+    return kept
+
+
+def _is_action_feasible_for_service(action_text: str, service_type: str) -> bool:
+    """Basic deterministic feasibility map for service-action compatibility."""
+    t = (action_text or "").lower()
+    s = (service_type or "service").lower()
+
+    # Actions that are generally unsafe/invalid for persistent databases.
+    if s in {"database", "rds", "aurora", "dynamodb", "redshift"} and (
+        "pause during off-hours" in t or "terminate idle" in t or "shutdown nightly" in t
+    ):
+        return False
+
+    # Service-action alignment checks.
+    if "lifecycle" in t or "intelligent-tiering" in t or "glacier" in t:
+        return s in {"storage", "s3"}
+    if "cache" in t or "redis" in t or "elasticache" in t:
+        return s in {"cache", "database", "service", "elasticache"}
+    if "price class" in t or "cloudfront" in t or "cdn" in t:
+        return s in {"cdn"}
+    if "gp3" in t or "snapshot" in t or "unattached volume" in t:
+        return s in {"storage", "ebs", "database", "service"}
+
+    return True
+
+
+def _is_generic_title(title: str) -> bool:
+    """Detect low-information titles that should not pass without concrete action."""
+    t = (title or "").strip().lower()
+    if not t:
+        return True
+
+    generic_prefixes = (
+        "optimize ",
+        "optimization for ",
+        "cost optimization for ",
+        "recommendation ",
+        "improve ",
+        "enhance ",
+    )
+    if t in {"optimization", "cost optimization", "recommendation"}:
+        return True
+    if any(t.startswith(p) for p in generic_prefixes):
+        # A title like "optimize api-x" is generic unless it includes a concrete change
+        concrete_tokens = (" to ", " from ", "->", "graviton", "gp3", "lifecycle", "intelligent-tiering", "price class")
+        return not any(tok in t for tok in concrete_tokens)
+    return False
+
+
+def _has_concrete_action_target(action_text: str) -> bool:
+    """Require explicit technical change details in the action body."""
+    t = (action_text or "").lower()
+    if not t:
+        return False
+
+    verbs = ("migrate", "right-size", "downsize", "upgrade", "replace", "enable", "add", "remove", "switch", "consolidate")
+    concrete_markers = (
+        " to ",
+        " from ",
+        "db.",
+        "m5",
+        "m6",
+        "t3",
+        "t4g",
+        "gp2",
+        "gp3",
+        "graviton",
+        "lifecycle",
+        "intelligent-tiering",
+        "price class",
+        "vpc endpoint",
+        "read replica",
+        "multi-az",
+    )
+
+    has_verb = any(v in t for v in verbs)
+    has_marker = any(m in t for m in concrete_markers)
+    return has_verb and has_marker
+
+
+def _rewrite_generic_title(card: Dict[str, Any], service_type: str, action_text: str) -> str:
+    """Build deterministic, specific title when LLM returns a generic one."""
+    rid = str((card.get("resource_identification") or {}).get("resource_id", "") or "resource").strip()
+    rec0 = (card.get("recommendations") or [{}])[0]
+    action = str(rec0.get("action", "") or action_text or "").lower()
+
+    current_type = str((card.get("resource_identification") or {}).get("current_instance_type", "") or "").strip()
+    recommended_type = str((card.get("resource_identification") or {}).get("recommended_instance_type", "") or "").strip()
+
+    if current_type and recommended_type:
+        return f"Right-size {rid} from {current_type} to {recommended_type}"
+    if "graviton" in action or "arm64" in action:
+        return f"Migrate {rid} to Graviton/ARM for lower compute cost"
+    if "lifecycle" in action:
+        return f"Add lifecycle policy for {rid} to reduce storage tiers"
+    if "intelligent-tiering" in action:
+        return f"Enable Intelligent-Tiering on {rid} to cut storage waste"
+    if "gp3" in action:
+        return f"Migrate {rid} storage from gp2 to gp3"
+    if "price class" in action or "cloudfront" in action:
+        return f"Optimize CloudFront price class for {rid}"
+    if "read replica" in action:
+        return f"Add read replica for {rid} to reduce primary DB pressure"
+    if "cache" in action or "redis" in action:
+        return f"Add caching optimization for {rid} to reduce backend load"
+    if "vpc endpoint" in action or "nat" in action:
+        return f"Reduce network transfer cost for {rid} via VPC endpoint strategy"
+
+    st = (service_type or "service").lower()
+    if st in {"database", "rds", "aurora", "dynamodb", "redshift"}:
+        return f"Right-size and tune database capacity for {rid}"
+    if st in {"storage", "s3", "ebs", "efs"}:
+        return f"Optimize storage lifecycle and class for {rid}"
+    if st in {"cdn", "cloudfront"}:
+        return f"Optimize CDN cost and cache policy for {rid}"
+    if st in {"cache", "elasticache"}:
+        return f"Right-size cache nodes for {rid}"
+
+    return f"Optimize {rid} with a specific cost-reduction configuration change"
 
 
 def _save_response(text: str, arch_name: str):

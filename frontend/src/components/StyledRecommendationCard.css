@@ -1,148 +1,246 @@
-/* From Uiverse.io by Yaya12085 */
-.plan {
-  border-radius: 16px;
-  box-shadow: 0 30px 30px -25px rgba(0, 38, 255, 0.205);
-  padding: 10px;
-  background-color: #fff;
-  color: #697e91;
-  max-width: 320px;
-  min-width: 300px;
+.plan-shell {
+  --white: hsl(0, 0%, 100%);
+  --black: hsl(240, 15%, 9%);
+  --paragraph: hsl(0, 0%, 83%);
+  --line: hsl(240, 9%, 17%);
+  --primary: hsl(266, 92%, 58%);
+
+  position: relative;
   flex: 0 0 auto;
-  transition: all 0.3s ease;
+  width: 19rem;
+  min-width: 19rem;
 }
 
-.plan:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 40px 40px -20px rgba(0, 38, 255, 0.3);
-}
-
-.plan strong {
-  font-weight: 600;
-  color: #425275;
-}
-
-.plan .inner {
-  align-items: flex-start;
-  padding: 20px;
-  padding-top: 50px;
-  padding-right: 140px;
-  background-color: #ecf0ff;
-  border-radius: 12px;
+.plan {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1rem;
+  padding: 1rem;
+  width: 19rem;
+  min-height: 25rem;
+  background-color: hsla(240, 15%, 9%, 1);
+  background-image:
+    radial-gradient(at 88% 40%, hsla(240, 15%, 9%, 1) 0px, transparent 85%),
+    radial-gradient(at 49% 30%, hsla(240, 15%, 9%, 1) 0px, transparent 85%),
+    radial-gradient(at 14% 26%, hsla(240, 15%, 9%, 1) 0px, transparent 85%),
+    radial-gradient(at 0% 64%, hsla(263, 93%, 56%, 1) 0px, transparent 85%),
+    radial-gradient(at 41% 94%, hsla(284, 100%, 84%, 1) 0px, transparent 85%),
+    radial-gradient(at 100% 99%, hsla(306, 100%, 57%, 1) 0px, transparent 85%);
+  border-radius: 1rem;
+  box-shadow: 0 -16px 24px 0 rgba(255, 255, 255, 0.25) inset;
 }
 
-.plan .pricing {
+.plan__border,
+.plan-drawer__border {
+  overflow: hidden;
+  pointer-events: none;
   position: absolute;
-  top: 0;
-  right: 0;
-  background-color: #bed6fb;
-  border-radius: 99em 0 0 99em;
-  display: flex;
-  align-items: center;
-  padding: 0.625em 0.75em;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #425475;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  background-image: linear-gradient(0deg, hsl(0, 0%, 100%) -50%, hsl(0, 0%, 40%) 100%);
+  border-radius: 1rem;
 }
 
-.plan .pricing small {
-  color: #707a91;
-  font-size: 0.75em;
-  margin-left: 0.25em;
+.plan__border::before,
+.plan-drawer__border::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  z-index: 200;
+  top: 50%;
+  left: 50%;
+  width: 200%;
+  height: 10rem;
+  transform-origin: left;
+  background-image: linear-gradient(
+    0deg,
+    hsla(0, 0%, 100%, 0) 0%,
+    hsl(277, 95%, 60%) 40%,
+    hsl(277, 95%, 60%) 60%,
+    hsla(0, 0%, 40%, 0) 100%
+  );
+  animation: rotate-border 8s linear infinite;
 }
 
-.plan .title {
-  font-weight: 600;
-  font-size: 1.25rem;
-  color: #425675;
-  text-align: left;
+@keyframes rotate-border {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.plan .title + * {
-  margin-top: 0.75rem;
+.card_title__container .card_title {
+  font-size: 1rem;
+  color: var(--white);
+  font-weight: 700;
+  line-height: 1.35;
 }
 
-.plan .info {
-  text-align: left;
-  font-size: 0.9rem;
-  line-height: 1.5;
+.card_title__container .card_paragraph {
+  margin: 0.35rem 0 0;
+  font-size: 0.66rem;
+  color: var(--paragraph);
+  line-height: 1.45;
 }
 
-.plan .info + * {
-  margin-top: 1rem;
+.line {
+  width: 100%;
+  height: 0.1rem;
+  background-color: var(--line);
+  border: none;
+  margin: 0;
 }
 
-.plan .features {
+.card__list {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 0.75rem;
-  width: 100%;
-  text-align: left;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
 }
 
-.plan .features li {
+.card__list .card__list_item {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   list-style: none;
 }
 
-.plan .features li + * {
-  margin-top: 0.75rem;
-}
-
-.plan .features .icon {
-  background-color: #1FCAC5;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-}
-
-.plan .features .icon svg {
-  width: 14px;
-  height: 14px;
-}
-
-.plan .features + * {
-  margin-top: 1.25rem;
-}
-
-.plan .action {
-  width: 100%;
+.card__list .card__list_item .check {
   display: flex;
+  justify-content: center;
   align-items: center;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
+  width: 1rem;
+  height: 1rem;
+  background-color: var(--primary);
+  border-radius: 50%;
+  color: var(--black);
+  font-size: 0.7rem;
+  font-weight: 800;
 }
 
-.plan .button {
-  background-color: #6558d3;
-  border-radius: 6px;
-  color: #fff;
-  font-weight: 500;
-  font-size: 0.9rem;
-  text-align: center;
-  border: 0;
-  outline: 0;
-  width: 100%;
-  padding: 0.625em 0.75em;
-  text-decoration: none;
+.card__list .card__list_item .list_text {
+  font-size: 0.75rem;
+  color: var(--white);
+}
+
+.pricing {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.65rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--white);
+  font-weight: 700;
+}
+
+.pricing small {
+  color: #e9ddff;
+  font-size: 0.72rem;
+  margin-left: 0.2rem;
+}
+
+.pricing .yearly {
+  font-size: 0.7rem;
+  color: #e9ddff;
+}
+
+.action {
+  margin-top: auto;
+}
+
+.button {
   cursor: pointer;
-  transition: all 0.3s ease;
+  display: block;
+  padding: 0.55rem;
+  width: 100%;
+  background-image: linear-gradient(0deg, rgba(94, 58, 238, 1) 0%, rgba(197, 107, 240, 1) 100%);
+  font-size: 0.75rem;
+  color: var(--white);
+  border: 0;
+  border-radius: 9999px;
+  box-shadow: inset 0 -2px 25px -4px var(--white);
+  text-decoration: none;
+  text-align: center;
 }
 
-.plan .button:hover, .plan .button:focus {
-  background-color: #4133B7;
-  transform: scale(1.02);
+.plan-drawer {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 0.9rem);
+  width: 21rem;
+  min-height: 100%;
+  border-radius: 1rem;
+  background-color: hsla(240, 15%, 9%, 1);
+  background-image:
+    radial-gradient(at 82% 34%, hsla(240, 15%, 9%, 1) 0px, transparent 85%),
+    radial-gradient(at 10% 74%, hsla(263, 93%, 56%, 0.95) 0px, transparent 85%),
+    radial-gradient(at 98% 98%, hsla(306, 100%, 57%, 0.88) 0px, transparent 85%);
+  box-shadow: 0 -16px 24px 0 rgba(255, 255, 255, 0.16) inset;
+  opacity: 0;
+  transform: translateX(-12px) scale(0.98);
+  pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+  z-index: 30;
+}
+
+.plan-drawer__body {
+  padding: 1rem;
+  color: #f5f2ff;
+}
+
+.drawer-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.drawer-sub {
+  margin: 0.3rem 0 0.9rem;
+  font-size: 0.72rem;
+  color: #d8d0ea;
+}
+
+.drawer-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 0.65rem;
+  margin-top: 0.65rem;
+}
+
+.drawer-section h5 {
+  margin: 0 0 0.4rem;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.drawer-section ul,
+.drawer-section ol {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.drawer-section li,
+.drawer-section p {
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.drawer-highlight {
+  padding: 0.65rem;
+  border-radius: 0.6rem;
+  background: rgba(165, 108, 238, 0.22);
+}
+
+.plan-shell:hover .plan-drawer,
+.plan-shell:focus-within .plan-drawer {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  pointer-events: auto;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -151,64 +249,59 @@
 
 .recommendations-carousel {
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .recommendations-cards-wrapper {
   display: flex;
   gap: 1.5rem;
-  overflow-x: auto;
-  scroll-behavior: smooth;
+  overflow: visible;
   padding: 1rem 0;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
+  justify-content: center;
+  align-items: stretch;
+  width: 100%;
 }
 
-.recommendations-cards-wrapper::-webkit-scrollbar {
-  height: 6px;
+.recommendations-cards-wrapper .plan-shell:not(:only-child):last-child .plan-drawer {
+  left: auto;
+  right: calc(100% + 0.9rem);
+  transform: translateX(12px) scale(0.98);
 }
 
-.recommendations-cards-wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-.recommendations-cards-wrapper::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 10px;
-}
-
-.recommendations-cards-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-.plan {
-  scroll-snap-align: start;
+.recommendations-cards-wrapper .plan-shell:not(:only-child):last-child:hover .plan-drawer,
+.recommendations-cards-wrapper .plan-shell:not(:only-child):last-child:focus-within .plan-drawer {
+  transform: translateX(0) scale(1);
 }
 
 .pagination-controls {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.9rem;
   margin-top: 2rem;
-  padding: 1rem;
+  padding: 0.9rem 1rem;
   flex-wrap: wrap;
+  border: 1px solid #dbe3f4;
+  border-radius: 9999px;
+  background: linear-gradient(120deg, #f8fbff 0%, #eef3ff 100%);
 }
 
 .pagination-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.6rem;
   align-items: center;
 }
 
 .pagination-btn {
-  background-color: #6558d3;
-  border: none;
-  border-radius: 6px;
+  background: linear-gradient(135deg, #5c6cff 0%, #4f46e5 100%);
+  border: 1px solid #4654d7;
+  border-radius: 10px;
   color: #fff;
   font-weight: 500;
-  padding: 0.5rem 1rem;
+  padding: 0.45rem 0.9rem;
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 0.9rem;
@@ -221,8 +314,8 @@
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background-color: #4133B7;
-  transform: scale(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(79, 70, 229, 0.26);
 }
 
 .pagination-btn:disabled {
@@ -236,10 +329,15 @@
   color: #fff;
 }
 
-.pagination-info {
-  font-size: 0.9rem;
-  color: #697e91;
-  font-weight: 500;
+.pagination-page-chip {
+  font-size: 0.82rem;
+  color: #384766;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: #ffffff;
+  border: 1px solid #d8def0;
+  border-radius: 9999px;
+  padding: 0.35rem 0.7rem;
 }
 
 .pagination-dots {
@@ -249,22 +347,48 @@
 }
 
 .dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background-color: #ccc;
+  background-color: #bec7dd;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .dot.active {
-  background-color: #6558d3;
-  width: 24px;
+  background: linear-gradient(135deg, #5c6cff 0%, #8b5cf6 100%);
+  width: 28px;
   border-radius: 4px;
 }
 
 .dot:hover {
-  background-color: #888;
+  background-color: #7f8cb0;
+}
+
+.pagination-total-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  color: #44506e;
+  font-weight: 600;
+  background: #ffffff;
+  border: 1px solid #d8def0;
+  border-radius: 9999px;
+  padding: 0.32rem 0.72rem;
+}
+
+.total-chip-number {
+  min-width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #4f46e5 0%, #8b5cf6 100%);
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -272,38 +396,60 @@
 ════════════════════════════════════════════════════════════ */
 
 @media (max-width: 768px) {
+  .plan-shell {
+    width: 17.5rem;
+    min-width: 17.5rem;
+  }
+
   .plan {
-    max-width: 280px;
-    min-width: 280px;
+    width: 17.5rem;
+    min-height: 22rem;
   }
 
-  .plan .title {
-    font-size: 1.1rem;
+  .plan-drawer {
+    position: static;
+    width: 100%;
+    min-height: auto;
+    margin-top: 0.8rem;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transform: none;
+    pointer-events: none;
+    transition: max-height 0.28s ease, opacity 0.28s ease;
   }
 
-  .plan .pricing {
-    font-size: 1.1rem;
+  .plan-shell:hover .plan-drawer,
+  .plan-shell:focus-within .plan-drawer {
+    opacity: 1;
+    max-height: 36rem;
+    pointer-events: auto;
   }
 
-  .pagination-info {
-    font-size: 0.85rem;
+  .pagination-controls {
+    border-radius: 18px;
+    gap: 0.65rem;
   }
 
   .pagination-btn {
     padding: 0.4rem 0.8rem;
     font-size: 0.85rem;
   }
+
+  .pagination-total-chip,
+  .pagination-page-chip {
+    font-size: 0.78rem;
+  }
 }
 
 @media (max-width: 480px) {
-  .plan {
-    max-width: 250px;
-    min-width: 250px;
+  .plan-shell {
+    width: 16rem;
+    min-width: 16rem;
   }
 
-  .plan .inner {
-    padding: 15px;
-    padding-top: 30px;
+  .plan {
+    width: 16rem;
   }
 
   .pagination-controls {

@@ -118,6 +118,31 @@ export function AnalysisPageWithRecommendations() {
     }
   }, [architectureId, architectureFile]);
 
+  // Load latest stored snapshot only (no generation side effects)
+  const loadLatestStoredRecommendations = useCallback(async () => {
+    if (!architectureId && !architectureFile) return;
+
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (architectureId) params.append('architecture_id', architectureId);
+      if (architectureFile) params.append('architecture_file', architectureFile);
+
+      const response = await fetch(`/api/analyze/recommendations/last?${params}`);
+      const data = await response.json();
+
+      setRecommendations(data.recommendations || []);
+      setTotalSavings(data.total_estimated_savings || 0);
+      setTaskId(null);
+      setTaskStatus(null);
+      await loadHistory();
+    } catch (error) {
+      console.error('Failed to load latest stored recommendations:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [architectureId, architectureFile, loadHistory]);
+
   // Handle refresh button
   const handleRefresh = async () => {
     // Clear cache first
@@ -134,10 +159,10 @@ export function AnalysisPageWithRecommendations() {
     await loadRecommendations(false);
   };
 
-  // Load initial data
+  // Load initial data from latest stored snapshot only.
   useEffect(() => {
-    loadRecommendations(true);
-  }, [architectureId, architectureFile]);
+    loadLatestStoredRecommendations();
+  }, [architectureId, architectureFile, loadLatestStoredRecommendations]);
 
   // Handle history item click
   const handleHistorySelect = async (historyItem) => {
@@ -219,7 +244,7 @@ export function AnalysisPageWithRecommendations() {
           {loading || taskId ? (
             <p>⏳ Generating recommendations...</p>
           ) : (
-            <p>No recommendations available. Click "Refresh Analysis" to get started.</p>
+            <p>No recommendations available yet. Hourly pipeline will populate new recommendations.</p>
           )}
         </div>
       )}

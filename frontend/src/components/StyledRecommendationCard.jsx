@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import './StyledRecommendationCard.css';
 
@@ -46,82 +46,84 @@ export function StyledRecommendationCard({ recommendation, onViewDetails }) {
   }
 
   const graphCtx = recommendation.graph_context || {};
+  const cost = recommendation.cost_breakdown || {};
+  const res = recommendation.resource_identification || {};
+  const steps = recommendation.recommendations?.[0]?.implementation_steps || [];
 
   return (
-    <div className="plan">
-      <div className="inner">
-        <span className="pricing">
-          <span>
-            ${savingsPerMonth.toFixed(0)}<small>/mo</small>
-          </span>
-        </span>
-        
-        <p className="title">{title}</p>
-        
-        <p className="info">
-          {description}
-        </p>
-        
-        <ul className="features">
-          {features.slice(0, 3).map((feature, idx) => (
-            <li key={idx}>
-              <span className="icon">
-                <svg height="24" width="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M0 0h24v24H0z" fill="none"></path>
-                  <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
-                </svg>
-              </span>
-              <span>{feature}</span>
+    <div className="plan-shell">
+      <div className="plan">
+        <div className="plan__border" />
+
+        <div className="card_title__container">
+          <span className="card_title">{title}</span>
+          <p className="card_paragraph">{description}</p>
+        </div>
+
+        <hr className="line" />
+
+        <ul className="card__list">
+          {features.slice(0, 5).map((feature, idx) => (
+            <li key={idx} className="card__list_item">
+              <span className="check">✓</span>
+              <span className="list_text">{feature}</span>
             </li>
           ))}
         </ul>
 
-        {/* Graph context badges */}
-        {(graphCtx.blast_radius_pct > 0 || graphCtx.is_spof || graphCtx.dependency_count > 0) && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.75rem', width: '100%' }}>
-            {graphCtx.blast_radius_pct > 0 && (
-              <span style={{
-                fontSize: '0.65rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: '9999px',
-                backgroundColor: graphCtx.blast_radius_pct > 50 ? '#fef2f2' : '#fffbeb',
-                color: graphCtx.blast_radius_pct > 50 ? '#dc2626' : '#d97706',
-                border: `1px solid ${graphCtx.blast_radius_pct > 50 ? '#fecaca' : '#fde68a'}`,
-              }}>
-                💥 {graphCtx.blast_radius_pct}% blast radius
-              </span>
-            )}
-            {graphCtx.is_spof && (
-              <span style={{
-                fontSize: '0.65rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: '9999px',
-                backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca',
-              }}>
-                ⚠ SPOF
-              </span>
-            )}
-            {graphCtx.dependency_count > 0 && (
-              <span style={{
-                fontSize: '0.65rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: '9999px',
-                backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe',
-              }}>
-                🔗 {graphCtx.dependency_count} deps
-              </span>
-            )}
-            {graphCtx.cross_az_count > 0 && (
-              <span style={{
-                fontSize: '0.65rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: '9999px',
-                backgroundColor: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa',
-              }}>
-                🌐 {graphCtx.cross_az_count} cross-AZ
-              </span>
-            )}
-          </div>
-        )}
-        
+        <div className="pricing">
+          <span>
+            ${savingsPerMonth.toFixed(0)}<small>/mo</small>
+          </span>
+          <span className="yearly">${savingsPerYear.toFixed(0)}/yr</span>
+        </div>
+
         <div className="action">
           <a className="button" href="#" onClick={handleViewDetails}>
             View Details
           </a>
         </div>
       </div>
+
+      <aside className="plan-drawer">
+        <div className="plan-drawer__border" />
+        <div className="plan-drawer__body">
+          <h4 className="drawer-title">Recommendation Details</h4>
+          <p className="drawer-sub">{res.service_type || 'AWS'} · {res.resource_id || 'N/A'}</p>
+
+          <div className="drawer-section">
+            <h5>Financial Snapshot</h5>
+            <ul>
+              <li>Current Cost: ${(cost.current_monthly || 0).toFixed(2)}/mo</li>
+              <li>Projected Savings: ${savingsPerMonth.toFixed(2)}/mo</li>
+              <li>Annual Impact: ${savingsPerYear.toFixed(2)}</li>
+            </ul>
+          </div>
+
+          {(graphCtx.blast_radius_pct > 0 || graphCtx.dependency_count > 0 || graphCtx.is_spof) && (
+            <div className="drawer-section">
+              <h5>Graph Context</h5>
+              <ul>
+                {graphCtx.blast_radius_pct > 0 && <li>Blast Radius: {graphCtx.blast_radius_pct}%</li>}
+                {graphCtx.dependency_count > 0 && <li>Dependencies: {graphCtx.dependency_count}</li>}
+                {graphCtx.cross_az_count > 0 && <li>Cross-AZ Links: {graphCtx.cross_az_count}</li>}
+                {graphCtx.is_spof && <li>Single Point of Failure</li>}
+              </ul>
+            </div>
+          )}
+
+          {steps.length > 0 && (
+            <div className="drawer-section drawer-highlight">
+              <h5>Implementation Steps</h5>
+              <ol>
+                {steps.slice(0, 4).map((step, idx) => (
+                  <li key={idx}>{step}</li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </div>
+      </aside>
     </div>
   );
 }
@@ -133,7 +135,6 @@ export function StyledRecommendationCard({ recommendation, onViewDetails }) {
 export function RecommendationCarousel({ recommendations = [], onViewDetails }) {
   const [currentPage, setCurrentPage] = useState(0);
   const [cardsPerPage, setCardsPerPage] = useState(3);
-  const scrollContainerRef = useRef(null);
 
   // Update cards per page based on screen size
   useEffect(() => {
@@ -156,6 +157,17 @@ export function RecommendationCarousel({ recommendations = [], onViewDetails }) 
   const startIdx = currentPage * cardsPerPage;
   const visibleCards = recommendations.slice(startIdx, startIdx + cardsPerPage);
 
+  // Keep page index valid when cards-per-page or total recommendations change.
+  useEffect(() => {
+    if (totalPages === 0) {
+      setCurrentPage(0);
+      return;
+    }
+    if (currentPage > totalPages - 1) {
+      setCurrentPage(totalPages - 1);
+    }
+  }, [currentPage, totalPages]);
+
   const handlePrevPage = () => {
     setCurrentPage(prev => (prev > 0 ? prev - 1 : totalPages - 1));
   };
@@ -167,14 +179,6 @@ export function RecommendationCarousel({ recommendations = [], onViewDetails }) 
   const handleDotClick = (pageIdx) => {
     setCurrentPage(pageIdx);
   };
-
-  // Scroll to show cards smoothly
-  useEffect(() => {
-    if (scrollContainerRef.current) {
-      const scrollAmount = startIdx * 330; // Approximate card width + gap
-      scrollContainerRef.current.scrollLeft = scrollAmount;
-    }
-  }, [startIdx]);
 
   if (!recommendations || recommendations.length === 0) {
     return (
@@ -189,10 +193,10 @@ export function RecommendationCarousel({ recommendations = [], onViewDetails }) 
   return (
     <div className="recommendations-carousel">
       {/* Cards Container */}
-      <div className="recommendations-cards-wrapper" ref={scrollContainerRef}>
-        {recommendations.map((rec, idx) => (
+      <div className="recommendations-cards-wrapper">
+        {visibleCards.map((rec, idx) => (
           <StyledRecommendationCard 
-            key={rec.id || idx} 
+            key={rec.id || `${startIdx}-${idx}`} 
             recommendation={rec}
             onViewDetails={onViewDetails}
           />
@@ -211,7 +215,7 @@ export function RecommendationCarousel({ recommendations = [], onViewDetails }) 
               <ChevronLeft size={18} />
             </button>
 
-            <span className="pagination-info">
+            <span className="pagination-page-chip">
               {currentPage + 1} / {totalPages}
             </span>
 
@@ -237,8 +241,9 @@ export function RecommendationCarousel({ recommendations = [], onViewDetails }) 
           </div>
 
           {/* Card Count */}
-          <span className="pagination-info">
-            Showing {startIdx + 1}-{Math.min(startIdx + cardsPerPage, recommendations.length)} of {recommendations.length}
+          <span className="pagination-total-chip">
+            <span className="total-chip-number">{recommendations.length}</span>
+            optimization recommendations
           </span>
         </div>
       )}
