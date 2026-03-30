@@ -1,18 +1,17 @@
 """
-LLM Client - Qwen 2.5 7B (Ollama) + Gemini Flash Backup
-========================================================
-KEY FIX: Robust parser that finds ALL recommendations
+LLM Client for FinOps Recommendations
+======================================
+Supports both Gemini Flash (API) and Qwen 2.5 7B (local Ollama).
+Uses environment variable USE_GEMINI to switch between backends.
 """
 
-from __future__ import annotations
-
-import json
-import logging
 import os
-import re
+import json
 import time
+import logging
+import re
+from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +23,7 @@ from src.knowledge_base.aws_finops_best_practices import (
     NETWORKING_BEST_PRACTICES,
     get_best_practices_for_service,
 )
+from src.llm.finops_metrics import FinOpsMetricsExtractor
 
 try:
     import requests
@@ -169,15 +169,7 @@ def _call_ollama(system_prompt: str, user_prompt: str, temperature: float, max_t
 
 def generate_recommendations(context_package, architecture_name: str = "",
                             raw_graph_data: Optional[dict] = None) -> RecommendationResult:
-    """Generate recommendations using pattern-based engine + LLM polishing.
-    
-    Pipeline:
-    1. Run pattern detectors against architecture graph → PatternMatches
-    2. Enrich matches with graph RAG context (deps, blast radius, cross-AZ, traffic)
-    3. Convert enriched matches to card format
-    4. Feed pre-built cards to LLM for language polishing (optional)
-    5. If LLM fails, use engine cards directly (never return 0 results)
-    """
+    """Generate recommendations using engine-grounded LLM + deterministic controls."""
     
     from src.llm.prompts import RECOMMENDATION_SYSTEM_PROMPT, RECOMMENDATION_USER_PROMPT
     
@@ -185,61 +177,34 @@ def generate_recommendations(context_package, architecture_name: str = "",
     result = RecommendationResult(architecture_name=architecture_name)
     
     logger.info("=" * 70)
-    logger.info("GENERATING RECOMMENDATIONS (Engine + LLM)")
+    logger.info("GENERATING RECOMMENDATIONS (Engine-grounded LLM)")
     logger.info("Backend: %s", "Gemini Flash" if USE_GEMINI else "Qwen 2.5 (Ollama)")
     logger.info("=" * 70)
     try:
         pkg_dict = asdict(context_package) if hasattr(context_package, '__dataclass_fields__') else context_package
-        
-        # ═══ STAGE 1: Pattern Engine (deterministic) ═══
-        engine_cards = []
+
+        # ═══ STAGE 0: Deterministic engine facts (grounding + fallback) ═══
+        engine_cards: List[Dict[str, Any]] = []
         if raw_graph_data:
-            t_engine = time.time()
             try:
                 from src.recommendation_engine.scanner import scan_architecture
                 from src.recommendation_engine.enricher import enrich_matches
-                
-                # Log what we got
-                graph_keys = list(raw_graph_data.keys()) if isinstance(raw_graph_data, dict) else "not-a-dict"
-                nodes_raw = raw_graph_data.get("nodes") or raw_graph_data.get("services") or {}
-                edges_raw = raw_graph_data.get("edges") or raw_graph_data.get("dependencies") or []
-                node_count = len(nodes_raw) if isinstance(nodes_raw, (dict, list)) else 0
-                edge_count = len(edges_raw) if isinstance(edges_raw, (dict, list)) else 0
-                logger.info("[ENGINE] graph_data keys=%s, nodes=%d, edges=%d", graph_keys, node_count, edge_count)
-                
-                # Fallback: if API graph has no nodes, try loading graph.json directly
-                scan_data = raw_graph_data
-                if node_count == 0:
-                    import os
-                    graph_json_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "outputs", "graph.json")
-                    if os.path.exists(graph_json_path):
-                        import json as _json
-                        with open(graph_json_path) as _f:
-                            scan_data = _json.load(_f)
-                        logger.info("[ENGINE] Loaded fallback graph.json: %d nodes", len(scan_data.get("nodes", {})))
-                
-                matches = scan_architecture(scan_data)
-                enriched = enrich_matches(matches, scan_data)
+
+                matches = scan_architecture(raw_graph_data)
+                enriched = enrich_matches(matches, raw_graph_data)
                 engine_cards = _engine_to_cards(enriched)
-                logger.info("[ENGINE] %d pattern matches → %d enriched cards in %.1fs",
-                           len(matches), len(engine_cards), time.time() - t_engine)
+                logger.info("[ENGINE] %d matches -> %d cards", len(matches), len(engine_cards))
             except Exception as e:
-                import traceback
-                logger.error("[ENGINE] Failed: %s\n%s", e, traceback.format_exc())
-                logger.warning("[ENGINE] Falling back to LLM-only mode")
-        
-        # ═══ STAGE 2: Build LLM context ═══
-        t1 = time.time()
+                logger.warning("[ENGINE] failed to build grounding facts: %s", e)
+
+        # ═══ STAGE 1: Build LLM context ═══
         service_inventory = _build_service_inventory(raw_graph_data) if raw_graph_data else ""
         cloudwatch_metrics = _build_metrics(raw_graph_data) if raw_graph_data else ""
         graph_context = _build_graph(pkg_dict)
         business_graph_context = _build_business_graph_context(raw_graph_data, pkg_dict) if raw_graph_data else "(No business graph context)"
         pricing_data = _build_pricing()
         aws_best_practices = _build_best_practices(pkg_dict, raw_graph_data)
-        
-        # Add engine results as factual grounding for LLM (source-of-truth facts)
-        engine_context = _format_engine_context(engine_cards) if engine_cards else ""
-        
+
         user_prompt = RECOMMENDATION_USER_PROMPT.format(
             service_inventory=service_inventory,
             cloudwatch_metrics=cloudwatch_metrics,
@@ -248,18 +213,31 @@ def generate_recommendations(context_package, architecture_name: str = "",
             pricing_data=pricing_data,
             aws_best_practices=aws_best_practices,
         )
-        
-        # Append engine context as factual JSON/text so LLM reasons from facts.
-        if engine_context:
-            user_prompt += f"\n\n## ENGINE_FACTS (source of truth from deterministic engine)\n\n{engine_context}"
-        
+
+        # Ground LLM with deterministic engine signals (facts, not format template).
+        if engine_cards:
+            user_prompt += (
+                "\n\n## ENGINE_FACTS (source of truth from deterministic engine)\n\n"
+                + _format_engine_context(engine_cards)
+            )
+
         prompt_chars = len(RECOMMENDATION_SYSTEM_PROMPT) + len(user_prompt)
-        logger.info("[PROMPT SIZE] system=%d, user=%d, total=%d chars (~%d tokens)",
-                   len(RECOMMENDATION_SYSTEM_PROMPT), len(user_prompt), prompt_chars, prompt_chars // 4)
-        
-        # ═══ STAGE 3: LLM call (primary recommender) ═══
-        llm_cards = []
+        logger.info(
+            "[PROMPT SIZE] system=%d, user=%d, total=%d chars (~%d tokens)",
+            len(RECOMMENDATION_SYSTEM_PROMPT),
+            len(user_prompt),
+            prompt_chars,
+            prompt_chars // 4,
+        )
+
+        # ═══ STAGE 2: LLM call (primary recommender) ═══
+        llm_cards: List[Dict[str, Any]] = []
         try:
+            logger.info("[STAGE 2] Starting LLM call...")
+            logger.info("[LLM] Using backend: %s", "Gemini" if USE_GEMINI else "Ollama")
+            logger.info("[LLM] Model: %s", OLLAMA_MODEL if not USE_GEMINI else GEMINI_MODEL)
+            logger.info("[LLM] URL: %s", OLLAMA_URL if not USE_GEMINI else "Gemini API")
+            
             t3 = time.time()
             raw_response = call_llm(
                 system_prompt=RECOMMENDATION_SYSTEM_PROMPT,
@@ -268,52 +246,95 @@ def generate_recommendations(context_package, architecture_name: str = "",
                 max_tokens=6000,
                 architecture_name=architecture_name,
             )
-            logger.info("[TIMING] LLM call completed in %.1fs (%d chars)",
-                       time.time() - t3, len(raw_response) if raw_response else 0)
-            
+            logger.info(
+                "[TIMING] LLM call completed in %.1fs (%d chars)",
+                time.time() - t3,
+                len(raw_response) if raw_response else 0,
+            )
+
             if raw_response:
                 _save_response(raw_response, architecture_name)
                 llm_cards = _parse_structured_json_recommendations(raw_response)
                 if not llm_cards:
                     llm_cards = _parse_all_recommendations(raw_response)
                 logger.info("[PIPELINE] LLM parsed: %d recommendations", len(llm_cards))
-                
+
                 if llm_cards:
                     llm_cards = _deduplicate_cards(llm_cards)
                     if raw_graph_data:
                         llm_cards = _enrich_cards(llm_cards, raw_graph_data, pkg_dict)
-                    llm_cards = _apply_deterministic_quality_gates(
-                        llm_cards,
-                        raw_graph_data,
-                        min_monthly_savings=50.0,
-                    )
+                        llm_cards = _apply_deterministic_quality_gates(
+                            llm_cards,
+                            raw_graph_data,
+                            min_monthly_savings=50.0,
+                        )
         except Exception as e:
-            logger.warning("[LLM] Call failed: %s — using engine cards only", e)
+            logger.error("[LLM] Call failed with exception: %s — will fall back to engine", e, exc_info=True)
+
+        # ═══ STAGE 3: Validate LLM-proposed recommendations ═══
+        validated_llm_cards: List[Dict[str, Any]] = []
+        rejected_llm_cards: List[Dict[str, Any]] = []
         
-        # ═══ STAGE 4: LLM-primary selection with deterministic fallback ═══
-        if llm_cards:
-            cards = llm_cards
-            logger.info("[PIPELINE] Final: %d cards (primary=llm, fallback=engine)", len(cards))
+        if llm_cards and raw_graph_data:
+            try:
+                from src.recommendation_engine.validator import validate_llm_recommendations
+                
+                validated_llm_cards, rejected_llm_cards = validate_llm_recommendations(
+                    llm_cards,
+                    raw_graph_data,
+                    engine_cards
+                )
+                
+                logger.info(
+                    "[VALIDATION] LLM cards: %d total → %d validated, %d rejected",
+                    len(llm_cards),
+                    len(validated_llm_cards),
+                    len(rejected_llm_cards)
+                )
+            except Exception as e:
+                logger.warning("[VALIDATION] Failed: %s — using LLM cards as-is", e)
+                validated_llm_cards = llm_cards
         else:
-            cards = engine_cards
-            logger.info("[PIPELINE] Final: %d cards (llm empty/failed, using engine fallback)", len(cards))
+            validated_llm_cards = llm_cards
+
+        # ═══ STAGE 4: Merge selection (engine truth + validated LLM) ═══
+        cards = _merge_engine_and_llm_cards(engine_cards, validated_llm_cards)
         
+        # Optional: Include rejected cards as "insights" (commented out by default)
+        # for rejected_card in rejected_llm_cards:
+        #     rejected_card['is_insight'] = True
+        #     cards.append(rejected_card)
+        
+        if raw_graph_data:
+            cards = [_populate_card_metrics(c, raw_graph_data) for c in cards]
+        
+        logger.info(
+            "[PIPELINE] Final: %d cards (engine=%d, validated_llm=%d, rejected_llm=%d) with metrics hardened",
+            len(cards),
+            len(engine_cards),
+            len(validated_llm_cards),
+            len(rejected_llm_cards)
+        )
+
         if not cards:
-            logger.warning("⚠️  No recommendations generated from engine or LLM — returning empty set")
-        
-        # Finalize (return empty list if no cards instead of crashing)
+            logger.warning("⚠️  No recommendations generated from engine/LLM — returning empty set")
+
         result.cards = cards
         result.llm_used = bool(llm_cards)
         result.total_estimated_savings = sum(c.get("total_estimated_savings", 0) for c in cards) if cards else 0.0
         result.generation_time_ms = int((time.time() - start) * 1000)
-        
+
         logger.info("=" * 70)
-        logger.info("COMPLETE: %d recommendations, $%.2f savings, %dms",
-                   len(cards), result.total_estimated_savings, result.generation_time_ms)
+        logger.info(
+            "COMPLETE: %d recommendations, $%.2f savings, %dms",
+            len(cards),
+            result.total_estimated_savings,
+            result.generation_time_ms,
+        )
         logger.info("=" * 70)
-        
+
         return result
-    
+
     except Exception as e:
         logger.error("Generation failed: %s", e, exc_info=True)
         result.error = str(e)
@@ -339,16 +360,17 @@ def _engine_to_cards(enriched_matches: List[Dict]) -> List[Dict]:
     - cost_breakdown.{current_monthly, line_items[].{item, usage, cost}}
     - severity, category, implementation_complexity
     """
-    cards = []
+    cards: List[Dict[str, Any]] = []
+
     for match in enriched_matches:
         enrichment = match.get("enrichment", {})
+        gm = match.get("graph_metrics", {})
         traffic = enrichment.get("traffic", {})
         cross_az = enrichment.get("cross_az", {})
         redundancy = enrichment.get("redundancy", {})
-        gm = match.get("graph_metrics", {})
         deps_in = enrichment.get("dependencies_in", [])
         deps_out = enrichment.get("dependencies_out", [])
-        
+
         # ── Resource info ──
         resource_id = match.get("resource_id", "")
         resource_name = match.get("resource_name", "")
@@ -360,25 +382,25 @@ def _engine_to_cards(enriched_matches: List[Dict]) -> List[Dict]:
         savings = match.get("estimated_savings_monthly", 0)
         cost = match.get("current_monthly_cost", 0)
         savings_pct = match.get("savings_percentage", 0)
-        
+
         # ── Why it matters (narrative) ──
         why = match.get("rendered_why_it_matters", "")
-        
+
         # ── Build implementation CLI command ──
         impl_cmd = match.get("rendered_implementation", match.get("implementation_template", ""))
-        
+
         # ── Map priority to severity ──
         priority_to_severity = {"HIGH": "high", "MEDIUM": "medium", "LOW": "low"}
         severity = priority_to_severity.get(match.get("priority", "MEDIUM"), "medium")
-        
+
         # ── Build dependent_services list (names of services that depend on this) ──
         dependent_services = [d.get("resource", "") for d in deps_in if d.get("resource")]
         depends_on_services = [d.get("resource", "") for d in deps_out if d.get("resource")]
-        
+
         # ── Cross-AZ dependency details ──
         cross_az_deps = cross_az.get("az_pairs", [])
         cross_az_count = cross_az.get("cross_az_count", 0)
-        
+
         # ── Build current_config string ──
         config_parts = []
         if current_type:
@@ -389,7 +411,7 @@ def _engine_to_cards(enriched_matches: List[Dict]) -> List[Dict]:
         if gm.get("utilization_score", 0) > 0:
             config_parts.append(f"CPU Utilization: {gm['utilization_score']}%")
         current_config = " | ".join(config_parts)
-        
+
         # ── Build cost line items ──
         line_items = [
             {"item": f"{aws_service} Instance/Service Cost", "usage": f"{env} ({region})", "cost": cost},
@@ -397,50 +419,50 @@ def _engine_to_cards(enriched_matches: List[Dict]) -> List[Dict]:
         if cross_az.get("has_cross_az"):
             xaz_cost = cross_az.get("estimated_monthly_cost", 0)
             line_items.append({"item": "Cross-AZ Data Transfer", "usage": f"{cross_az_count} cross-AZ edges", "cost": xaz_cost})
-        
+
         # ── Build full analysis text ──
         analysis_parts = []
         analysis_parts.append(f"Pattern Detected: {match.get('pattern_id', 'N/A')}")
         analysis_parts.append(f"Best Practice: {match.get('linked_best_practice', '')}")
-        analysis_parts.append(f"")
+        analysis_parts.append("")
         analysis_parts.append(f"Current State: {current_type} in {region} ({env} environment)")
         analysis_parts.append(f"Recommended: Migrate to {recommended_type}")
         analysis_parts.append(f"Estimated Savings: ${savings:.2f}/month (${savings * 12:.2f}/year)")
-        analysis_parts.append(f"")
+        analysis_parts.append("")
         if why:
             analysis_parts.append(f"Impact Analysis: {why}")
         if not redundancy.get("has_full_redundancy", True):
-            analysis_parts.append(f"⚠ WARNING: No redundancy path exists. {len(dependent_services)} service(s) will be impacted if this resource fails.")
+            analysis_parts.append(f"WARNING: No redundancy path exists. {len(dependent_services)} service(s) will be impacted if this resource fails.")
         if gm.get("single_point_of_failure"):
-            analysis_parts.append(f"🔴 CRITICAL: This is a Single Point of Failure. Add redundancy before making changes.")
+            analysis_parts.append("CRITICAL: This is a Single Point of Failure. Add redundancy before making changes.")
         full_analysis = "\n".join(analysis_parts)
-        
+
         # ── Build implementation steps ──
         impl_steps = []
         impl_steps.append(f"1. Review current {aws_service} resource: {resource_id}")
-        impl_steps.append(f"2. Verify no active deployments depend on current configuration")
+        impl_steps.append("2. Verify no active deployments depend on current configuration")
         if dependent_services:
             impl_steps.append(f"3. Notify teams owning dependent services: {', '.join(dependent_services)}")
         impl_steps.append(f"{'4' if dependent_services else '3'}. Execute change in staging first:")
         impl_steps.append(f"   {impl_cmd}")
         impl_steps.append(f"{'5' if dependent_services else '4'}. Monitor CloudWatch metrics for 24h post-change")
         impl_steps.append(f"{'6' if dependent_services else '5'}. Validate: aws cloudwatch get-metric-statistics --namespace AWS/{aws_service}")
-        
+
         # ── Cascade risk label ──
         cascade_risk = gm.get("cascading_failure_risk", enrichment.get("cascade_risk", "low"))
-        
+
         # ── Risk mitigation text ──
         risk_parts = []
         risk_parts.append(f"Risk Level: {match.get('risk_level', 'LOW')}")
         if dependent_services:
-            risk_parts.append(f"Impact: {len(dependent_services)} dependent service(s) — {', '.join(dependent_services)}")
+            risk_parts.append(f"Impact: {len(dependent_services)} dependent service(s) - {', '.join(dependent_services)}")
         if gm.get("single_point_of_failure"):
             risk_parts.append("SPOF: Add Multi-AZ or replica BEFORE making changes")
         if not redundancy.get("has_full_redundancy", True):
             risk_parts.append("No redundancy: Create failover path before proceeding")
         risk_parts.append("Always test in staging/dev environment first")
         risk_mitigation = ". ".join(risk_parts)
-        
+
         card = {
             # ── Core fields that frontend reads ──
             "title": match.get("title", match.get("recommendation_template", "Optimization")[:80]),
@@ -451,7 +473,7 @@ def _engine_to_cards(enriched_matches: List[Dict]) -> List[Dict]:
             "category": match.get("category", "right_sizing").replace("_", "-"),
             "implementation_complexity": "low" if match.get("risk_level") == "LOW" else ("high" if match.get("risk_level") == "HIGH" else "medium"),
             "risk_level": match.get("risk_level", "LOW"),
-            
+
             # ── Resource identification ──
             "resource_identification": {
                 "resource_id": resource_id,
@@ -470,7 +492,7 @@ def _engine_to_cards(enriched_matches: List[Dict]) -> List[Dict]:
                     "Region": region,
                 },
             },
-            
+
             # ── Cost breakdown (with line_items for table) ──
             "cost_breakdown": {
                 "current_monthly": cost,
@@ -479,7 +501,7 @@ def _engine_to_cards(enriched_matches: List[Dict]) -> List[Dict]:
                 "annual_impact": savings * 12,
                 "line_items": line_items,
             },
-            
+
             # ── Graph context (field names MATCH FullRecommendationCard JSX) ──
             "graph_context": {
                 "blast_radius_pct": round(enrichment.get("blast_radius_pct", 0), 1),
@@ -500,7 +522,7 @@ def _engine_to_cards(enriched_matches: List[Dict]) -> List[Dict]:
                 "has_redundancy": redundancy.get("has_full_redundancy", True),
                 "alternative_paths": redundancy.get("alternative_paths", {}),
             },
-            
+
             # ── Recommendations array (frontend iterates this) ──
             "recommendations": [{
                 "title": match.get("linked_best_practice", ""),
@@ -512,7 +534,7 @@ def _engine_to_cards(enriched_matches: List[Dict]) -> List[Dict]:
                 "estimated_monthly_savings": savings,
                 "confidence": "high" if match.get("risk_level") == "LOW" else "medium",
             }],
-            
+
             # ── Best practice (frontend checks this field name) ──
             "finops_best_practice": match.get("linked_best_practice", ""),
             "linked_best_practice": match.get("linked_best_practice", ""),
@@ -521,7 +543,7 @@ def _engine_to_cards(enriched_matches: List[Dict]) -> List[Dict]:
             "source": "engine",
         }
         cards.append(card)
-    
+
     return cards
 
 
@@ -546,109 +568,321 @@ def _format_engine_context(engine_cards: List[Dict]) -> str:
     return "\n".join(lines)
 
 
-def _merge_engine_and_llm_cards(engine_cards: List[Dict], llm_cards: List[Dict]) -> List[Dict]:
-    """Merge engine cards (base) with LLM cards (supplements).
-    
-    Behavior:
-    1) Engine cards are always included (deterministic baseline).
-    2) If an LLM card matches an engine resource/title, it ENHANCES the existing
-       engine card instead of being dropped.
-    3) LLM cards for truly new opportunities are appended.
-    4) Cards explicitly tagged as [NEW DISCOVERY] are preserved as LLM cards,
-       even when they target an existing resource.
+def _extract_primary_action_bucket(card: Dict[str, Any]) -> str:
+    """Classify a recommendation into an action bucket for dedup/conflict handling."""
+    title = str(card.get("title", "") or "").lower()
+    rec0 = (card.get("recommendations") or [{}])[0]
+    action = str(rec0.get("action", "") or "").lower()
+    pattern_id = str(card.get("pattern_id", "") or "").lower()
+    text = f"{title} {action} {pattern_id}"
+
+    if any(k in text for k in ("terminate", "decommission", "delete", "retire", "shutdown", "stop instance", "stop-instances")):
+        return "terminate"
+    if any(k in text for k in ("right-size", "rightsize", "downsize", "resize", "rightsizing", "rightsized")):
+        return "right_size"
+    return "other"
+
+
+def _conflict_resolution_signal(cards_for_resource: List[Dict[str, Any]]) -> str:
+    """Resolve terminate-vs-right-size using explicit business confirmation fields.
+
+    Returns one of: terminate, right_size, ambiguous.
     """
-    if not engine_cards:
-        return llm_cards or []
-    if not llm_cards:
-        return engine_cards
+    bag: List[str] = []
+    backups_safe = False
 
-    merged = list(engine_cards)
+    for c in cards_for_resource:
+        rid = c.get("resource_identification", {}) or {}
+        tags = rid.get("tags", {}) or {}
+        gc = c.get("graph_context", {}) or {}
+        ctx = c.get("decision_context", {}) or {}
 
-    # Build lookup for engine cards by resource and title prefix.
-    engine_by_resource: Dict[str, int] = {}
-    engine_title_prefixes: Dict[str, int] = {}
-    for idx, card in enumerate(merged):
-        rid = card.get("resource_identification", {}) or {}
-        resource_id = str(rid.get("resource_id", "") or "").strip().lower()
-        resource_name = str(rid.get("resource_name", "") or "").strip().lower()
-        title_prefix = str(card.get("title", "") or "").strip().lower()[:40]
+        for v in (
+            ctx.get("instance_lifecycle_decision"),
+            c.get("instance_lifecycle_decision"),
+            rid.get("instance_lifecycle_decision"),
+            tags.get("instance_lifecycle_decision"),
+            tags.get("business_decision"),
+            c.get("business_decision"),
+            c.get("future_use_status"),
+            tags.get("future_use_status"),
+        ):
+            if v is not None:
+                bag.append(str(v).strip().lower())
 
-        if resource_id:
-            engine_by_resource[resource_id] = idx
-        if resource_name:
-            engine_by_resource[resource_name] = idx
-        if title_prefix:
-            engine_title_prefixes[title_prefix] = idx
+        backup_vals = (
+            ctx.get("backup_safe"),
+            c.get("backup_safe"),
+            rid.get("backup_safe"),
+            tags.get("backup_safe"),
+            gc.get("backup_safe"),
+            tags.get("backups_verified"),
+            c.get("backups_verified"),
+        )
+        for bv in backup_vals:
+            if isinstance(bv, bool):
+                backups_safe = backups_safe or bv
+            elif isinstance(bv, str) and bv.strip().lower() in {"true", "yes", "verified", "safe"}:
+                backups_safe = True
 
-    appended = 0
-    enhanced = 0
+    if any(k in " ".join(bag) for k in ("no future use", "decommission", "retire", "terminate")) and backups_safe:
+        return "terminate"
+    if any(k in " ".join(bag) for k in ("needed", "keep", "still used", "oversized", "rightsizing")):
+        return "right_size"
+    return "ambiguous"
 
-    for llm_card in llm_cards:
-        llm_card = dict(llm_card)
-        llm_card["source"] = "llm"
 
-        llm_rid = llm_card.get("resource_identification", {}) or {}
-        llm_resource_id = str(llm_rid.get("resource_id", "") or "").strip().lower()
-        llm_resource_name = str(llm_rid.get("resource_name", "") or "").strip().lower()
-        llm_title = str(llm_card.get("title", "") or "").strip()
-        llm_title_prefix = llm_title.lower()[:40]
-        is_new_discovery = "[new discovery]" in llm_title.lower()
+def _dedupe_and_resolve_conflicts(cards: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Remove true duplicates and collapse terminate-vs-right-size conflicts per resource."""
+    if not cards:
+        return cards
 
-        match_idx = None
-        for key in (llm_resource_id, llm_resource_name):
-            if key and key in engine_by_resource:
-                match_idx = engine_by_resource[key]
-                break
-        if match_idx is None and llm_title_prefix and llm_title_prefix in engine_title_prefixes:
-            match_idx = engine_title_prefixes[llm_title_prefix]
+    # 1) True duplicate removal: same resource + same action bucket + same savings.
+    deduped: List[Dict[str, Any]] = []
+    seen: Dict[Tuple[str, str, int], int] = {}
+    dropped_dups = 0
 
-        if match_idx is not None and not is_new_discovery:
-            base = merged[match_idx]
-            # Keep deterministic numeric/scope fields from engine, but replace
-            # narrative-heavy fields with LLM enrichment when present.
-            if llm_card.get("title"):
-                base["title"] = llm_card.get("title")
+    for card in cards:
+        rid = str((card.get("resource_identification") or {}).get("resource_id", "") or "").strip().lower()
+        action_bucket = _extract_primary_action_bucket(card)
+        savings = float(card.get("total_estimated_savings", 0) or 0)
+        key = (rid, action_bucket, int(round(savings * 100)))
 
-            # Replace recommendation details only when LLM content has
-            # meaningful savings context; otherwise preserve engine details.
-            llm_recs = llm_card.get("recommendations") or []
-            if llm_recs:
-                llm_rec0 = llm_recs[0] if isinstance(llm_recs[0], dict) else {}
-                llm_rec_savings = llm_rec0.get("estimated_monthly_savings", 0)
-                try:
-                    llm_rec_savings = float(llm_rec_savings or 0)
-                except Exception:
-                    llm_rec_savings = 0.0
-
-                base_savings = base.get("total_estimated_savings", 0)
-                try:
-                    base_savings = float(base_savings or 0)
-                except Exception:
-                    base_savings = 0.0
-
-                if llm_rec_savings > 0 or base_savings <= 0:
-                    base["recommendations"] = llm_recs
-            if llm_card.get("raw_analysis"):
-                base["raw_analysis"] = llm_card.get("raw_analysis")
-            if llm_card.get("why_it_matters"):
-                base["why_it_matters"] = llm_card.get("why_it_matters")
-            if llm_card.get("linked_best_practice"):
-                base["linked_best_practice"] = llm_card.get("linked_best_practice")
-            if llm_card.get("finops_best_practice"):
-                base["finops_best_practice"] = llm_card.get("finops_best_practice")
-
-            # Provenance markers for UI/debugging.
-            base["source"] = "engine+llm"
-            base["llm_enhanced"] = True
-            enhanced += 1
+        if key in seen:
+            prev = deduped[seen[key]]
+            prev_source = str(prev.get("source", "") or "")
+            new_source = str(card.get("source", "") or "")
+            # Prefer engine card when duplicate pair exists.
+            if prev_source != "engine" and new_source == "engine":
+                deduped[seen[key]] = card
+            dropped_dups += 1
             continue
 
+        seen[key] = len(deduped)
+        deduped.append(card)
+
+    # 2) Conflict resolution: same resource has terminate and right-size options.
+    by_resource: Dict[str, List[Dict[str, Any]]] = {}
+    for c in deduped:
+        rid = str((c.get("resource_identification") or {}).get("resource_id", "") or "").strip().lower()
+        if not rid:
+            rid = f"_noid_{id(c)}"
+        by_resource.setdefault(rid, []).append(c)
+
+    resolved: List[Dict[str, Any]] = []
+    conflict_resolved = 0
+
+    for rid, group in by_resource.items():
+        terminate_cards = [c for c in group if _extract_primary_action_bucket(c) == "terminate"]
+        right_size_cards = [c for c in group if _extract_primary_action_bucket(c) == "right_size"]
+
+        if terminate_cards and right_size_cards:
+            decision = _conflict_resolution_signal(group)
+            if decision == "terminate":
+                keep = terminate_cards
+                drop = right_size_cards
+                reason = "business confirmed no future use and backups verified"
+            else:
+                # Default-safe branch: keep right-size unless explicit terminate signal exists.
+                keep = right_size_cards
+                drop = terminate_cards
+                reason = "resource still needed/oversized or terminate confirmation missing"
+
+            for c in keep:
+                c.setdefault("conflict_resolution", {})
+                c["conflict_resolution"].update({
+                    "resource_id": rid,
+                    "decision": decision if decision != "ambiguous" else "right_size",
+                    "reason": reason,
+                    "dropped_alternatives": len(drop),
+                })
+                resolved.append(c)
+            for c in group:
+                if c not in keep and c not in drop:
+                    resolved.append(c)
+            conflict_resolved += len(drop)
+            continue
+
+        resolved.extend(group)
+
+    logger.info(
+        "[DEDUP/CONFLICT] in=%d true_duplicates_removed=%d conflict_alternatives_removed=%d out=%d",
+        len(cards),
+        dropped_dups,
+        conflict_resolved,
+        len(resolved),
+    )
+    return resolved
+
+
+def _merge_engine_and_llm_cards(engine_cards: List[Dict], llm_cards: List[Dict]) -> List[Dict]:
+    """Merge engine and LLM cards with perfect balance.
+    
+    Strategy:
+    1) Engine cards ALWAYS displayed (deterministic baseline).
+    2) LLM cards for EXISTING resources are always appended (adds narrative diversity).
+    3) LLM cards for NEW resources are appended (true discoveries).
+    4) Deduplication is SMART: only remove near-identical pairs, keep variants.
+    
+    Result: Users see BOTH engine facts AND LLM insights without aggressive filtering.
+    """
+    if not engine_cards and not llm_cards:
+        return []
+    if not engine_cards:
+        return [_coerce_backend_card_template(c, source_hint="llm") for c in (llm_cards or [])]
+    if not llm_cards:
+        return [_coerce_backend_card_template(c, source_hint="engine") for c in engine_cards]
+
+    # Start with all engine cards (always included).
+    merged = [_coerce_backend_card_template(c, source_hint="engine") for c in engine_cards]
+
+    appended = 0
+
+    # Process LLM cards: append all (post-step resolver handles duplicate/conflict removal).
+    for llm_card in llm_cards:
+        llm_card = _coerce_backend_card_template(llm_card, source_hint="llm")
         merged.append(llm_card)
         appended += 1
 
-    logger.info("[MERGE] engine=%d llm=%d => final=%d (enhanced=%d appended=%d)",
-                len(engine_cards), len(llm_cards), len(merged), enhanced, appended)
-    return merged
+    merged = _dedupe_and_resolve_conflicts(merged)
+
+    # Sort by savings to show high-impact recommendations first.
+    merged.sort(
+        key=lambda c: float(c.get("total_estimated_savings", 0) or 0),
+        reverse=True,
+    )
+
+    logger.info("[MERGE] engine=%d llm=%d appended=%d => final=%d (post-policy dedup/conflict applied)",
+                len(engine_cards), len(llm_cards), appended, len(merged))
+    return [_coerce_backend_card_template(c) for c in merged]
+
+
+def _coerce_backend_card_template(card: Dict[str, Any], source_hint: str = "") -> Dict[str, Any]:
+    """Force a recommendation card into backend/frontend-compatible template shape."""
+    c = _normalize_llm_card_shape(dict(card))
+
+    if source_hint and not c.get("source"):
+        c["source"] = source_hint
+
+    # recommendation_number MUST be an integer, never a string.
+    try:
+        rec_num = int(c.get("recommendation_number", 1) or 1)
+    except (ValueError, TypeError):
+        rec_num = 1
+    c["recommendation_number"] = rec_num
+
+    c.setdefault("priority", c.get("severity", "medium"))
+    c.setdefault("inefficiencies", [])
+    c.setdefault("category", "right_sizing")
+    c.setdefault("severity", "medium")
+    c.setdefault("risk_level", "medium")
+    c.setdefault("implementation_complexity", "medium")
+    c.setdefault("why_it_matters", c.get("raw_analysis", ""))
+    c.setdefault("linked_best_practice", "")
+    c.setdefault("finops_best_practice", c.get("linked_best_practice", ""))
+
+    rid = c.setdefault("resource_identification", {})
+    rid.setdefault("resource_id", "")
+    rid.setdefault("resource_name", rid.get("service_name", rid.get("resource_id", "")))
+    rid.setdefault("service_name", rid.get("resource_name", rid.get("resource_id", "")))
+    rid.setdefault("service_type", c.get("service_type", rid.get("service_type", "service")))
+
+    c.setdefault("service_type", rid.get("service_type", "service"))
+
+    cost = c.setdefault("cost_breakdown", {})
+    cost.setdefault("current_monthly", 0.0)
+    cost.setdefault("projected_monthly", 0.0)
+    if not cost.get("annual_impact"):
+        savings_for_annual = float(c.get("total_estimated_savings", 0) or 0)
+        cost["annual_impact"] = round(savings_for_annual * 12, 2)
+    if cost.get("savings_percentage") is None:
+        current_m = float(cost.get("current_monthly", 0) or 0)
+        projected_m = float(cost.get("projected_monthly", 0) or 0)
+        if current_m > 0:
+            cost["savings_percentage"] = round(max(0.0, (current_m - projected_m) / current_m * 100.0), 2)
+        else:
+            cost["savings_percentage"] = 0.0
+    if not isinstance(cost.get("line_items"), list):
+        cost["line_items"] = []
+
+    graph = c.setdefault("graph_context", {})
+    graph.setdefault("dependency_count", 0)
+    graph.setdefault("dependent_services", [])
+    graph.setdefault("depends_on_count", 0)
+    graph.setdefault("blast_radius_pct", 0)
+    graph.setdefault("blast_radius_services", 0)
+    graph.setdefault("is_spof", False)
+    graph.setdefault("cascading_failure_risk", "low")
+    graph.setdefault("centrality", 0)
+    graph.setdefault("narrative", "")
+    graph.setdefault("cross_az_count", 0)
+
+    graph.setdefault("cross_az_dependencies", [])
+
+    # Wire metrics_summary: comprehensive finops metrics (CPU, IOPS, P95 latency, cost, error rate)
+    metrics_summary = c.setdefault("metrics_summary", {})
+    metrics_summary.setdefault("cpu_utilization_percent", None)
+    metrics_summary.setdefault("memory_utilization_percent", None)
+    metrics_summary.setdefault("iops", None)
+    metrics_summary.setdefault("read_iops", None)
+    metrics_summary.setdefault("write_iops", None)
+    metrics_summary.setdefault("latency_p50_ms", None)
+    metrics_summary.setdefault("latency_p95_ms", None)
+    metrics_summary.setdefault("latency_p99_ms", None)
+    metrics_summary.setdefault("error_rate_percent", None)
+    metrics_summary.setdefault("throughput_qps", None)
+    metrics_summary.setdefault("throughput_rps", None)
+    metrics_summary.setdefault("network_in_mbps", None)
+    metrics_summary.setdefault("network_out_mbps", None)
+    metrics_summary.setdefault("cost_monthly", None)
+    metrics_summary.setdefault("cost_p95_monthly", None)
+    metrics_summary.setdefault("health_score", 75.0)
+    metrics_summary.setdefault("observation", "")
+    recs = c.setdefault("recommendations", [])
+    if not recs:
+        recs.append({
+            "action_number": 1,
+            "title": c.get("title", "Optimization Recommendation"),
+            "description": c.get("title", "Optimization Recommendation"),
+            "action": c.get("title", "Optimization Recommendation"),
+            "estimated_monthly_savings": float(c.get("total_estimated_savings", 0) or 0),
+            "implementation_steps": [],
+            "validation_steps": [],
+            "performance_impact": f"Estimated savings: ${float(c.get('total_estimated_savings', 0) or 0):.2f}/mo",
+            "risk_mitigation": f"Risk level: {c.get('risk_level', 'medium')}",
+            "full_analysis": str(c.get("raw_analysis", ""))[:1200],
+            "confidence": "medium",
+        })
+
+    normalized_recs: List[Dict[str, Any]] = []
+    for i, rec in enumerate(recs, 1):
+        if not isinstance(rec, dict):
+            rec = {"action": str(rec)}
+        rec.setdefault("action_number", i)
+        rec.setdefault("title", c.get("title", "Optimization Recommendation"))
+        rec.setdefault("action", rec.get("title", c.get("title", "Optimization Recommendation")))
+        rec.setdefault("description", rec.get("title", c.get("title", "Optimization Recommendation")))
+        try:
+            rec.setdefault("estimated_monthly_savings", float(c.get("total_estimated_savings", 0) or 0))
+        except Exception:
+            rec.setdefault("estimated_monthly_savings", 0.0)
+        if not isinstance(rec.get("implementation_steps"), list):
+            rec["implementation_steps"] = [str(rec.get("implementation_steps", "")).strip()] if rec.get("implementation_steps") else []
+        if not isinstance(rec.get("validation_steps"), list):
+            rec["validation_steps"] = [
+                "Track CloudWatch/Datadog metrics for 24h after rollout",
+                "Validate no latency/error regression on dependent services",
+                "Confirm monthly cost trend reduction in billing dashboard",
+            ]
+        rec.setdefault("performance_impact", f"Estimated savings: ${float(rec.get('estimated_monthly_savings', 0) or 0):.2f}/mo")
+        rec.setdefault("risk_mitigation", f"Risk level: {c.get('risk_level', 'medium')}")
+        rec.setdefault("full_analysis", str(c.get("raw_analysis", c.get("why_it_matters", "")))[:1200])
+        rec.setdefault("confidence", "medium")
+        normalized_recs.append(rec)
+
+    c["recommendations"] = normalized_recs
+
+    return c
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1383,17 +1617,173 @@ def _build_service_inventory(graph_data: dict) -> str:
     return "\n".join(lines)
 
 
+def _extract_service_metrics(service: dict, edges: List[Dict] = None) -> Dict[str, Any]:
+    """Extract comprehensive finops metrics from a service node.
+
+    Uses FinOpsMetricsExtractor for consistent, hardened metric extraction.
+    Returns structured metrics dict with P95, CPU, IOPS, latency, and more.
+    """
+    # Use the comprehensive extractor
+    full_metrics = FinOpsMetricsExtractor.extract_node_metrics(service, edges or [])
+
+    # Return the full dict (frontend can use all fields)
+    return full_metrics
+
+
+def _populate_card_metrics(card: Dict[str, Any], graph_data: dict) -> Dict[str, Any]:
+    """Wire comprehensive finops metrics from graph_data into recommendation card.
+
+    Looks up the resource_id in graph_data and populates metrics_summary with
+    real CloudWatch metrics (CPU, IOPS, P95 latency, P95 cost, error rate, etc.)
+    to fully harden the recommendation with concrete data.
+    """
+    resource_id = card.get("resource_identification", {}).get("resource_id", "")
+    if not resource_id or not graph_data:
+        return card
+
+    # Find the service in graph_data
+    services = graph_data.get("services") or graph_data.get("nodes") or []
+    edges = graph_data.get("dependencies") or graph_data.get("edges") or []
+
+    target_service = None
+    for svc in services:
+        if svc.get("id") == resource_id or svc.get("node_id") == resource_id:
+            target_service = svc
+            break
+
+    if not target_service:
+        return card
+
+    # Extract comprehensive metrics for this service
+    metrics = _extract_service_metrics(target_service, edges)
+
+    # Populate metrics_summary with all extracted values
+    metrics_summary = card.setdefault("metrics_summary", {})
+
+    # Core metrics (CPU, Memory, IOPS, Latency)
+    metrics_summary["cpu_utilization_percent"] = metrics.get("cpu_utilization_percent")
+    metrics_summary["memory_utilization_percent"] = metrics.get("memory_utilization_percent")
+    metrics_summary["iops"] = metrics.get("iops")
+    metrics_summary["read_iops"] = metrics.get("read_iops")
+    metrics_summary["write_iops"] = metrics.get("write_iops")
+
+    # Latency metrics (P50, P95, P99)
+    metrics_summary["latency_p50_ms"] = metrics.get("latency_p50_ms")
+    metrics_summary["latency_p95_ms"] = metrics.get("latency_p95_ms")
+    metrics_summary["latency_p99_ms"] = metrics.get("latency_p99_ms")
+
+    # Error and throughput metrics
+    metrics_summary["error_rate_percent"] = metrics.get("error_rate_percent")
+    metrics_summary["throughput_qps"] = metrics.get("throughput_qps")
+    metrics_summary["throughput_rps"] = metrics.get("throughput_rps")
+
+    # Network metrics
+    metrics_summary["network_in_mbps"] = metrics.get("network_in_mbps")
+    metrics_summary["network_out_mbps"] = metrics.get("network_out_mbps")
+
+    # Cost metrics (including P95)
+    metrics_summary["cost_monthly"] = metrics.get("cost_monthly")
+    metrics_summary["cost_p95_monthly"] = metrics.get("cost_p95_monthly")
+
+    # Health
+    metrics_summary["health_score"] = metrics.get("health_score")
+
+    # Build readable observation from all metrics
+    observation = metrics.get("observation", "")
+    if not observation:
+        observations = []
+        if metrics.get("cpu_utilization_percent") is not None:
+            observations.append(f"CPU {metrics['cpu_utilization_percent']}%")
+        if metrics.get("iops") is not None:
+            observations.append(f"IOPS {metrics['iops']:.0f}")
+        if metrics.get("latency_p95_ms") is not None:
+            observations.append(f"P95 latency {metrics['latency_p95_ms']:.0f}ms")
+        if metrics.get("throughput_qps") is not None:
+            observations.append(f"Throughput {metrics['throughput_qps']:.0f} qps")
+        if metrics.get("error_rate_percent") is not None and metrics["error_rate_percent"] > 0.1:
+            observations.append(f"Errors {metrics['error_rate_percent']:.2f}%")
+        if metrics.get("memory_utilization_percent") is not None:
+            observations.append(f"Memory {metrics['memory_utilization_percent']}%")
+
+        observation = " | ".join(observations) if observations else "No detailed metrics available"
+
+    metrics_summary["observation"] = observation
+
+    card["metrics_summary"] = metrics_summary
+    return card
+
+
 def _build_metrics(graph_data: dict) -> str:
-    """Build metrics summary."""
+    """Build detailed metrics summary for LLM context with explicit CPU, IOPS, latency."""
     services = graph_data.get("services") or []
     lines = []
     
-    for svc in services[:15]:
-        metrics = svc.get("metrics", {})
-        if metrics:
-            lines.append(f"{svc.get('id')}: {metrics}")
+    lines.append("CLOUDWATCH METRICS (current utilization—inform right-sizing decisions):")
     
-    return "\n".join(lines) if lines else "(No metrics)"
+    # Collect services with high metrics (interesting for LLM)
+    interesting_services = []
+    for svc in services:
+        metrics = _extract_service_metrics(svc)
+        svc_id = svc.get("id", "unknown")
+        svc_type = svc.get("type", svc.get("service_type", "service"))
+        cost_mo = svc.get("cost_monthly", 0) or 0
+        
+        # Only include if has at least one metric or has cost
+        has_latency = metrics.get("latency_p95_ms") or metrics.get("latency_p50_ms")
+        if any([metrics["cpu_utilization_percent"], metrics["iops"], has_latency]) or cost_mo > 10:
+            interesting_services.append({
+                "id": svc_id,
+                "type": svc_type,
+                "cost": cost_mo,
+                "metrics": metrics
+            })
+    
+    # Sort by cost descending and take top 20
+    interesting_services.sort(key=lambda x: x["cost"], reverse=True)
+    
+    for svc_info in interesting_services[:20]:
+        svc_id = svc_info["id"]
+        svc_type = svc_info["type"]
+        metrics = svc_info["metrics"]
+        cost_mo = svc_info["cost"]
+        
+        line = f"  • {svc_id} ({svc_type})"
+
+        # Add metrics if present
+        metric_parts = []
+        if metrics["cpu_utilization_percent"] is not None:
+            metric_parts.append(f"CPU {metrics['cpu_utilization_percent']}%")
+        if metrics["memory_utilization_percent"] is not None:
+            metric_parts.append(f"Mem {metrics['memory_utilization_percent']}%")
+        if metrics["iops"] is not None:
+            metric_parts.append(f"IOPS {metrics['iops']:.0f}")
+        if metrics.get("latency_p95_ms") is not None:
+            metric_parts.append(f"P95 latency {metrics['latency_p95_ms']:.0f}ms")
+        elif metrics.get("latency_p50_ms") is not None:
+            metric_parts.append(f"Latency {metrics['latency_p50_ms']:.0f}ms")
+        if metrics.get("error_rate_percent") is not None and metrics["error_rate_percent"] > 0.1:
+            metric_parts.append(f"Errors {metrics['error_rate_percent']:.2f}%")
+        if metrics.get("throughput_qps") is not None:
+            metric_parts.append(f"{metrics['throughput_qps']:.0f} qps")
+
+        if metric_parts:
+            line += f" | {', '.join(metric_parts)}"
+
+        if cost_mo > 0:
+            line += f" | ${cost_mo:,.0f}/mo"
+
+        # Optional: show P95 cost if available and significantly different
+        cost_p95 = metrics.get("cost_p95_monthly", 0)
+        if cost_p95 > cost_mo * 1.2:
+            line += f" (p95: ${cost_p95:,.0f}/mo)"
+
+        lines.append(line)
+    
+    if not interesting_services:
+        lines.append("  (No detailed metrics available—use graph structure for right-sizing decisions)")
+    
+    lines.append("")
+    return "\n".join(lines)
 
 
 def _build_graph(pkg: dict) -> str:
@@ -1750,7 +2140,13 @@ def _infer_service_type(card: Dict[str, Any], graph_data: Optional[dict]) -> str
         return ""
 
     resource_id = str((card.get("resource_identification") or {}).get("resource_id", "")).strip()
-    services = list(graph_data.get("services") or graph_data.get("nodes") or [])
+    raw_services = graph_data.get("services") or graph_data.get("nodes") or []
+    if isinstance(raw_services, dict):
+        services = list(raw_services.values())
+    elif isinstance(raw_services, list):
+        services = raw_services
+    else:
+        services = []
     for s in services:
         if s.get("id") == resource_id or s.get("name") == resource_id:
             return str(s.get("type", s.get("aws_service", ""))).lower()
@@ -2190,9 +2586,11 @@ def _apply_deterministic_quality_gates(
         "low_savings": 0,
         "infeasible": 0,
         "generic_title": 0,
+        "no_metrics": 0,
     }
 
     for card in cards:
+        card = _coerce_backend_card_template(card)
         rid = str((card.get("resource_identification") or {}).get("resource_id", "") or "").strip()
         if not rid or rid not in inv_by_id:
             rejected["missing_resource"] += 1
@@ -2262,10 +2660,29 @@ def _apply_deterministic_quality_gates(
             rejected["low_savings"] += 1
             continue
 
+
         if not _is_action_feasible_for_service(action_text, svc_type):
             rejected["infeasible"] += 1
             continue
+        
+        # ─ Metric validation: warn if key metrics missing for compute-heavy services ─
+        metrics_summary = card.get("metrics_summary", {})
+        svc_metrics = _extract_service_metrics(svc)
+        has_cpu = svc_metrics.get("cpu_utilization_percent") is not None
+        has_iops = svc_metrics.get("iops") is not None
+        has_latency = svc_metrics.get("latency_p95_ms") is not None or svc_metrics.get("latency_p50_ms") is not None
 
+        # For compute/database services, prefer recommendations grounded in metrics
+        if svc_type in {"compute", "ec2", "rds", "database"} and not any([has_cpu, has_iops, has_latency]):
+            logger.warning("[METRIC_ALERT] %s: no CloudWatch metrics for %s—recommendation not backed by usage data", rid, svc_type)
+        
+        # Populate metrics_summary if not already done
+        if not metrics_summary or not any([
+            metrics_summary.get("cpu_utilization_percent"),
+            metrics_summary.get("iops"),
+            metrics_summary.get("latency_p95_ms") or metrics_summary.get("latency_p50_ms")
+        ]):
+            card = _populate_card_metrics(card, graph_data)
         # Keep nested rec summary coherent.
         rec0["estimated_monthly_savings"] = savings
         rec0["performance_impact"] = f"Estimated savings: ${savings:.2f}/mo"
@@ -2306,11 +2723,37 @@ def _is_action_feasible_for_service(action_text: str, service_type: str) -> bool
 
 
 def _is_generic_title(title: str) -> bool:
-    """Detect low-information titles that should not pass without concrete action."""
+    """Detect low-information titles that should not pass without concrete action.
+    
+    A title is generic if it:
+    - Starts with 'optimize', 'improve', 'enhance' without a specific verb
+    - Only contains resource name and target type (e.g., "Optimize X to type")
+    - Lacks action-verb specificity (downsize, add, enable, migrate, etc.)
+    - Has no metrics or business context
+    """
     t = (title or "").strip().lower()
     if not t:
         return True
 
+    # Exact generic strings
+    if t in {"optimization", "cost optimization", "recommendation", "optimize", "improve", "enhance"}:
+        return True
+    
+    # Strong action verbs that make titles specific
+    strong_verbs = (
+        "downsize", "right-size", "migrate", "upgrade", "add ", "enable", 
+        "consolidate", "remove ", "switch", "delete ", "replace", "pause",
+        "lifecycle", "intelligent-tiering", "vpc endpoint", "read replica"
+    )
+    if any(verb in t for verb in strong_verbs):
+        return False  # Has a strong specific verb, so it's NOT generic
+    
+    # Metrics/context indicators (CPU %, cost reduction %, %, rate)
+    context_markers = ("cpu ", "avg ", "%", "/s", "/mo", "metrics", "average", "utilization")
+    if any(marker in t for marker in context_markers):
+        return False  # Has metrics/context, likely specific
+    
+    # Generic prefixes that need further inspection
     generic_prefixes = (
         "optimize ",
         "optimization for ",
@@ -2318,13 +2761,22 @@ def _is_generic_title(title: str) -> bool:
         "recommendation ",
         "improve ",
         "enhance ",
+        "reduce cost",
     )
-    if t in {"optimization", "cost optimization", "recommendation"}:
-        return True
+    
     if any(t.startswith(p) for p in generic_prefixes):
-        # A title like "optimize api-x" is generic unless it includes a concrete change
-        concrete_tokens = (" to ", " from ", "->", "graviton", "gp3", "lifecycle", "intelligent-tiering", "price class")
-        return not any(tok in t for tok in concrete_tokens)
+        # Pattern: "optimize X to Y" OR "improve X for Y" with NO specific verb = GENERIC
+        # Allow ONLY if it has strong specifics: metrics, strong action verb, or detailed context
+        has_strong_specific = any(verb in t for verb in strong_verbs)
+        has_metrics = any(marker in t for marker in context_markers)
+        
+        # "Optimize X to Y" is generic unless it has metrics or a strong verb
+        if " to " in t or " for " in t:
+            return not (has_strong_specific or has_metrics)
+        
+        # Any generic prefix without specificity = GENERIC
+        return True
+    
     return False
 
 
@@ -2360,10 +2812,20 @@ def _has_concrete_action_target(action_text: str) -> bool:
 
 
 def _rewrite_generic_title(card: Dict[str, Any], service_type: str, action_text: str) -> str:
-    """Build deterministic, specific title when LLM returns a generic one."""
+    """Build specific title when LLM returns a generic one.
+
+    Uses Qwen first for a stronger title + implementation plan, then falls back to
+    deterministic rule-based title generation.
+    """
     rid = str((card.get("resource_identification") or {}).get("resource_id", "") or "resource").strip()
     rec0 = (card.get("recommendations") or [{}])[0]
     action = str(rec0.get("action", "") or action_text or "").lower()
+
+    qwen_title, qwen_steps = _generate_significant_title_and_plan_with_qwen(card, service_type, action)
+    if qwen_title:
+        if qwen_steps and not rec0.get("implementation_steps"):
+            rec0["implementation_steps"] = qwen_steps
+        return qwen_title
 
     current_type = str((card.get("resource_identification") or {}).get("current_instance_type", "") or "").strip()
     recommended_type = str((card.get("resource_identification") or {}).get("recommended_instance_type", "") or "").strip()
@@ -2398,6 +2860,79 @@ def _rewrite_generic_title(card: Dict[str, Any], service_type: str, action_text:
         return f"Right-size cache nodes for {rid}"
 
     return f"Optimize {rid} with a specific cost-reduction configuration change"
+
+
+def _generate_significant_title_and_plan_with_qwen(
+    card: Dict[str, Any],
+    service_type: str,
+    action_text: str,
+) -> Tuple[str, List[str]]:
+    """Use Qwen to generate a concrete recommendation title and implementation plan."""
+    if not HAS_REQUESTS:
+        return "", []
+
+    rid = str((card.get("resource_identification") or {}).get("resource_id", "") or "resource").strip()
+    rec0 = (card.get("recommendations") or [{}])[0]
+    current_type = str((card.get("resource_identification") or {}).get("current_instance_type", "") or "").strip()
+    target_type = str((card.get("resource_identification") or {}).get("recommended_instance_type", "") or "").strip()
+    savings = float(card.get("total_estimated_savings", 0) or 0)
+    env = str((card.get("resource_identification") or {}).get("environment", "production") or "production")
+
+    system_prompt = (
+        "You are a senior FinOps architect. "
+        "Return ONLY compact JSON with keys: title (string), implementation_steps (list of 4-6 strings). "
+        "The title MUST be concrete, specific, and action-oriented. "
+        "NEVER use vague words: Optimize, Improve, Enhance, Cost Optimization, or Recommendation. "
+        "For resource/type changes: use verbs like Downsize, Right-size, Migrate, Upgrade, Consolidate. "
+        "ALWAYS include 'from X to Y' for instance/cluster changes. "
+        "Include metrics, business context, or specific actions in the title."
+    )
+    
+    user_prompt = (
+        "Generate a FinOps recommendation title and implementation steps.\n"
+        f"Resource: {rid}\n"
+        f"Service: {service_type}\n"
+        f"Environment: {env}\n"
+        f"Current: {current_type if current_type else 'not specified'}\n"
+        f"Target: {target_type if target_type else 'not specified'}\n"
+        f"Savings: ${savings:.2f}/month\n"
+        f"Action: {action_text or rec0.get('action', 'optimization')}\n\n"
+        "Requirements:\n"
+        "1. Title must include action verb (Right-size/Downsize/Add/Enable/Migrate, etc.)\n"
+        "2. If changing instance type, use format: 'Right-size X from TYPE1 to TYPE2'\n"
+        "3. If adding feature/policy, use format: 'Add FEATURE for X to achieve BENEFIT'\n"
+        "4. Title max 110 characters, no vague words\n"
+        "5. Implementation steps must be concrete and ordered (4-6 steps)\n"
+    )
+
+    try:
+        response = _call_ollama(system_prompt, user_prompt, temperature=0.1, max_tokens=320)
+        if not response:
+            return "", []
+
+        payload = response.strip()
+        fence = re.search(r"```json\s*(\{[\s\S]*\})\s*```", payload, re.IGNORECASE)
+        if fence:
+            payload = fence.group(1).strip()
+        else:
+            start = payload.find("{")
+            end = payload.rfind("}")
+            if start >= 0 and end > start:
+                payload = payload[start:end + 1]
+
+        parsed = json.loads(payload)
+        title = str(parsed.get("title", "") or "").strip()
+        steps = parsed.get("implementation_steps") or []
+        if not isinstance(steps, list):
+            steps = [str(steps)] if steps else []
+        steps = [str(s).strip() for s in steps if str(s).strip()]
+
+        if _is_generic_title(title):
+            return "", []
+        return title[:110], steps[:6]
+    except Exception as e:
+        logger.debug("[TITLE REWRITE] Qwen title generation failed: %s", e)
+        return "", []
 
 
 def _save_response(text: str, arch_name: str):

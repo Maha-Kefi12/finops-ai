@@ -1,0 +1,118 @@
+```json
+[
+    {
+        "resource": "main-ad-server-024",
+        "service": "EC2",
+        "environment": "production",
+        "region": "us-east-1",
+        "current_instance_type": "m5.xlarge",
+        "recommended_instance_type": "m6g.large",
+        "cost_savings": "$2718.19/mo (95.0%)"
+    },
+    {
+        "resource": "async-audience-020",
+        "service": "EC2",
+        "environment": "production",
+        "region": "us-east-1",
+        "current_instance_type": "m5.xlarge",
+        "recommended_instance_type": "m6g.large",
+        "cost_savings": "$2107.21/mo (95.0%)"
+    },
+    {
+        "resource": "attribution-ec2-001",
+        "service": "EC2",
+        "environment": "production",
+        "region": "us-east-1",
+        "current_instance_type": "m5.xlarge",
+        "recommended_instance_type": "m6g.large",
+        "cost_savings": "$1837.59/mo (95.0%)"
+    },
+    {
+        "resource": "hot-attribution-021",
+        "service": "REDSHIFT",
+        "environment": "production",
+        "region": "us-east-1",
+        "current_cluster_type": "ra3.xlarge",
+        "recommended_cluster_type": "ra3.large",
+        "cost_savings": "$2243.78/mo (50.0%)"
+    },
+    {
+        "resource": "async-ad-server-016",
+        "service": "REDSHIFT",
+        "environment": "production",
+        "region": "us-east-1",
+        "current_cluster_type": "ra3.xlarge",
+        "recommended_cluster_type": "ra3.large",
+        "cost_savings": "$1872.81/mo (50.0%)"
+    },
+    {
+        "resource": "shared-frequency-cap-005",
+        "service": "REDSHIFT",
+        "environment": "production",
+        "region": "us-east-1",
+        "current_cluster_type": "ra3.xlarge",
+        "recommended_cluster_type": "ra3.large",
+        "cost_savings": "$1710.55/mo (50.0%)"
+    },
+    {
+        "resource": "secondary-bidder-012",
+        "service": "OPENSEARCH",
+        "environment": "production",
+        "region": "us-east-1",
+        "current_instance_type": "m5.large.search",
+        "recommended_instance_type": "m5.medium.search",
+        "cost_savings": "$754.10/mo (30.0%)"
+    },
+    {
+        "resource": "creative-store-elasticache-003",
+        "service": "ELASTICACHE",
+        "environment": "production",
+        "region": "us-east-1",
+        "current_cache_type": "cache.r6g.large",
+        "recommended_cache_type": "cache.r6g.medium (Graviton r7g)",
+        "cost_savings": "$670.93/mo (35.0%)"
+    },
+    {
+        "resource": "global-reports-013",
+        "service": "S3",
+        "environment": "production",
+        "region": "us-east-1",
+        "current_storage_class": "s3-current",
+        "recommended_storage_class": "s3-optimized",
+        "cost_savings": "$532.77/mo (50.0%)"
+    },
+    {
+        "resource": "global-reports-013",
+        "service": "S3",
+        "environment": "production",
+        "region": "us-east-1",
+        "current_storage_class": "s3-current",
+        "recommended_storage_class": "s3-optimized with Intelligent-Tiering",
+        "cost_savings": "$426.22/mo (40.0%)"
+    }
+]
+```
+
+### Summary of Recommendations
+
+1. **EC2 Instance Right-Sizing:**
+   - **main-ad-server-024**: Downsize from `m5.xlarge` to `m6g.large`.
+   - **async-audience-020**: Downsize from `m5.xlarge` to `m6g.large`.
+   - **attribution-ec2-001**: Downsize from `m5.xlarge` to `m6g.large`.
+
+2. **Redshift Cluster Right-Sizing:**
+   - **hot-attribution-021**: Pause during off-hours and consider Redshift Serverless.
+   - **async-ad-server-016**: Pause during off-hours and consider Redshift Serverless.
+   - **shared-frequency-cap-005**: Pause during off-hours and consider Redshift Serverless.
+
+3. **OpenSearch Instance Right-Sizing:**
+   - **secondary-bidder-012**: Downsize from `m5.large.search` to `m5.medium.search`.
+
+4. **ElastiCache Cache Type Change:**
+   - **creative-store-elasticache-003**: Downsize from `cache.r6g.large` to `cache.r6g.medium (Graviton r7g)`.
+
+5. **S3 Storage Class Optimization:**
+   - **global-reports-013**: Add lifecycle policy for cost reduction.
+   - **global-reports-013**: Enable S3 Intelligent-Tiering for automatic tier management and up to 95% savings on infrequently accessed data.
+
+These recommendations will help in reducing costs while maintaining the operational integrity of your resources.
