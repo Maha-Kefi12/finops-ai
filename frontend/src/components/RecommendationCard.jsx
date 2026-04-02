@@ -5,6 +5,59 @@ import './RecommendationCard.css';
  * Stylish Recommendation Card Component
  * Displays individual recommendations with click-to-expand details
  */
+/**
+ * Source Badge Component - Identifies recommendation source
+ */
+function SourceBadge({ source, validationStatus, engineConfidence, llmConfidence }) {
+  const isEngineBacked = source === 'engine' || source === 'engine_backed';
+  const isValidated = validationStatus === 'validated';
+  const isRejected = validationStatus === 'rejected';
+  const isConflict = validationStatus === 'conflict';
+  
+  const confidence = engineConfidence || llmConfidence || 0;
+  const confidencePercent = Math.round(confidence * 100);
+  
+  let badgeClass = 'source-badge';
+  let badgeIcon = '';
+  let badgeText = '';
+  
+  if (isEngineBacked) {
+    if (isValidated) {
+      badgeClass += ' source-badge--ai-validated';
+      badgeIcon = '🤖✓';
+      badgeText = 'AI Validated';
+    } else {
+      badgeClass += ' source-badge--engine';
+      badgeIcon = '⚙️';
+      badgeText = 'Engine';
+    }
+  } else {
+    if (isRejected) {
+      badgeClass += ' source-badge--rejected';
+      badgeIcon = '💡✗';
+      badgeText = 'AI Insight';
+    } else if (isConflict) {
+      badgeClass += ' source-badge--conflict';
+      badgeIcon = '⚠️';
+      badgeText = 'Conflict';
+    } else {
+      badgeClass += ' source-badge--llm';
+      badgeIcon = '🤖';
+      badgeText = 'AI Proposed';
+    }
+  }
+  
+  return (
+    <div className={badgeClass}>
+      <span className="source-badge__icon">{badgeIcon}</span>
+      <span className="source-badge__text">{badgeText}</span>
+      {confidence > 0 && (
+        <span className="source-badge__confidence">{confidencePercent}%</span>
+      )}
+    </div>
+  );
+}
+
 export function RecommendationCard({ 
   recommendation, 
   onExpand,
@@ -24,6 +77,13 @@ export function RecommendationCard({
   const summary = recommendation.recommendations?.[0]?.description
     || recommendation.recommendations?.[0]?.action
     || 'Optimization opportunity identified for this resource.';
+  
+  // Two-tier system fields
+  const source = recommendation.source || 'engine';
+  const validationStatus = recommendation.validation_status;
+  const engineConfidence = recommendation.engine_confidence;
+  const llmConfidence = recommendation.llm_confidence;
+  const validationNotes = recommendation.validation_notes;
 
   const listItems = [
     `Service: ${serviceType}`,
@@ -44,7 +104,15 @@ export function RecommendationCard({
         <div className="rec-card__border" />
 
         <div className="rec-card__header">
-          <span className="rec-card__title">{recommendation.title || `Recommendation #${recommendation.priority}`}</span>
+          <div className="rec-card__header-top">
+            <span className="rec-card__title">{recommendation.title || `Recommendation #${recommendation.priority}`}</span>
+            <SourceBadge 
+              source={source}
+              validationStatus={validationStatus}
+              engineConfidence={engineConfidence}
+              llmConfidence={llmConfidence}
+            />
+          </div>
           <p className="rec-card__paragraph">{summary}</p>
         </div>
 
@@ -103,10 +171,26 @@ export function RecommendationCard({
 
           {recommendation.finops_best_practice && (
             <div className="drawer-section drawer-highlight">
-              <h5>Best Practice</h5>
+              <h5>FinOps Best Practice</h5>
               <p>{recommendation.finops_best_practice}</p>
             </div>
           )}
+
+          {validationNotes && (
+            <div className="drawer-section drawer-validation">
+              <h5>Validation Notes</h5>
+              <p>{validationNotes}</p>
+            </div>
+          )}
+
+          <div className="drawer-section drawer-aws-style">
+            <h5>AWS FinOps Framework</h5>
+            <div className="aws-pillars">
+              <span className="aws-pillar">💰 Cost Optimization</span>
+              <span className="aws-pillar">📊 Usage Optimization</span>
+              <span className="aws-pillar">⚡ Performance Efficiency</span>
+            </div>
+          </div>
         </div>
       </aside>
     </div>

@@ -24,6 +24,13 @@ from src.knowledge_base.aws_finops_best_practices import (
     get_best_practices_for_service,
 )
 from src.llm.finops_metrics import FinOpsMetricsExtractor
+from src.llm.normalizer import normalize_recommendations
+
+try:
+    import PyPDF2
+    HAS_PYPDF2 = True
+except ImportError:
+    HAS_PYPDF2 = False
 
 try:
     import requests
@@ -263,65 +270,55 @@ def generate_recommendations(context_package, architecture_name: str = "",
                     llm_cards = _deduplicate_cards(llm_cards)
                     if raw_graph_data:
                         llm_cards = _enrich_cards(llm_cards, raw_graph_data, pkg_dict)
+                        from src.llm._llm_card_aligner import align_llm_cards_to_engine_shape
+                        llm_cards = align_llm_cards_to_engine_shape(llm_cards, raw_graph_data)
                         llm_cards = _apply_deterministic_quality_gates(
                             llm_cards,
                             raw_graph_data,
                             min_monthly_savings=50.0,
+                            engine_cards=engine_cards,
                         )
         except Exception as e:
             logger.error("[LLM] Call failed with exception: %s — will fall back to engine", e, exc_info=True)
 
-        # ═══ STAGE 3: Validate LLM-proposed recommendations ═══
-        validated_llm_cards: List[Dict[str, Any]] = []
-        rejected_llm_cards: List[Dict[str, Any]] = []
-        
-        if llm_cards and raw_graph_data:
-            try:
-                from src.recommendation_engine.validator import validate_llm_recommendations
-                
-                validated_llm_cards, rejected_llm_cards = validate_llm_recommendations(
-                    llm_cards,
-                    raw_graph_data,
-                    engine_cards
-                )
-                
-                logger.info(
-                    "[VALIDATION] LLM cards: %d total → %d validated, %d rejected",
-                    len(llm_cards),
-                    len(validated_llm_cards),
-                    len(rejected_llm_cards)
-                )
-            except Exception as e:
-                logger.warning("[VALIDATION] Failed: %s — using LLM cards as-is", e)
-                validated_llm_cards = llm_cards
-        else:
-            validated_llm_cards = llm_cards
+        # ═══ STAGE 3: LLM cards bypass engine validator ═══
+        # LLM finds hidden architectural deficiencies the engine cannot detect.
+        # Engine validator only knows right-sizing/idle patterns — it would reject
+        # novel insights like caching gaps, Graviton migrations, VPC endpoints, etc.
+        # LLM cards stay as source=llm_proposed so the UI distinguishes them.
+        for lc in (llm_cards or []):
+            lc["source"] = "llm_proposed"
+            lc["validation_status"] = "llm_insight"
+            lc["is_ai_insight"] = True
 
-        # ═══ STAGE 4: Merge selection (engine truth + validated LLM) ═══
-        cards = _merge_engine_and_llm_cards(engine_cards, validated_llm_cards)
-        
-        # Optional: Include rejected cards as "insights" (commented out by default)
-        # for rejected_card in rejected_llm_cards:
-        #     rejected_card['is_insight'] = True
-        #     cards.append(rejected_card)
+        logger.info("[STAGE 3] LLM cards: %d (bypassed engine validator — architectural insights)", len(llm_cards or []))
+
+        # ═══ STAGE 4: Merge engine truth + LLM architectural insights ═══
+        cards = _merge_engine_and_llm_cards(engine_cards, llm_cards or [])
         
         if raw_graph_data:
             cards = [_populate_card_metrics(c, raw_graph_data) for c in cards]
         
         logger.info(
-            "[PIPELINE] Final: %d cards (engine=%d, validated_llm=%d, rejected_llm=%d) with metrics hardened",
+            "[PIPELINE] Final: %d cards (engine=%d, llm_insights=%d) with metrics hardened",
             len(cards),
             len(engine_cards),
-            len(validated_llm_cards),
-            len(rejected_llm_cards)
+            len(llm_cards or [])
         )
 
         if not cards:
             logger.warning("⚠️  No recommendations generated from engine/LLM — returning empty set")
 
+        # ═══ STAGE 5: Normalise to unified flat schema ═══
+        # Maps engine + LLM cards to consistent shape; marks duplicates & conflicts.
+        cards = normalize_recommendations(cards)
+
         result.cards = cards
         result.llm_used = bool(llm_cards)
-        result.total_estimated_savings = sum(c.get("total_estimated_savings", 0) for c in cards) if cards else 0.0
+        result.total_estimated_savings = sum(
+            c.get("estimated_savings_monthly") or c.get("total_estimated_savings", 0)
+            for c in cards
+        ) if cards else 0.0
         result.generation_time_ms = int((time.time() - start) * 1000)
 
         logger.info("=" * 70)
@@ -548,23 +545,84 @@ def _engine_to_cards(enriched_matches: List[Dict]) -> List[Dict]:
 
 
 def _format_engine_context(engine_cards: List[Dict]) -> str:
-    """Format engine cards as structured text for LLM context injection."""
+    """Format engine cards as structured text for LLM context injection.
+
+    Produces:
+    1. ALREADY_HANDLED — explicit list of resource+action the engine owns (LLM must not duplicate)
+    2. COST ANCHORS    — verified current costs for savings math
+    3. DETAILED SIGNALS — full engine card data for context
+    """
     lines = []
-    for i, card in enumerate(engine_cards[:10], 1):  # Max 10 in context
-        rid = card.get("resource_identification", {})
-        cost = card.get("cost_breakdown", {})
-        graph = card.get("graph_context", {})
-        
-        lines.append(f"ENGINE SIGNAL #{i}: {card.get('title', 'N/A')}")
-        lines.append(f"- Resource: `{rid.get('resource_id', 'N/A')}` ({rid.get('resource_name', '')})")
-        lines.append(f"- Service: {card.get('service_type', 'N/A')} | Env: {rid.get('environment', '?')} | Region: {rid.get('region', '?')}")
-        lines.append(f"- Current: {rid.get('current_instance_type', '?')} → Recommended: {rid.get('recommended_instance_type', '?')}")
-        lines.append(f"- Cost: ${cost.get('current_monthly', 0):.2f}/mo → Save ${card.get('total_estimated_savings', 0):.2f}/mo ({cost.get('savings_percentage', 0)}%)")
-        lines.append(f"- Graph: blast={graph.get('blast_radius_pct', 0)}%, deps={graph.get('services_powered', 0)}, SPOF={graph.get('is_spof', False)}")
-        lines.append(f"- Best Practice: {card.get('linked_best_practice', 'N/A')}")
-        lines.append(f"- Why: {card.get('why_it_matters', 'N/A')[:150]}")
+
+    # ── ALREADY_HANDLED: hard no-duplicate contract ──────────────────────────
+    lines.append("## ALREADY_HANDLED (DO NOT generate recommendations for these resource+action pairs)")
+    lines.append("⛔ Any recommendation you produce for a resource_id listed here with the same")
+    lines.append("   action type will be automatically rejected as a duplicate.")
+    lines.append("")
+    _action_bucket_map = {
+        "terminate": ["TERMINATE", "STOP"],
+        "right_size": ["DOWNSIZE", "MOVE_TO_GRAVITON", "UPSCALE"],
+        "storage": ["CHANGE_STORAGE_CLASS", "ADD_LIFECYCLE"],
+        "network": ["ADD_VPC_ENDPOINT", "ELIMINATE_CROSS_AZ"],
+        "database": ["DISABLE_MULTI_AZ", "ADD_READ_REPLICA"],
+        "cache": ["ADD_CACHE"],
+        "compute_tune": ["TUNE_MEMORY"],
+    }
+    for card in engine_cards:
+        rid = (card.get("resource_identification") or {})
+        rid_val = rid.get("resource_id") or card.get("resource_id", "")
+        if not rid_val:
+            continue
+        action = str(card.get("action") or "")
+        if not action:
+            # Infer from pattern_id / title
+            text = (str(card.get("pattern_id") or "") + " " + str(card.get("title") or "")).lower()
+            if any(k in text for k in ("terminate", "waste", "idle")):
+                action = "TERMINATE/STOP"
+            elif any(k in text for k in ("rightsize", "right_size", "downsize", "resize")):
+                action = "DOWNSIZE"
+            elif "graviton" in text:
+                action = "MOVE_TO_GRAVITON"
+            else:
+                action = card.get("category", "DOWNSIZE").upper()
+        svc = card.get("service_type") or rid.get("service_type", "")
+        env = rid.get("environment", "")
+        lines.append(f"  ✗ {rid_val} | action={action} | service={svc} | env={env}")
+    lines.append("")
+    lines.append("Every resource_id above already has an engine-backed card.")
+    lines.append("You MUST pick DIFFERENT resources or DIFFERENT action types not listed above.")
+    lines.append("")
+
+    # ── Cost anchor table ────────────────────────────────────────────────────
+    lines.append("## COST ANCHORS — use ONLY these figures for savings calculations")
+    lines.append("Resource ID | Current $/mo | Engine savings $/mo | Instance type")
+    lines.append("-" * 80)
+    for card in engine_cards[:15]:
+        rid = card.get("resource_identification", {}) or {}
+        cost = card.get("cost_breakdown", {}) or {}
+        current = cost.get("current_monthly") or 0
+        savings = card.get("total_estimated_savings") or 0
+        itype = rid.get("current_instance_type") or "unknown"
+        rid_val = rid.get("resource_id") or card.get("resource_id", "N/A")
+        lines.append(f"  {rid_val:<35} | ${current:>8.2f}/mo | ${savings:>8.2f}/mo | {itype}")
+    lines.append("")
+    lines.append("⚠️  RULE: estimated_savings_monthly MUST be < current_monthly_cost for that resource.")
+    lines.append("⚠️  RULE: Use current_monthly_cost from this table. Do NOT invent cost figures.")
+    lines.append("")
+
+    # ── Detailed engine signals ──────────────────────────────────────────────
+    lines.append("## ENGINE SIGNALS (for context — do not duplicate)")
+    for i, card in enumerate(engine_cards[:10], 1):
+        rid = card.get("resource_identification", {}) or {}
+        cost = card.get("cost_breakdown", {}) or {}
+        graph = card.get("graph_context", {}) or {}
+        current = cost.get("current_monthly") or 0
+        savings = card.get("total_estimated_savings") or 0
+        lines.append(f"[{i}] {card.get('title', 'N/A')}")
+        lines.append(f"    resource={rid.get('resource_id', 'N/A')} | {card.get('service_type', '')} | {rid.get('environment', '')} | {rid.get('region', '')}")
+        lines.append(f"    {rid.get('current_instance_type', '?')} → {rid.get('recommended_instance_type', '?')} | cost=${current:.2f}/mo | saves=${savings:.2f}/mo")
+        lines.append(f"    blast={graph.get('blast_radius_pct', 0)}% | deps={graph.get('dependency_count', 0)} | SPOF={graph.get('is_spof', False)}")
         lines.append("")
-    
     return "\n".join(lines)
 
 
@@ -637,14 +695,26 @@ def _dedupe_and_resolve_conflicts(cards: List[Dict[str, Any]]) -> List[Dict[str,
     if not cards:
         return cards
 
-    # 1) True duplicate removal: same resource + same action bucket + same savings.
+    # 1) True duplicate removal: same resource + same canonical action + same savings.
+    # Use canonical action (not coarse 3-way bucket) so cards with different actions
+    # on the same resource are kept as distinct recommendations.
     deduped: List[Dict[str, Any]] = []
     seen: Dict[Tuple[str, str, int], int] = {}
     dropped_dups = 0
 
+    def _canonical_action(card: Dict[str, Any]) -> str:
+        """Return canonical action string for dedup keying."""
+        act = str(card.get("action") or "").strip().upper()
+        if not act:
+            rec0 = (card.get("recommendations") or [{}])[0]
+            act = str(rec0.get("action") or "").strip().upper()
+        if not act:
+            act = _extract_primary_action_bucket(card)
+        return act
+
     for card in cards:
         rid = str((card.get("resource_identification") or {}).get("resource_id", "") or "").strip().lower()
-        action_bucket = _extract_primary_action_bucket(card)
+        action_bucket = _canonical_action(card)
         savings = float(card.get("total_estimated_savings", 0) or 0)
         key = (rid, action_bucket, int(round(savings * 100)))
 
@@ -1018,6 +1088,7 @@ def _parse_structured_json_recommendations(text: str) -> List[Dict]:
     def _extract_savings(item: Dict[str, Any], current: float, projected: float) -> float:
         # Primary numeric fields
         direct = _pick(item, [
+            "estimated_savings_monthly",
             "monthly_savings",
             "total_estimated_savings",
             "estimated_monthly_savings",
@@ -1050,10 +1121,14 @@ def _parse_structured_json_recommendations(text: str) -> List[Dict]:
             continue
 
         resource_id = str(_pick(item, ["resource_id", "resource", "resourceId", "id"], "") or "").strip()
-        service_type = str(_pick(item, ["service_type", "service", "aws_service", "type"], "") or "").strip()
+        service_type = str(_pick(item, ["service", "service_type", "aws_service", "type"], "") or "").strip()
         environment = str(_pick(item, ["environment", "env"], "production") or "production").strip()
         risk_level = str(_pick(item, ["risk_level", "severity", "risk"], "medium") or "medium").lower()
         category = str(_pick(item, ["category", "optimization_type"], "optimization") or "optimization")
+        region = str(_pick(item, ["region"], "us-east-1") or "us-east-1").strip()
+
+        # Action — normalise to canonical enum
+        raw_action = str(_pick(item, ["action"], "") or "").strip()
 
         current = _to_float(_pick(item, ["current_monthly_cost", "current_monthly", "currentCost", "current_cost"], 0.0), 0.0)
         projected = _to_float(_pick(item, ["projected_monthly_cost", "projected_monthly", "newCost", "projected_cost"], 0.0), 0.0)
@@ -1065,10 +1140,18 @@ def _parse_structured_json_recommendations(text: str) -> List[Dict]:
 
         current_type = str(_pick(item, ["currentInstanceType", "current_instance_type"], "") or "").strip()
         recommended_type = str(_pick(item, ["recommendedInstanceType", "recommended_instance_type"], "") or "").strip()
-        base_title = str(_pick(item, ["title", "recommendation", "action"], "") or "").strip()
+
+        # summary / title — new schema uses 'summary', old uses 'title'
+        base_title = str(_pick(item, ["summary", "title", "recommendation"], "") or "").strip()
+        # Sanitize: strip leading "N. " / "N) " numbering from LLM-generated lists
+        base_title = re.sub(r"^\d+[\.\)]\s+", "", base_title).strip()
+        # Strip "— Estimated savings: $X/mo" tails that the LLM sometimes embeds in the title
+        base_title = re.sub(r"\s*[—\-–]+\s*[Ee]stimated savings?:?.*$", "", base_title).strip()
         if not base_title:
             if resource_id and recommended_type:
                 base_title = f"Optimize {resource_id} to {recommended_type}"
+            elif resource_id and raw_action:
+                base_title = f"{raw_action} {resource_id}"
             elif resource_id:
                 base_title = f"Optimize {resource_id}"
             else:
@@ -1077,33 +1160,61 @@ def _parse_structured_json_recommendations(text: str) -> List[Dict]:
 
         why = str(_pick(item, ["why_this_matters", "narrative", "why"], "") or "").strip()
         problem = str(_pick(item, ["problem", "issue"], "") or "").strip()
-        solution = str(_pick(item, ["solution", "action", "recommendation"], title) or title).strip()
+        solution = str(_pick(item, ["solution", "recommendation"], title) or title).strip()
+        linked_best_practice = str(_pick(item, ["linked_best_practice", "finops_best_practice", "best_practice"], "") or "").strip()
         risk_mitigation = str(_pick(item, ["risk_mitigation", "mitigation", "safety_notes"], f"Risk level: {risk_level}"))
-        impl = _pick(item, ["implementation_steps", "steps", "implementation"], [])
+
+        # justification — new schema is array, old schema is string
+        raw_just = _pick(item, ["justification"], None)
+        if isinstance(raw_just, list):
+            justification_bullets = [str(b) for b in raw_just if b]
+        elif isinstance(raw_just, str) and raw_just:
+            justification_bullets = [raw_just]
+        else:
+            justification_bullets = []
+
+        # implementation_notes / implementation_steps — both schemas
+        impl = _pick(item, ["implementation_notes", "implementation_steps", "steps", "implementation"], [])
         if not isinstance(impl, list):
             impl = [str(impl)] if impl else []
 
-        conf = _pick(item, ["confidence", "confidence_score"], "medium")
-        if isinstance(conf, (int, float)):
-            confidence = max(0.0, min(1.0, float(conf)))
+        # llm_confidence from new schema
+        llm_conf_raw = _pick(item, ["llm_confidence", "confidence", "confidence_score"], "medium")
+        if isinstance(llm_conf_raw, (int, float)):
+            confidence = max(0.0, min(1.0, float(llm_conf_raw)))
             conf_label = "high" if confidence >= 0.8 else ("medium" if confidence >= 0.6 else "low")
         else:
-            conf_label = str(conf)
+            conf_label = str(llm_conf_raw)
+            confidence = 0.7 if conf_label == "high" else (0.5 if conf_label == "medium" else 0.3)
 
         card = {
             "priority": i,
             "recommendation_number": i,
             "title": title,
+            "summary": title,
             "severity": risk_level,
             "category": category,
             "risk_level": risk_level,
             "implementation_complexity": "medium",
+            # New flat schema fields
+            "action": raw_action,
+            "service": service_type,
+            "region": region,
+            "environment": environment,
+            "estimated_savings_monthly": savings,
+            "current_monthly_cost": current,
+            "llm_confidence": confidence,
+            "engine_confidence": 0,
+            "justification": justification_bullets or ([why] if why else []),
+            "implementation_notes": [str(x) for x in impl if str(x).strip()],
+            # Legacy nested fields (kept for backward compat with engine pipeline)
             "resource_identification": {
                 "resource_id": resource_id,
                 "resource_name": resource_id,
                 "service_name": resource_id,
                 "service_type": service_type,
                 "environment": environment,
+                "region": region,
                 "current_instance_type": current_type,
                 "recommended_instance_type": recommended_type,
             },
@@ -1118,7 +1229,7 @@ def _parse_structured_json_recommendations(text: str) -> List[Dict]:
                 "action_number": 1,
                 "title": solution,
                 "description": solution,
-                "action": solution,
+                "action": raw_action or solution,
                 "estimated_monthly_savings": savings,
                 "implementation_steps": [str(x) for x in impl if str(x).strip()],
                 "validation_steps": [],
@@ -1130,7 +1241,12 @@ def _parse_structured_json_recommendations(text: str) -> List[Dict]:
             "why_it_matters": why,
             "raw_analysis": json.dumps(item, ensure_ascii=True),
             "total_estimated_savings": savings,
-            "source": "llm",
+            "source": "llm_proposed",
+            "linked_best_practice": linked_best_practice,
+            "finops_best_practice": linked_best_practice,
+            # top-level resource_id required by validator._resolve_conflicts and
+            # _validate_single_recommendation (they only call rec.get("resource_id"))
+            "resource_id": resource_id,
         }
         cards.append(_normalize_llm_card_shape(card))
 
@@ -1968,9 +2084,123 @@ def _build_business_graph_context(graph_data: dict, pkg: dict = None) -> str:
 
 
 def _build_pricing() -> str:
-    """AWS pricing."""
-    return """RDS: db.r5.large=$213/mo, db.r5.xlarge=$426/mo, db.r5.2xlarge=$853/mo
-EC2: t3.medium=$30/mo, m5.large=$70/mo, m5.xlarge=$140/mo"""
+    """AWS on-demand pricing reference (us-east-1, Linux, per month)."""
+    return """
+EC2 ON-DEMAND (us-east-1, Linux, 730 hrs/mo):
+  t3.micro=$8   t3.small=$15  t3.medium=$30  t3.large=$60   t3.xlarge=$120  t3.2xlarge=$240
+  t4g.micro=$6  t4g.small=$12 t4g.medium=$24 t4g.large=$48  (Graviton3 — 20% cheaper)
+  m5.large=$70  m5.xlarge=$140 m5.2xlarge=$280 m5.4xlarge=$560
+  m6g.large=$55 m6g.xlarge=$110 m6g.2xlarge=$220            (Graviton2 — 20% cheaper)
+  m6i.large=$77 m6i.xlarge=$154 m6i.2xlarge=$308
+  c5.large=$62  c5.xlarge=$123  c5.2xlarge=$246
+  c6g.large=$49 c6g.xlarge=$98  c6g.2xlarge=$196             (Graviton2 — 20% cheaper)
+  r5.large=$113 r5.xlarge=$226  r5.2xlarge=$453
+  r6g.large=$90 r6g.xlarge=$180 r6g.2xlarge=$360             (Graviton2 — 20% cheaper)
+
+RDS ON-DEMAND (us-east-1, Multi-AZ doubles cost):
+  db.t3.micro=$28/mo  db.t3.small=$56/mo  db.t3.medium=$110/mo
+  db.t4g.micro=$22/mo db.t4g.small=$44/mo db.t4g.medium=$88/mo
+  db.m5.large=$190/mo db.m5.xlarge=$380/mo db.m5.2xlarge=$760/mo
+  db.r5.large=$240/mo db.r5.xlarge=$480/mo db.r5.2xlarge=$960/mo
+  Multi-AZ surcharge: 2x single-AZ cost
+  gp2→gp3 storage: 20% cheaper ($0.115/GB/mo → $0.092/GB/mo)
+
+ELASTICACHE (us-east-1):
+  cache.t3.micro=$15/mo  cache.t3.small=$29/mo  cache.t3.medium=$58/mo
+  cache.r6g.large=$115/mo cache.r6g.xlarge=$230/mo
+
+NAT GATEWAY: $32/mo fixed + $0.045/GB processed
+ALB: $16/mo base + $0.008/LCU-hour
+S3: Standard=$0.023/GB/mo, IA=$0.0125/GB/mo, Glacier=$0.004/GB/mo
+EBS: gp2=$0.10/GB/mo, gp3=$0.08/GB/mo (20% cheaper)
+
+SAVINGS MATH RULES (CRITICAL):
+  - Rightsizing savings = current_instance_cost - target_instance_cost
+  - Graviton migration savings ≈ 20% of current cost
+  - Stopping dev instance 12h/day = 50% savings
+  - Stopping dev instance nights+weekends (65hrs/week off) = 38% savings
+  - Disabling Multi-AZ = 50% of RDS cost saved
+  - S3 IA lifecycle = (Standard - IA) × GB = $0.0105/GB/mo saved
+  - NEVER claim savings > current resource cost
+"""
+
+
+_DOCS_RAG_CACHE: Optional[str] = None
+
+def _load_docs_rag(detected_families: set = None) -> str:
+    """Read PDFs from /app/docs and extract FinOps knowledge for LLM grounding.
+
+    Uses PyPDF2 to read focused PDFs. Large files are capped at first N pages.
+    Result is cached after first load to avoid re-reading on every request.
+    """
+    global _DOCS_RAG_CACHE
+    if _DOCS_RAG_CACHE:
+        return _DOCS_RAG_CACHE
+
+    if not HAS_PYPDF2:
+        logger.warning("[DOCS RAG] PyPDF2 not available — skipping PDF knowledge base")
+        return ""
+
+    docs_dir = "/app/docs"
+    if not os.path.isdir(docs_dir):
+        logger.warning("[DOCS RAG] /app/docs not found — skipping PDF knowledge base")
+        return ""
+
+    # Priority PDFs: small/focused files that fit in context, ordered by usefulness
+    priority_files = [
+        ("how-aws-pricing-works.pdf", 6),
+        ("cost-optimization-laying-the-foundation.pdf", 8),
+        ("English-FinOps-Framework-2025.pdf", 6),
+        ("fig.io.pdf", 5),
+        ("romexsoft.pdf", 5),
+        ("Finout.pdf", 4),
+        ("wellarchitected-cost-optimization-pillar.pdf", 5),
+        ("compute-optimizer.pdf#what-is-compute-optimizer.pdf", 5),
+        ("cost-management-guide.pdf#coh-optimization-strategies.pdf", 5),
+    ]
+
+    sections: List[str] = []
+    sections.append("## GROUNDED KNOWLEDGE BASE (from /docs — verified AWS FinOps documentation)")
+    sections.append("")
+
+    total_chars = 0
+    max_total_chars = 8000  # Stay within Qwen 7B context budget
+
+    for filename, max_pages in priority_files:
+        if total_chars >= max_total_chars:
+            break
+        filepath = os.path.join(docs_dir, filename)
+        if not os.path.isfile(filepath):
+            continue
+        try:
+            text_parts: List[str] = []
+            with open(filepath, "rb") as f:
+                reader = PyPDF2.PdfReader(f)
+                pages_to_read = min(max_pages, len(reader.pages))
+                for page_num in range(pages_to_read):
+                    page = reader.pages[page_num]
+                    text = page.extract_text() or ""
+                    # Clean up whitespace
+                    text = re.sub(r"\s{3,}", "  ", text).strip()
+                    if len(text) > 100:
+                        text_parts.append(text[:1200])  # Cap per page
+            if text_parts:
+                combined = "\n".join(text_parts)
+                sections.append(f"### {filename.split('.')[0].replace('-', ' ').title()}")
+                sections.append(combined[:2000])  # Cap per document
+                sections.append("")
+                total_chars += len(combined)
+                logger.info("[DOCS RAG] Loaded %s (%d pages, %d chars)", filename, pages_to_read, len(combined))
+        except Exception as exc:
+            logger.debug("[DOCS RAG] Could not read %s: %s", filename, exc)
+
+    if len(sections) <= 2:
+        return ""
+
+    result = "\n".join(sections)
+    _DOCS_RAG_CACHE = result
+    logger.info("[DOCS RAG] Knowledge base ready: %d chars from /docs", len(result))
+    return result
 
 
 def _build_best_practices(pkg: dict = None, graph_data: dict = None) -> str:
@@ -2080,7 +2310,7 @@ def _build_best_practices(pkg: dict = None, graph_data: dict = None) -> str:
     lines.append("- Use the exact thresholds from the best practices above (CPU 60-70%, memory 70-80%, etc.)")
     lines.append("- Include AWS CLI commands in implementation steps")
 
-    # Add RAG-retrieved docs if available
+    # Add RAG-retrieved docs from pkg context package if available
     if pkg and isinstance(pkg, dict):
         rag_practices = pkg.get("rag_best_practices", [])
         if rag_practices:
@@ -2093,6 +2323,12 @@ def _build_best_practices(pkg: dict = None, graph_data: dict = None) -> str:
             for doc in rag_docs[:5]:
                 source = doc.get("source", "docs")
                 lines.append(f"- {source}: {doc.get('content', '')[:150]}...")
+
+    # ── Load /docs PDF knowledge base (RAG) ──
+    docs_rag = _load_docs_rag(detected_families)
+    if docs_rag:
+        lines.append("")
+        lines.append(docs_rag)
 
     return "\n".join(lines)
 
@@ -2556,6 +2792,7 @@ def _apply_deterministic_quality_gates(
     cards: List[Dict[str, Any]],
     graph_data: Optional[dict],
     min_monthly_savings: float = 50.0,
+    engine_cards: Optional[List[Dict[str, Any]]] = None,
 ) -> List[Dict[str, Any]]:
     """Deterministic gate after LLM generation.
 
@@ -2578,6 +2815,55 @@ def _apply_deterministic_quality_gates(
         if sid:
             inv_by_id[sid] = s
 
+    # Build engine-handled set: (resource_id, canonical_action) exact pairs
+    # Using canonical action strings (not coarse 3-way buckets) so that e.g.
+    # an engine MOVE_TO_GRAVITON card does NOT block a novel LLM ADD_CACHE card
+    # on the same resource — only the exact same action is considered a duplicate.
+    _engine_handled: set = set()
+    _ENGINE_PATTERN_TO_ACTION = {
+        "graviton": "MOVE_TO_GRAVITON",
+        "cpu_underutil": "DOWNSIZE",
+        "rightsize": "DOWNSIZE",
+        "right_size": "DOWNSIZE",
+        "resource_waste": "TERMINATE",
+        "idle": "TERMINATE",
+        "schedule_stop": "STOP",
+        "storage_class": "CHANGE_STORAGE_CLASS",
+        "s3_lifecycle": "ADD_LIFECYCLE",
+        "nat_gateway": "ADD_VPC_ENDPOINT",
+        "vpc_endpoint": "ADD_VPC_ENDPOINT",
+        "cross_az": "ELIMINATE_CROSS_AZ",
+        "multi_az": "DISABLE_MULTI_AZ",
+        "read_replica": "ADD_READ_REPLICA",
+        "add_cache": "ADD_CACHE",
+        "caching": "ADD_CACHE",
+        "lambda_memory": "TUNE_MEMORY",
+        "reserved": "PURCHASE_RESERVED",
+    }
+    for ec in (engine_cards or []):
+        ec_rid = str((ec.get("resource_identification") or {}).get("resource_id", "") or "").strip().lower()
+        if not ec_rid:
+            continue
+        # Prefer explicit top-level action field
+        ec_action = str(ec.get("action") or "").strip().upper()
+        if not ec_action:
+            # Build searchable text from all available fields
+            _search_fields = [
+                str(ec.get("pattern_id") or ""),
+                str(ec.get("title") or ""),
+                str(ec.get("linked_best_practice") or ""),
+                str(ec.get("finops_best_practice") or ""),
+                str(((ec.get("recommendations") or [{}])[0]).get("title") or ""),
+                str(((ec.get("recommendations") or [{}])[0]).get("action") or ""),
+            ]
+            _text = " ".join(_search_fields).lower()
+            for kw, act in _ENGINE_PATTERN_TO_ACTION.items():
+                if kw in _text:
+                    ec_action = act
+                    break
+        if ec_action:
+            _engine_handled.add((ec_rid, ec_action))
+
     kept: List[Dict[str, Any]] = []
     rejected = {
         "missing_resource": 0,
@@ -2587,13 +2873,116 @@ def _apply_deterministic_quality_gates(
         "infeasible": 0,
         "generic_title": 0,
         "no_metrics": 0,
+        "engine_duplicate": 0,
+        "engine_only_action": 0,
     }
+
+    # Actions exclusively owned by the deterministic engine — LLM must never produce these.
+    _ENGINE_ONLY_ACTIONS = {"DOWNSIZE", "TERMINATE", "STOP", "DECOMMISSION", "DELETE", "RETIRE"}
+    # Whitelist of allowed LLM architectural actions — anything else is rejected.
+    _LLM_ALLOWED_ACTIONS = {
+        "MOVE_TO_GRAVITON", "CHANGE_STORAGE_CLASS", "ADD_LIFECYCLE", "ADD_CACHE",
+        "ADD_VPC_ENDPOINT", "DISABLE_MULTI_AZ", "ADD_READ_REPLICA",
+        "ELIMINATE_CROSS_AZ", "TUNE_MEMORY", "PURCHASE_RESERVED",
+    }
+
+    # Pre-build list of real service IDs for fuzzy matching
+    _real_ids = list(inv_by_id.keys())
+
+    def _fuzzy_match_rid(llm_rid: str) -> str:
+        """Try to match an LLM-generated resource_id to a real service ID."""
+        if not llm_rid:
+            return ""
+        low = llm_rid.lower()
+        # 1) Exact match
+        if low in {k.lower() for k in _real_ids}:
+            for k in _real_ids:
+                if k.lower() == low:
+                    return k
+        # 2) Substring match: real ID contains LLM ID or vice versa
+        for real in _real_ids:
+            rl = real.lower()
+            if low in rl or rl in low:
+                return real
+        # 3) Token overlap: split on hyphens, find best overlap
+        llm_tokens = set(low.replace("_", "-").split("-"))
+        best, best_score = "", 0
+        for real in _real_ids:
+            real_tokens = set(real.lower().replace("_", "-").split("-"))
+            overlap = len(llm_tokens & real_tokens)
+            # Require at least 2 token overlap to avoid false matches
+            if overlap > best_score and overlap >= 2:
+                best, best_score = real, overlap
+        if best:
+            return best
+        return ""
 
     for card in cards:
         card = _coerce_backend_card_template(card)
         rid = str((card.get("resource_identification") or {}).get("resource_id", "") or "").strip()
+
+        # Fuzzy-match LLM resource_id to real service ID
+        if rid and rid not in inv_by_id:
+            matched = _fuzzy_match_rid(rid)
+            if matched:
+                logger.info("[QUALITY GATE] Fuzzy-matched LLM rid '%s' → '%s'", rid, matched)
+                rid = matched
+                card["resource_identification"]["resource_id"] = rid
+                card["resource_id"] = rid
+
         if not rid or rid not in inv_by_id:
             rejected["missing_resource"] += 1
+            continue
+
+        # Extract canonical action — if LLM used a banned/unknown action,
+        # infer the real architectural action from card content.
+        llm_action = str(card.get("action") or "").strip().upper()
+        if not llm_action:
+            _r0 = (card.get("recommendations") or [{}])[0]
+            llm_action = str(_r0.get("action") or "").strip().upper()
+
+        if llm_action not in _LLM_ALLOWED_ACTIONS:
+            # Try to infer the real action from card text (title, summary, description)
+            _text_bag = " ".join(filter(None, [
+                str(card.get("title") or ""),
+                str(card.get("summary") or ""),
+                str(card.get("description") or ""),
+                str(((card.get("recommendations") or [{}])[0]).get("description") or ""),
+                str(card.get("linked_best_practice") or ""),
+            ])).lower()
+            _REMAP_KEYWORDS: list = [
+                (["graviton", "arm64", "arm-based", "m6g", "m7g", "c6g", "r6g", "t4g"], "MOVE_TO_GRAVITON"),
+                (["storage class", "gp2", "gp3", "io1", "io2", "st1", "sc1", "storage tier", "ebs volume"], "CHANGE_STORAGE_CLASS"),
+                (["lifecycle", "s3 lifecycle", "expiration", "transition"], "ADD_LIFECYCLE"),
+                (["cache", "elasticache", "redis", "memcached", "caching layer", "read-heavy"], "ADD_CACHE"),
+                (["vpc endpoint", "nat gateway", "nat cost", "privatelink", "interface endpoint"], "ADD_VPC_ENDPOINT"),
+                (["multi-az", "multi_az", "single-az", "standby", "disable multi"], "DISABLE_MULTI_AZ"),
+                (["read replica", "read-replica", "read load", "read scaling"], "ADD_READ_REPLICA"),
+                (["cross-az", "cross az", "availability zone", "az transfer"], "ELIMINATE_CROSS_AZ"),
+                (["lambda memory", "memory tuning", "power tuning", "memory size"], "TUNE_MEMORY"),
+                (["reserved", "savings plan", "commitment", "on-demand", "ri ", "1-year", "3-year"], "PURCHASE_RESERVED"),
+            ]
+            remapped = ""
+            for keywords, target_action in _REMAP_KEYWORDS:
+                if any(kw in _text_bag for kw in keywords):
+                    remapped = target_action
+                    break
+            if remapped:
+                logger.info("[QUALITY GATE] Remapped action '%s' → '%s' (inferred from card content)", llm_action, remapped)
+                llm_action = remapped
+                card["action"] = remapped
+                card.setdefault("resource_identification", {})
+                for rec in (card.get("recommendations") or []):
+                    rec["action"] = remapped
+            else:
+                # Truly unrecognisable — reject
+                rejected["engine_only_action"] += 1
+                continue
+
+        # Reject only if the exact same (resource_id, canonical_action) is already
+        # handled by the engine — different actions on the same resource are allowed.
+        if _engine_handled and llm_action and (rid.lower(), llm_action) in _engine_handled:
+            rejected["engine_duplicate"] += 1
             continue
 
         svc = inv_by_id[rid]
@@ -2648,6 +3037,27 @@ def _apply_deterministic_quality_gates(
             if abs(expected - savings) > max(5.0, savings * 0.15):
                 rejected["math_invalid"] += 1
                 continue
+
+        # Reject terminate on high-blast-radius resources (safety gate).
+        blast_pct = 0.0
+        gc = card.get("graph_context") or {}
+        try:
+            blast_pct = float(gc.get("blast_radius_pct") or svc.get("blast_radius_pct") or 0)
+        except (TypeError, ValueError):
+            blast_pct = 0.0
+        if ("terminate" in action_text or "decommission" in action_text) and blast_pct > 50:
+            logger.warning(
+                "[QUALITY GATE] Blocked terminate on high-blast-radius resource %s (%.0f%%)", rid, blast_pct
+            )
+            card["validation_status"] = "rejected"
+            card["validation_notes"] = (
+                f"Blocked: terminate on resource with {blast_pct:.0f}% blast radius is too risky. "
+                "Consider right-sizing or scheduling instead."
+            )
+            card["source"] = "llm_proposed"
+            card["is_ai_insight"] = True
+            kept.append(card)
+            continue
 
         # Reject risky purchasing guidance for non-production environments.
         if env in {"development", "dev", "test", "staging", "sandbox", "qa"} and (
@@ -2940,6 +3350,8 @@ def _save_response(text: str, arch_name: str):
     try:
         # Save to predictable path (overwrite each time) + timestamped copy
         stable_path = "/home/finops/finops-ai-system/data/last_llm_response.txt"
+        import os as _os
+        _os.makedirs(_os.path.dirname(stable_path), exist_ok=True)
         with open(stable_path, "w") as f:
             f.write(text)
         logger.info("Saved response to %s (%d chars)", stable_path, len(text))

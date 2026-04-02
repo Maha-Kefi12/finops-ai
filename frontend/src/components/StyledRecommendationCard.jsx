@@ -3,10 +3,69 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import './StyledRecommendationCard.css';
 
 /**
+ * Source Badge Component - Identifies recommendation source
+ */
+function SourceBadge({ source, validationStatus, engineConfidence, llmConfidence }) {
+  const isEngineBacked = source === 'engine' || source === 'engine_backed';
+  const isValidated = validationStatus === 'validated';
+  const isRejected = validationStatus === 'rejected';
+  const isConflict = validationStatus === 'conflict';
+  
+  const confidence = engineConfidence || llmConfidence || 0;
+  const confidencePercent = Math.round(confidence * 100);
+  
+  let badgeClass = 'source-badge';
+  let badgeIcon = '';
+  let badgeText = '';
+  
+  if (isEngineBacked) {
+    if (isValidated) {
+      badgeClass += ' source-badge--ai-validated';
+      badgeIcon = '🤖✓';
+      badgeText = 'AI Validated';
+    } else {
+      badgeClass += ' source-badge--engine';
+      badgeIcon = '⚙️';
+      badgeText = 'Engine';
+    }
+  } else {
+    if (isRejected) {
+      badgeClass += ' source-badge--rejected';
+      badgeIcon = '💡✗';
+      badgeText = 'AI Insight';
+    } else if (isConflict) {
+      badgeClass += ' source-badge--conflict';
+      badgeIcon = '⚠️';
+      badgeText = 'Conflict';
+    } else {
+      badgeClass += ' source-badge--llm';
+      badgeIcon = '🤖';
+      badgeText = 'AI Proposed';
+    }
+  }
+  
+  return (
+    <div className={badgeClass}>
+      <span className="source-badge__icon">{badgeIcon}</span>
+      <span className="source-badge__text">{badgeText}</span>
+      {confidence > 0 && (
+        <span className="source-badge__confidence">{confidencePercent}%</span>
+      )}
+    </div>
+  );
+}
+
+/**
  * Styled Recommendation Card Component
  * Uses Uiverse design template with carousel and pagination
  */
 export function StyledRecommendationCard({ recommendation, onViewDetails }) {
+  // Two-tier system fields
+  const source = recommendation.source || 'engine';
+  const validationStatus = recommendation.validation_status;
+  const engineConfidence = recommendation.engine_confidence;
+  const llmConfidence = recommendation.llm_confidence;
+  const validationNotes = recommendation.validation_notes;
   const savingsPerMonth = recommendation.total_estimated_savings || 0;
   const savingsPerYear = savingsPerMonth * 12;
   
@@ -56,7 +115,15 @@ export function StyledRecommendationCard({ recommendation, onViewDetails }) {
         <div className="plan__border" />
 
         <div className="card_title__container">
-          <span className="card_title">{title}</span>
+          <div className="card_title__header">
+            <span className="card_title">{title}</span>
+            <SourceBadge 
+              source={source}
+              validationStatus={validationStatus}
+              engineConfidence={engineConfidence}
+              llmConfidence={llmConfidence}
+            />
+          </div>
           <p className="card_paragraph">{description}</p>
         </div>
 
