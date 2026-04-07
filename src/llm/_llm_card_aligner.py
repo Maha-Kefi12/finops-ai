@@ -27,6 +27,7 @@ _ACTION_TO_PATTERN: Dict[str, str] = {
     "ADD_CACHE":            "database_caching",
     "TUNE_MEMORY":          "lambda_memory",
     "PURCHASE_RESERVED":    "reserved_instance",
+    "REVIEW_ARCHITECTURE":  "architecture_review",
 }
 
 
@@ -97,10 +98,23 @@ def align_llm_cards_to_engine_shape(
         if not cb.get("projected_monthly") and current > 0 and savings > 0:
             cb["projected_monthly"] = round(max(0.0, current - savings), 2)
 
-        # ── 4. why_it_matters (narrative / dependency text) ───────────────────
-        if not card.get("why_it_matters"):
+        # ── 4. why_it_matters (build from LLM output fields) ────────────────
+        if not card.get("why_it_matters") or len(str(card.get("why_it_matters", ""))) < 40:
+            # Try to build from justification, summary, or description
+            _why_parts = []
+            _just = card.get("justification") or []
+            if isinstance(_just, list) and _just:
+                _why_parts.extend(str(j).strip("- ").strip() for j in _just[:2] if j)
+            _summary = card.get("summary") or card.get("title") or ""
+            _desc = card.get("description") or ""
+            if _desc and len(_desc) > 30:
+                _why_parts.append(str(_desc)[:200])
+            elif _summary and len(_summary) > 20:
+                _why_parts.append(str(_summary)[:200])
             if dep_names:
-                card["why_it_matters"] = "depended on by: " + ", ".join(dep_names[:3]) + "."
+                _why_parts.append(f"Impacts {len(dep_names)} dependent service(s): {', '.join(dep_names[:3])}")
+            if _why_parts:
+                card["why_it_matters"] = ". ".join(_why_parts[:3])
             elif narrative:
                 card["why_it_matters"] = narrative[:200]
 

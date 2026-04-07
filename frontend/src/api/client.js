@@ -64,7 +64,7 @@ export const generateRecommendations = (architectureId, architectureFile) => {
     const body = {}
     if (architectureId) body.architecture_id = architectureId
     if (architectureFile) body.architecture_file = architectureFile
-    return api.post('/analyze/recommendations', body, { timeout: 600000 })
+    return api.post('/analyze/recommendations', body, { timeout: 900000 })
 }
 
 /** Load last stored recommendation result from DB (for retry after timeout/failure). */

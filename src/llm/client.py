@@ -61,7 +61,7 @@ OLLAMA_MODEL = os.getenv("FINOPS_MODEL", "qwen2.5:7b")  # Use Qwen 2.5 7B as pri
 USE_GEMINI = os.getenv("USE_GEMINI", "false").lower() == "true" and GEMINI_API_KEY
 
 MAX_RETRIES = 3
-TIMEOUT = 300  # Standard timeout for 4000 token generation
+TIMEOUT = 480  # Increased for dual-call pipeline (narrative + recommendations)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -204,6 +204,17 @@ def generate_recommendations(context_package, architecture_name: str = "",
             except Exception as e:
                 logger.warning("[ENGINE] failed to build grounding facts: %s", e)
 
+        # ═══ STAGE 0b: LLM Call #1 — Narrate engine cards ═══
+        # Qwen polishes template text into rich human-readable narratives.
+        # Numbers, IDs, actions, savings are NEVER changed — only text fields.
+        if engine_cards:
+            try:
+                t_narr = time.time()
+                engine_cards = _narrate_engine_cards(engine_cards)
+                logger.info("[STAGE 0b] Narrative pass completed in %.1fs", time.time() - t_narr)
+            except Exception as e:
+                logger.warning("[STAGE 0b] Narrative pass failed: %s — using template text", e)
+
         # ═══ STAGE 1: Build LLM context ═══
         service_inventory = _build_service_inventory(raw_graph_data) if raw_graph_data else ""
         cloudwatch_metrics = _build_metrics(raw_graph_data) if raw_graph_data else ""
@@ -212,7 +223,13 @@ def generate_recommendations(context_package, architecture_name: str = "",
         pricing_data = _build_pricing()
         aws_best_practices = _build_best_practices(pkg_dict, raw_graph_data)
 
+        # Build engine facts FIRST — this goes at the top of the prompt
+        engine_facts_text = ""
+        if engine_cards:
+            engine_facts_text = _format_engine_context(engine_cards)
+
         user_prompt = RECOMMENDATION_USER_PROMPT.format(
+            engine_facts=engine_facts_text or "(No engine cards — you have full freedom)",
             service_inventory=service_inventory,
             cloudwatch_metrics=cloudwatch_metrics,
             graph_context=graph_context,
@@ -220,13 +237,6 @@ def generate_recommendations(context_package, architecture_name: str = "",
             pricing_data=pricing_data,
             aws_best_practices=aws_best_practices,
         )
-
-        # Ground LLM with deterministic engine signals (facts, not format template).
-        if engine_cards:
-            user_prompt += (
-                "\n\n## ENGINE_FACTS (source of truth from deterministic engine)\n\n"
-                + _format_engine_context(engine_cards)
-            )
 
         prompt_chars = len(RECOMMENDATION_SYSTEM_PROMPT) + len(user_prompt)
         logger.info(
@@ -275,7 +285,7 @@ def generate_recommendations(context_package, architecture_name: str = "",
                         llm_cards = _apply_deterministic_quality_gates(
                             llm_cards,
                             raw_graph_data,
-                            min_monthly_savings=50.0,
+                            min_monthly_savings=10.0,
                             engine_cards=engine_cards,
                         )
         except Exception as e:
@@ -544,6 +554,134 @@ def _engine_to_cards(enriched_matches: List[Dict]) -> List[Dict]:
     return cards
 
 
+def _narrate_engine_cards(engine_cards: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """LLM Call #1: Polish engine cards with AI-generated narratives.
+
+    Takes deterministic engine cards and calls Qwen to write rich
+    why_it_matters, full_analysis, and graph_context.narrative text.
+    Numbers, resource IDs, actions, and savings are NEVER changed.
+    """
+    if not engine_cards:
+        return engine_cards
+
+    from src.llm.prompts import ENGINE_NARRATIVE_SYSTEM_PROMPT, ENGINE_NARRATIVE_USER_PROMPT
+
+    # Build a COMPACT payload — only essential fields, limit card count
+    _max_narrate = 4  # Keep small to avoid timeout
+    cards_to_narrate = engine_cards[:_max_narrate]
+    slim_cards = []
+    for card in cards_to_narrate:
+        rid = (card.get("resource_identification") or {})
+        gc = card.get("graph_context") or {}
+        cb = card.get("cost_breakdown") or {}
+        deps = gc.get("dependent_services", [])[:3]  # limit dep list
+        slim_cards.append({
+            "resource_id": rid.get("resource_id", ""),
+            "title": card.get("title", "")[:80],
+            "svc": card.get("service_type", ""),
+            "cur": rid.get("current_instance_type", ""),
+            "rec": rid.get("recommended_instance_type", ""),
+            "env": rid.get("environment", ""),
+            "cost": cb.get("current_monthly", 0),
+            "save": card.get("total_estimated_savings", 0),
+            "blast": gc.get("blast_radius_pct", 0),
+            "deps": len(gc.get("dependent_services", [])),
+            "dep_names": deps,
+            "spof": gc.get("is_spof", False),
+        })
+
+    user_prompt = ENGINE_NARRATIVE_USER_PROMPT.format(
+        card_count=len(slim_cards),
+        cards_json=json.dumps(slim_cards, indent=2),
+    )
+
+    logger.info("[NARRATIVE] Calling LLM to narrate %d/%d engine cards...", len(cards_to_narrate), len(engine_cards))
+    t0 = time.time()
+    try:
+        raw = call_llm(
+            system_prompt=ENGINE_NARRATIVE_SYSTEM_PROMPT,
+            user_prompt=user_prompt,
+            temperature=0.3,
+            max_tokens=3000,
+            architecture_name="engine_narrative",
+        )
+        logger.info("[NARRATIVE] LLM response in %.1fs (%d chars)", time.time() - t0, len(raw or ""))
+    except Exception as e:
+        logger.warning("[NARRATIVE] LLM call failed: %s — keeping template narratives", e)
+        return engine_cards
+
+    if not raw:
+        return engine_cards
+
+    # Parse the response — handle truncated JSON from token limits
+    narrated = []
+    try:
+        cleaned = raw.strip()
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```[a-zA-Z]*\n?", "", cleaned)
+            cleaned = re.sub(r"\n?```$", "", cleaned)
+        # Try direct parse first
+        try:
+            parsed = json.loads(cleaned)
+            narrated = parsed.get("narrated_cards", [])
+        except json.JSONDecodeError:
+            # Truncated response — try to recover partial array
+            # Find the narrated_cards array and parse individual objects
+            match = re.search(r'"narrated_cards"\s*:\s*\[', cleaned)
+            if match:
+                arr_start = match.end() - 1  # include the [
+                # Try progressively shorter substrings to find valid JSON array
+                for end_pos in range(len(cleaned), arr_start + 10, -1):
+                    fragment = cleaned[arr_start:end_pos].rstrip().rstrip(",")
+                    if not fragment.endswith("]"):
+                        fragment += "]"
+                    try:
+                        narrated = json.loads(fragment)
+                        logger.info("[NARRATIVE] Recovered %d cards from truncated JSON", len(narrated))
+                        break
+                    except json.JSONDecodeError:
+                        continue
+        if not isinstance(narrated, list):
+            narrated = []
+    except Exception as e:
+        logger.warning("[NARRATIVE] Failed to parse LLM narrative response: %s", e)
+        return engine_cards
+
+    # Map narratives by resource_id
+    narr_by_rid = {}
+    for n in narrated:
+        rid = str(n.get("resource_id", "")).strip()
+        if rid:
+            narr_by_rid[rid] = n
+
+    applied = 0
+    for card in engine_cards:
+        rid = (card.get("resource_identification") or {}).get("resource_id", "")
+        narr = narr_by_rid.get(rid)
+        if not narr:
+            continue
+
+        # Overlay narrative fields — never overwrite numbers/IDs
+        new_why = str(narr.get("why_it_matters", "")).strip()
+        new_analysis = str(narr.get("full_analysis", "")).strip()
+        new_narrative = str(narr.get("narrative", "")).strip()
+
+        if new_why and len(new_why) > 20:
+            card["why_it_matters"] = new_why
+        if new_narrative and len(new_narrative) > 15:
+            card.setdefault("graph_context", {})["narrative"] = new_narrative
+        if new_analysis and len(new_analysis) > 30:
+            rec0 = (card.get("recommendations") or [{}])[0]
+            rec0["full_analysis"] = new_analysis
+            if card.get("recommendations"):
+                card["recommendations"][0] = rec0
+
+        applied += 1
+
+    logger.info("[NARRATIVE] Applied AI narratives to %d/%d engine cards", applied, len(engine_cards))
+    return engine_cards
+
+
 def _format_engine_context(engine_cards: List[Dict]) -> str:
     """Format engine cards as structured text for LLM context injection.
 
@@ -695,11 +833,21 @@ def _dedupe_and_resolve_conflicts(cards: List[Dict[str, Any]]) -> List[Dict[str,
     if not cards:
         return cards
 
-    # 1) True duplicate removal: same resource + same canonical action + same savings.
-    # Use canonical action (not coarse 3-way bucket) so cards with different actions
-    # on the same resource are kept as distinct recommendations.
+    # 1) True duplicate removal: same resource + same action family = duplicate.
+    # Engine cards always win over LLM cards. Different action families on the
+    # same resource are kept as distinct recommendations.
+    _DEDUP_FAMILIES = {
+        "DOWNSIZE": "rightsize", "STOP": "rightsize", "TERMINATE": "decommission",
+        "MOVE_TO_GRAVITON": "graviton",
+        "CHANGE_STORAGE_CLASS": "storage", "ADD_LIFECYCLE": "storage",
+        "ADD_VPC_ENDPOINT": "network", "ELIMINATE_CROSS_AZ": "network",
+        "ADD_CACHE": "cache", "ADD_READ_REPLICA": "read_offload",
+        "DISABLE_MULTI_AZ": "multi_az", "TUNE_MEMORY": "memory",
+        "PURCHASE_RESERVED": "commitment", "REVIEW_ARCHITECTURE": "review",
+        "OPTIMIZE": "optimize",
+    }
     deduped: List[Dict[str, Any]] = []
-    seen: Dict[Tuple[str, str, int], int] = {}
+    seen: Dict[Tuple[str, str], int] = {}
     dropped_dups = 0
 
     def _canonical_action(card: Dict[str, Any]) -> str:
@@ -714,17 +862,25 @@ def _dedupe_and_resolve_conflicts(cards: List[Dict[str, Any]]) -> List[Dict[str,
 
     for card in cards:
         rid = str((card.get("resource_identification") or {}).get("resource_id", "") or "").strip().lower()
-        action_bucket = _canonical_action(card)
-        savings = float(card.get("total_estimated_savings", 0) or 0)
-        key = (rid, action_bucket, int(round(savings * 100)))
+        action = _canonical_action(card)
+        family = _DEDUP_FAMILIES.get(action, action.lower())
+        key = (rid, family)
+        source = str(card.get("source", "") or "")
+        is_engine = source in ("engine", "engine_backed")
 
         if key in seen:
             prev = deduped[seen[key]]
             prev_source = str(prev.get("source", "") or "")
-            new_source = str(card.get("source", "") or "")
-            # Prefer engine card when duplicate pair exists.
-            if prev_source != "engine" and new_source == "engine":
+            prev_is_engine = prev_source in ("engine", "engine_backed")
+            # Engine always wins over LLM
+            if is_engine and not prev_is_engine:
                 deduped[seen[key]] = card
+            elif is_engine == prev_is_engine:
+                # Same tier — keep higher savings
+                prev_sav = float(prev.get("total_estimated_savings", 0) or 0)
+                new_sav = float(card.get("total_estimated_savings", 0) or 0)
+                if new_sav > prev_sav:
+                    deduped[seen[key]] = card
             dropped_dups += 1
             continue
 
@@ -2791,7 +2947,7 @@ def _compute_blast_radius(node_id: str, dependents_of: Dict[str, List[str]], vis
 def _apply_deterministic_quality_gates(
     cards: List[Dict[str, Any]],
     graph_data: Optional[dict],
-    min_monthly_savings: float = 50.0,
+    min_monthly_savings: float = 10.0,
     engine_cards: Optional[List[Dict[str, Any]]] = None,
 ) -> List[Dict[str, Any]]:
     """Deterministic gate after LLM generation.
@@ -2815,11 +2971,23 @@ def _apply_deterministic_quality_gates(
         if sid:
             inv_by_id[sid] = s
 
-    # Build engine-handled set: (resource_id, canonical_action) exact pairs
-    # Using canonical action strings (not coarse 3-way buckets) so that e.g.
-    # an engine MOVE_TO_GRAVITON card does NOT block a novel LLM ADD_CACHE card
-    # on the same resource — only the exact same action is considered a duplicate.
-    _engine_handled: set = set()
+    # Build engine-handled set: (resource_id, canonical_action) pairs AND
+    # (resource_id, savings) pairs to catch LLM cards that copy engine findings.
+    # Uses action-family matching so LLM CHANGE_STORAGE_CLASS is caught when
+    # engine already has ADD_LIFECYCLE on the same resource.
+    _engine_handled: set = set()       # (rid, action)
+    _engine_handled_savings: set = set()  # (rid, savings_cents)
+    _engine_resource_actions: dict = {}   # rid → set of actions
+    _ACTION_FAMILIES = {
+        "DOWNSIZE": "rightsize", "STOP": "rightsize", "TERMINATE": "decommission",
+        "MOVE_TO_GRAVITON": "graviton",
+        "CHANGE_STORAGE_CLASS": "storage", "ADD_LIFECYCLE": "storage",
+        "ADD_VPC_ENDPOINT": "network", "ELIMINATE_CROSS_AZ": "network",
+        "ADD_CACHE": "cache", "ADD_READ_REPLICA": "read_offload",
+        "DISABLE_MULTI_AZ": "multi_az", "TUNE_MEMORY": "memory",
+        "PURCHASE_RESERVED": "commitment", "REVIEW_ARCHITECTURE": "review",
+        "OPTIMIZE": "optimize",
+    }
     _ENGINE_PATTERN_TO_ACTION = {
         "graviton": "MOVE_TO_GRAVITON",
         "cpu_underutil": "DOWNSIZE",
@@ -2863,6 +3031,12 @@ def _apply_deterministic_quality_gates(
                     break
         if ec_action:
             _engine_handled.add((ec_rid, ec_action))
+            family = _ACTION_FAMILIES.get(ec_action, ec_action.lower())
+            _engine_resource_actions.setdefault(ec_rid, set()).add(family)
+        # Track savings to catch LLM cards that copy engine savings exactly
+        ec_savings = float(ec.get("total_estimated_savings", 0) or 0)
+        if ec_savings > 0:
+            _engine_handled_savings.add((ec_rid, int(round(ec_savings * 100))))
 
     kept: List[Dict[str, Any]] = []
     rejected = {
@@ -2889,7 +3063,9 @@ def _apply_deterministic_quality_gates(
     # Pre-build list of real service IDs for fuzzy matching
     _real_ids = list(inv_by_id.keys())
 
-    def _fuzzy_match_rid(llm_rid: str) -> str:
+    _fuzzy_claimed: set = set()  # track which real IDs have been claimed by fuzzy matching
+
+    def _fuzzy_match_rid(llm_rid: str, card: Optional[Dict] = None) -> str:
         """Try to match an LLM-generated resource_id to a real service ID."""
         if not llm_rid:
             return ""
@@ -2904,17 +3080,54 @@ def _apply_deterministic_quality_gates(
             rl = real.lower()
             if low in rl or rl in low:
                 return real
-        # 3) Token overlap: split on hyphens, find best overlap
+        # 3) Token overlap: split on hyphens, find best overlap (require 2+ tokens)
         llm_tokens = set(low.replace("_", "-").split("-"))
         best, best_score = "", 0
         for real in _real_ids:
             real_tokens = set(real.lower().replace("_", "-").split("-"))
             overlap = len(llm_tokens & real_tokens)
-            # Require at least 2 token overlap to avoid false matches
             if overlap > best_score and overlap >= 2:
                 best, best_score = real, overlap
         if best:
             return best
+        # 4) Service-type match: use the card's service field or type tokens in the ID
+        #    to find the best unclaimed real resource of the same service type.
+        _SVC_KEYWORDS = {
+            "ec2": "ec2", "rds": "rds", "s3": "s3", "lambda": "lambda",
+            "elasticache": "elasticache", "ebs": "ebs", "nat": "nat",
+            "alb": "alb", "elb": "alb", "ecs": "ecs", "opensearch": "opensearch",
+            "elasticsearch": "opensearch", "sqs": "sqs", "sns": "sns",
+            "dynamodb": "dynamodb", "aurora": "rds",
+        }
+        target_svc = ""
+        # Try service field from card
+        if card:
+            card_svc = str(card.get("service") or "").lower().strip()
+            target_svc = _SVC_KEYWORDS.get(card_svc, card_svc)
+        # Try service type from resource ID tokens
+        if not target_svc:
+            for token in llm_tokens:
+                if token in _SVC_KEYWORDS:
+                    target_svc = _SVC_KEYWORDS[token]
+                    break
+        if target_svc:
+            # Find highest-cost unclaimed real resource of this service type
+            candidates = []
+            for real in _real_ids:
+                if real in _fuzzy_claimed:
+                    continue
+                rl = real.lower()
+                svc_data = inv_by_id.get(real, {})
+                real_type = str(svc_data.get("type", svc_data.get("aws_service", "")) or "").lower()
+                if target_svc in rl or target_svc in real_type:
+                    cost = float(svc_data.get("cost_monthly", 0) or svc_data.get("monthly_cost", 0) or 0)
+                    candidates.append((real, cost))
+            if candidates:
+                candidates.sort(key=lambda x: -x[1])  # highest cost first
+                pick = candidates[0][0]
+                _fuzzy_claimed.add(pick)
+                logger.info("[QUALITY GATE] Service-type matched '%s' (svc=%s) → '%s'", llm_rid, target_svc, pick)
+                return pick
         return ""
 
     for card in cards:
@@ -2923,7 +3136,7 @@ def _apply_deterministic_quality_gates(
 
         # Fuzzy-match LLM resource_id to real service ID
         if rid and rid not in inv_by_id:
-            matched = _fuzzy_match_rid(rid)
+            matched = _fuzzy_match_rid(rid, card=card)
             if matched:
                 logger.info("[QUALITY GATE] Fuzzy-matched LLM rid '%s' → '%s'", rid, matched)
                 rid = matched
@@ -2974,14 +3187,37 @@ def _apply_deterministic_quality_gates(
                 card.setdefault("resource_identification", {})
                 for rec in (card.get("recommendations") or []):
                     rec["action"] = remapped
-            else:
-                # Truly unrecognisable — reject
+            elif llm_action in _ENGINE_ONLY_ACTIONS:
+                # Hard-banned engine actions that couldn't be remapped — reject
                 rejected["engine_only_action"] += 1
                 continue
+            else:
+                # Unknown but not engine-owned — keep as REVIEW_ARCHITECTURE
+                logger.info("[QUALITY GATE] Unknown action '%s' kept as REVIEW_ARCHITECTURE", llm_action)
+                llm_action = "REVIEW_ARCHITECTURE"
+                card["action"] = "REVIEW_ARCHITECTURE"
+                for rec in (card.get("recommendations") or []):
+                    rec["action"] = "REVIEW_ARCHITECTURE"
 
-        # Reject only if the exact same (resource_id, canonical_action) is already
-        # handled by the engine — different actions on the same resource are allowed.
-        if _engine_handled and llm_action and (rid.lower(), llm_action) in _engine_handled:
+        # Reject if engine already handles this resource with the same action OR
+        # same action family (e.g. engine ADD_LIFECYCLE blocks LLM CHANGE_STORAGE_CLASS).
+        rid_low = rid.lower()
+        if _engine_handled and llm_action:
+            # Exact action match
+            if (rid_low, llm_action) in _engine_handled:
+                rejected["engine_duplicate"] += 1
+                continue
+            # Action family match (CHANGE_STORAGE_CLASS ≈ ADD_LIFECYCLE, etc.)
+            llm_family = _ACTION_FAMILIES.get(llm_action, llm_action.lower())
+            engine_families = _engine_resource_actions.get(rid_low, set())
+            if llm_family in engine_families:
+                logger.info("[QUALITY GATE] Rejected LLM %s on %s — engine already has family '%s'", llm_action, rid, llm_family)
+                rejected["engine_duplicate"] += 1
+                continue
+        # Reject LLM cards that copied engine savings exactly (same resource + same $)
+        llm_savings_cents = int(round(float(card.get("total_estimated_savings", 0) or 0) * 100))
+        if llm_savings_cents > 0 and (rid_low, llm_savings_cents) in _engine_handled_savings:
+            logger.info("[QUALITY GATE] Rejected LLM card on %s — identical savings $%.2f to engine card", rid, llm_savings_cents/100)
             rejected["engine_duplicate"] += 1
             continue
 
@@ -3009,11 +3245,13 @@ def _apply_deterministic_quality_gates(
                 if rec0.get("description") in (None, "", rec0.get("action"), "optimize this service"):
                     rec0["description"] = rewritten
 
-        # Reject generic titles unless action text has concrete change details.
+        # Warn on generic titles but keep the card (LLM cards often have useful content
+        # even when the title is generic — the summary/justification may be specific).
         if _is_generic_title(title) and not _has_concrete_action_target(action_text):
-            rejected["generic_title"] += 1
-            continue
+            logger.info("[QUALITY GATE] Generic title kept (relaxed): '%s'", title[:60])
 
+        # ── Auto-populate costs from inventory when LLM left them at 0 ──
+        real_cost = float(svc.get("cost_monthly", 0) or svc.get("monthly_cost", 0) or 0)
         current = card.get("cost_breakdown", {}).get("current_monthly", 0)
         projected = card.get("cost_breakdown", {}).get("projected_monthly", 0)
         savings = card.get("total_estimated_savings", 0)
@@ -3025,6 +3263,30 @@ def _apply_deterministic_quality_gates(
             rejected["math_invalid"] += 1
             continue
 
+        # If LLM didn't provide costs, use real inventory cost
+        if current <= 0 and real_cost > 0:
+            current = real_cost
+            card.setdefault("cost_breakdown", {})["current_monthly"] = current
+            card["current_monthly_cost"] = current
+
+        # If savings is 0 but we have a real cost, estimate based on action type
+        _ACTION_SAVINGS_PCT = {
+            "ADD_CACHE": 0.25, "ADD_READ_REPLICA": 0.20, "ADD_VPC_ENDPOINT": 0.10,
+            "ELIMINATE_CROSS_AZ": 0.10, "DISABLE_MULTI_AZ": 0.45,
+            "MOVE_TO_GRAVITON": 0.30, "CHANGE_STORAGE_CLASS": 0.25,
+            "ADD_LIFECYCLE": 0.20, "TUNE_MEMORY": 0.15, "PURCHASE_RESERVED": 0.35,
+            "REVIEW_ARCHITECTURE": 0.15,
+        }
+        if savings <= 0 and current > 0:
+            est_pct = _ACTION_SAVINGS_PCT.get(llm_action, 0.15)
+            savings = round(current * est_pct, 2)
+            card["total_estimated_savings"] = savings
+            projected = round(current - savings, 2)
+            card.setdefault("cost_breakdown", {})["projected_monthly"] = projected
+            card["estimated_savings_monthly"] = savings
+            logger.info("[QUALITY GATE] Auto-estimated savings for %s %s: $%.2f/mo (%.0f%% of $%.2f)",
+                        llm_action, rid, savings, est_pct * 100, current)
+
         if savings <= 0 and current > 0 and projected >= 0:
             savings = round(max(0.0, current - projected), 2)
             card["total_estimated_savings"] = savings
@@ -3034,7 +3296,7 @@ def _apply_deterministic_quality_gates(
 
         if current > 0 and projected >= 0 and savings > 0:
             expected = round(max(0.0, current - projected), 2)
-            if abs(expected - savings) > max(5.0, savings * 0.15):
+            if abs(expected - savings) > max(10.0, savings * 0.30):
                 rejected["math_invalid"] += 1
                 continue
 
@@ -3109,7 +3371,11 @@ def _apply_deterministic_quality_gates(
 
 
 def _is_action_feasible_for_service(action_text: str, service_type: str) -> bool:
-    """Basic deterministic feasibility map for service-action compatibility."""
+    """Basic deterministic feasibility map for service-action compatibility.
+    
+    Relaxed: only reject truly impossible combinations (e.g. lifecycle on EC2).
+    Most architectural actions (cache, vpc endpoint, graviton) apply broadly.
+    """
     t = (action_text or "").lower()
     s = (service_type or "service").lower()
 
@@ -3119,16 +3385,15 @@ def _is_action_feasible_for_service(action_text: str, service_type: str) -> bool
     ):
         return False
 
-    # Service-action alignment checks.
+    # S3-only actions
     if "lifecycle" in t or "intelligent-tiering" in t or "glacier" in t:
-        return s in {"storage", "s3"}
-    if "cache" in t or "redis" in t or "elasticache" in t:
-        return s in {"cache", "database", "service", "elasticache"}
+        return s in {"storage", "s3", "service"}
+    # CDN-only actions
     if "price class" in t or "cloudfront" in t or "cdn" in t:
-        return s in {"cdn"}
-    if "gp3" in t or "snapshot" in t or "unattached volume" in t:
-        return s in {"storage", "ebs", "database", "service"}
+        return s in {"cdn", "service"}
 
+    # Everything else (graviton, cache, vpc endpoint, read replica, etc.)
+    # is broadly applicable — let the LLM decide relevance.
     return True
 
 

@@ -74,7 +74,11 @@ _KNOWN_CANONICAL = {
     "CHANGE_STORAGE_CLASS", "ADD_LIFECYCLE", "ADD_CACHE", "ADD_VPC_ENDPOINT",
     "ADD_READ_REPLICA", "DISABLE_MULTI_AZ", "ELIMINATE_CROSS_AZ",
     "TUNE_MEMORY", "PURCHASE_RESERVED", "PURCHASE_SAVINGS_PLAN",
+    "REVIEW_ARCHITECTURE",
 }
+
+# Engine-owned actions that should NEVER be inferred for LLM cards
+_ENGINE_ONLY_ACTIONS = {"DOWNSIZE", "TERMINATE", "STOP"}
 
 
 # Best-practice description phrases that must NOT be treated as action enums.
@@ -311,6 +315,10 @@ def normalize_card(card: Dict[str, Any]) -> Dict[str, Any]:
     # past the action-enum rule in the prompt.
     if canonical_action not in _KNOWN_CANONICAL:
         canonical_action = _infer_action_from_context(card)
+    # Never let normalizer overwrite LLM cards with engine-owned actions
+    _src = card.get("source", "")
+    if _src in ("llm_proposed",) and canonical_action in _ENGINE_ONLY_ACTIONS:
+        canonical_action = "REVIEW_ARCHITECTURE"
     out["action"] = canonical_action
 
     # ── Costs — engine values are authoritative; only fill missing ────────────
@@ -385,6 +393,7 @@ def normalize_card(card: Dict[str, Any]) -> Dict[str, Any]:
         "ADD_CACHE":            "AWS FinOps - Caching: ElastiCache reduces DB load and lowers per-query cost",
         "TUNE_MEMORY":          "AWS FinOps - Lambda: right-size memory allocation — over-provisioning wastes compute budget",
         "PURCHASE_RESERVED":    "AWS FinOps - Reservations: 1-yr Reserved Instances save 30-40% vs On-Demand for steady workloads",
+        "REVIEW_ARCHITECTURE":  "AWS FinOps - Architecture Review: structural optimization opportunity identified by AI analysis",
     }
     if not out.get("linked_best_practice"):
         out["linked_best_practice"] = _BP_LABEL.get(out["action"], f"AWS FinOps - {out['action']} optimisation")
@@ -473,22 +482,37 @@ def detect_duplicates_and_conflicts(cards: List[Dict[str, Any]]) -> List[Dict[st
 
             for prev_idx, prev_action in seen:
                 if _are_same_action_family(action, prev_action):
-                    # Only mark as duplicate within the SAME source tier.
-                    # Engine cards and LLM cards are complementary — never dedup across tiers.
+                    # Cross-tier dedup: engine always wins over LLM.
                     cur_src = card.get("source", "")
                     prev_src = cards[prev_idx].get("source", "")
                     cur_is_engine = cur_src in ("engine", "engine_backed")
                     prev_is_engine = prev_src in ("engine", "engine_backed")
-                    if cur_is_engine != prev_is_engine:
-                        continue  # different tiers — keep both
-                    # Duplicate within same tier — this card loses
-                    cards[idx]["is_duplicate_of"] = cards[prev_idx].get("id")
-                    is_dup = True
-                    logger.debug(
-                        "[NORMALISER] Duplicate: %s action=%s is dup of %s",
-                        rid, action, cards[prev_idx].get("id"),
-                    )
-                    break
+                    if cur_is_engine and not prev_is_engine:
+                        # Current is engine, prev is LLM — mark LLM as dup
+                        cards[prev_idx]["is_duplicate_of"] = card.get("id")
+                        logger.debug(
+                            "[NORMALISER] Cross-tier dup: LLM %s superseded by engine %s on %s",
+                            prev_action, action, rid,
+                        )
+                        continue  # engine card keeps its spot in seen
+                    elif not cur_is_engine and prev_is_engine:
+                        # Current is LLM, prev is engine — mark LLM as dup
+                        cards[idx]["is_duplicate_of"] = cards[prev_idx].get("id")
+                        is_dup = True
+                        logger.debug(
+                            "[NORMALISER] Cross-tier dup: LLM %s superseded by engine %s on %s",
+                            action, prev_action, rid,
+                        )
+                        break
+                    else:
+                        # Same tier — lower priority card loses
+                        cards[idx]["is_duplicate_of"] = cards[prev_idx].get("id")
+                        is_dup = True
+                        logger.debug(
+                            "[NORMALISER] Same-tier dup: %s action=%s is dup of %s",
+                            rid, action, cards[prev_idx].get("id"),
+                        )
+                        break
                 elif _are_conflicting_actions(action, prev_action):
                     # Conflict — mark both
                     cards[idx]["is_conflicting"] = True
