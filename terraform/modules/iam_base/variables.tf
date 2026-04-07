@@ -1,11 +1,6 @@
 variable "project" { type = string }
 variable "env" { type = string }
 
-variable "cluster_oidc_issuer" {
-  description = "EKS cluster OIDC issuer URL"
-  type        = string
-}
-
 variable "tags" {
   type    = map(string)
   default = {}

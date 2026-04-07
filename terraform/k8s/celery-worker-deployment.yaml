@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  namespace: finops
+  labels:
+    app: celery-worker
+    app.kubernetes.io/part-of: finops-ai
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: celery-worker
+  template:
+    metadata:
+      labels:
+        app: celery-worker
+    spec:
+      serviceAccountName: backend
+      nodeSelector:
+        role: app
+      containers:
+        - name: celery-worker
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/finops-ai-dev/backend:latest
+          command: ["celery", "-A", "src.background.tasks", "worker", "--loglevel=info", "--concurrency=2"]
+          envFrom:
+            - configMapRef:
+                name: finops-config
+            - secretRef:
+                name: finops-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          livenessProbe:
+            exec:
+              command: ["celery", "-A", "src.background.tasks", "inspect", "ping", "--timeout", "5"]
+            initialDelaySeconds: 30
+            periodSeconds: 60
+          volumeMounts:
+            - name: synthetic-data
+              mountPath: /app/data/synthetic
+              readOnly: true
+      volumes:
+        - name: synthetic-data
+          emptyDir: {}

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat
+  namespace: finops
+  labels:
+    app: celery-beat
+    app.kubernetes.io/part-of: finops-ai
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: celery-beat
+  template:
+    metadata:
+      labels:
+        app: celery-beat
+    spec:
+      serviceAccountName: backend
+      nodeSelector:
+        role: app
+      containers:
+        - name: celery-beat
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/finops-ai-dev/backend:latest
+          command: ["celery", "-A", "src.background.tasks", "beat", "--loglevel=info", "--schedule", "/tmp/celerybeat-schedule"]
+          envFrom:
+            - configMapRef:
+                name: finops-config
+            - secretRef:
+                name: finops-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"

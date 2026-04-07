@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: finops-config
+  namespace: finops
+  labels:
+    app.kubernetes.io/part-of: finops-ai
+data:
+  ENVIRONMENT: "production"
+  PYTHONPATH: "/app"
+  DATA_DIR: "/app/data/synthetic"
+  REDIS_PORT: "6379"
+  NEO4J_USER: "neo4j"
+  FINOPS_MODEL: "qwen2.5:7b"
+  # ── Populated by Terraform outputs (replace at deploy time) ──
+  DATABASE_URL: "REPLACE_WITH_TERRAFORM_OUTPUT"
+  REDIS_HOST: "REPLACE_WITH_TERRAFORM_OUTPUT"
+  CELERY_BROKER_URL: "REPLACE_WITH_TERRAFORM_OUTPUT"
+  CELERY_RESULT_BACKEND: "REPLACE_WITH_TERRAFORM_OUTPUT"
+  NEO4J_URI: "bolt://neo4j:7687"
+  OLLAMA_URL: "http://ollama:11434"
