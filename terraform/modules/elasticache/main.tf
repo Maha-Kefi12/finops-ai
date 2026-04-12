@@ -31,7 +31,7 @@ resource "aws_security_group" "redis" {
 
 resource "aws_elasticache_replication_group" "main" {
   replication_group_id = "${var.project}-${var.env}-redis"
-  description          = "FinOps AI Redis — Celery broker + cache"
+  description          = "FinOps AI Redis - Celery broker and cache"
 
   engine               = "redis"
   engine_version       = "7.1"

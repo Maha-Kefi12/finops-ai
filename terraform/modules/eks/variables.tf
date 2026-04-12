@@ -32,7 +32,7 @@ variable "ebs_csi_role_arn" {
 
 variable "kubernetes_version" {
   type    = string
-  default = "1.29"
+  default = "1.30"
 }
 
 # ── App Node Group ──────────────────────────────────────────────────────

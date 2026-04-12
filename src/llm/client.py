@@ -21,6 +21,11 @@ from src.knowledge_base.aws_finops_best_practices import (
     DATABASE_BEST_PRACTICES,
     STORAGE_BEST_PRACTICES,
     NETWORKING_BEST_PRACTICES,
+    SERVERLESS_BEST_PRACTICES,
+    MESSAGING_BEST_PRACTICES,
+    ANALYTICS_BEST_PRACTICES,
+    SECURITY_BEST_PRACTICES,
+    MANAGEMENT_BEST_PRACTICES,
     get_best_practices_for_service,
 )
 from src.llm.finops_metrics import FinOpsMetricsExtractor
@@ -61,7 +66,7 @@ OLLAMA_MODEL = os.getenv("FINOPS_MODEL", "qwen2.5:7b")  # Use Qwen 2.5 7B as pri
 USE_GEMINI = os.getenv("USE_GEMINI", "false").lower() == "true" and GEMINI_API_KEY
 
 MAX_RETRIES = 3
-TIMEOUT = 480  # Increased for dual-call pipeline (narrative + recommendations)
+TIMEOUT = 120  # Keep tight — prompt is capped to ~16K chars for Ollama 7B
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -178,7 +183,13 @@ def generate_recommendations(context_package, architecture_name: str = "",
                             raw_graph_data: Optional[dict] = None) -> RecommendationResult:
     """Generate recommendations using engine-grounded LLM + deterministic controls."""
     
-    from src.llm.prompts import RECOMMENDATION_SYSTEM_PROMPT, RECOMMENDATION_USER_PROMPT
+    from src.llm.prompts import (
+        RECOMMENDATION_SYSTEM_PROMPT,
+        RECOMMENDATION_USER_PROMPT,
+        ENGINE_NARRATIVE_SYSTEM_PROMPT,
+        ENGINE_NARRATIVE_USER_PROMPT,
+    )
+    from src.llm.security_context_builder import build_security_context as _build_security_context
     
     start = time.time()
     result = RecommendationResult(architecture_name=architecture_name)
@@ -204,104 +215,110 @@ def generate_recommendations(context_package, architecture_name: str = "",
             except Exception as e:
                 logger.warning("[ENGINE] failed to build grounding facts: %s", e)
 
-        # ═══ STAGE 0b: LLM Call #1 — Narrate engine cards ═══
-        # Qwen polishes template text into rich human-readable narratives.
-        # Numbers, IDs, actions, savings are NEVER changed — only text fields.
-        if engine_cards:
-            try:
-                t_narr = time.time()
-                engine_cards = _narrate_engine_cards(engine_cards)
-                logger.info("[STAGE 0b] Narrative pass completed in %.1fs", time.time() - t_narr)
-            except Exception as e:
-                logger.warning("[STAGE 0b] Narrative pass failed: %s — using template text", e)
-
-        # ═══ STAGE 1: Build LLM context ═══
-        service_inventory = _build_service_inventory(raw_graph_data) if raw_graph_data else ""
-        cloudwatch_metrics = _build_metrics(raw_graph_data) if raw_graph_data else ""
-        graph_context = _build_graph(pkg_dict)
-        business_graph_context = _build_business_graph_context(raw_graph_data, pkg_dict) if raw_graph_data else "(No business graph context)"
-        pricing_data = _build_pricing()
-        aws_best_practices = _build_best_practices(pkg_dict, raw_graph_data)
-
-        # Build engine facts FIRST — this goes at the top of the prompt
-        engine_facts_text = ""
-        if engine_cards:
-            engine_facts_text = _format_engine_context(engine_cards)
-
-        user_prompt = RECOMMENDATION_USER_PROMPT.format(
-            engine_facts=engine_facts_text or "(No engine cards — you have full freedom)",
-            service_inventory=service_inventory,
-            cloudwatch_metrics=cloudwatch_metrics,
-            graph_context=graph_context,
-            business_graph_context=business_graph_context,
-            pricing_data=pricing_data,
-            aws_best_practices=aws_best_practices,
-        )
-
-        prompt_chars = len(RECOMMENDATION_SYSTEM_PROMPT) + len(user_prompt)
-        logger.info(
-            "[PROMPT SIZE] system=%d, user=%d, total=%d chars (~%d tokens)",
-            len(RECOMMENDATION_SYSTEM_PROMPT),
-            len(user_prompt),
-            prompt_chars,
-            prompt_chars // 4,
-        )
-
-        # ═══ STAGE 2: LLM call (primary recommender) ═══
+        # ═══ STAGE 1+2: Lean LLM call for security/reliability/performance ═══
+        # The full RECOMMENDATION_SYSTEM_PROMPT + context is ~31K chars which
+        # Ollama 7B cannot process within any reasonable timeout.  Instead we
+        # use a compact, purpose-built prompt (~5K chars total) that asks the
+        # LLM specifically for security, reliability and performance findings.
+        # Then we ENRICH each finding with graph_context, resource_identification,
+        # cost_breakdown, recommendations, and finops_best_practice from raw_graph_data.
         llm_cards: List[Dict[str, Any]] = []
+
+        # Build service lookup and compact service list for prompt
+        services = (raw_graph_data or {}).get("services", (raw_graph_data or {}).get("nodes", []))
+        edges = (raw_graph_data or {}).get("dependencies", (raw_graph_data or {}).get("edges", []))
+        svc_by_name: Dict[str, dict] = {}
+        svc_by_id: Dict[str, dict] = {}
+        svc_lines = []
+        for s in services:
+            svc_by_name[s.get("name", "")] = s
+            svc_by_id[s.get("id", "")] = s
+            cfg = s.get("config", {})
+            flags = []
+            if cfg.get("multi_az") is not None:
+                flags.append(f"multi_az={cfg['multi_az']}")
+            if cfg.get("encrypted") is not None:
+                flags.append(f"encrypted={cfg['encrypted']}")
+            if cfg.get("publicly_accessible") is not None:
+                flags.append(f"public={cfg['publicly_accessible']}")
+            if cfg.get("backup_retention_period") is not None:
+                flags.append(f"backup={cfg['backup_retention_period']}d")
+            flag_str = f" [{', '.join(flags)}]" if flags else ""
+            svc_lines.append(f"- {s.get('name', s.get('id','?'))} ({s.get('type','?')}){flag_str}")
+        svc_text = "\n".join(svc_lines[:40])
+
+        lean_system = (
+            "You are an AWS security and reliability architect. "
+            "Analyze the services and return a JSON array of 5-8 findings. "
+            "Focus ONLY on security vulnerabilities, reliability risks, and performance issues. "
+            "Do NOT suggest cost savings. Respond with ONLY a JSON array, no markdown."
+        )
+
+        lean_user = (
+            f"Architecture: {architecture_name}\n"
+            f"Services ({len(svc_lines)}):\n{svc_text}\n\n"
+            "Return a JSON array. Each item MUST have ALL these fields:\n"
+            '{"title":"Enable encryption at rest for RDS",'
+            '"category":"security",'
+            '"severity":"critical",'
+            '"resource":"exact_resource_name_from_list_above",'
+            '"finding":"RDS instance has no encryption at rest, exposing data to unauthorized access",'
+            '"remediation":"aws rds modify-db-instance --db-instance-identifier X --storage-encrypted",'
+            '"implementation_steps":["Create snapshot","Restore with encryption","Switch DNS"],'
+            '"performance_impact":"No performance degradation expected from enabling encryption",'
+            '"risk_assessment":"Data breach risk if instance storage is compromised",'
+            '"confidence":"high",'
+            '"complexity":"medium"}\n\n'
+            "Analyze for:\n"
+            "1. SECURITY: public exposure, missing encryption, no MFA, overly permissive IAM, open security groups\n"
+            "2. RELIABILITY: no multi-AZ, no backups, single points of failure, no health checks, no failover\n"
+            "3. PERFORMANCE: missing caches, no read replicas, synchronous bottlenecks, undersized instances\n"
+        )
+
+        total_prompt = len(lean_system) + len(lean_user)
+        logger.info("[PROMPT SIZE] lean: %d chars (~%d tokens)", total_prompt, total_prompt // 4)
+
         try:
-            logger.info("[STAGE 2] Starting LLM call...")
-            logger.info("[LLM] Using backend: %s", "Gemini" if USE_GEMINI else "Ollama")
-            logger.info("[LLM] Model: %s", OLLAMA_MODEL if not USE_GEMINI else GEMINI_MODEL)
-            logger.info("[LLM] URL: %s", OLLAMA_URL if not USE_GEMINI else "Gemini API")
-            
+            logger.info("[STAGE 2] Calling LLM (lean security/reliability/performance)...")
             t3 = time.time()
             raw_response = call_llm(
-                system_prompt=RECOMMENDATION_SYSTEM_PROMPT,
-                user_prompt=user_prompt,
-                temperature=0.2,
-                max_tokens=6000,
+                system_prompt=lean_system,
+                user_prompt=lean_user,
+                temperature=0.3,
+                max_tokens=2500,
                 architecture_name=architecture_name,
             )
-            logger.info(
-                "[TIMING] LLM call completed in %.1fs (%d chars)",
-                time.time() - t3,
-                len(raw_response) if raw_response else 0,
-            )
+            elapsed_llm = time.time() - t3
+            logger.info("[TIMING] LLM completed in %.1fs (%d chars)", elapsed_llm, len(raw_response or ""))
 
             if raw_response:
-                _save_response(raw_response, architecture_name)
-                llm_cards = _parse_structured_json_recommendations(raw_response)
+                import re as _re
+                clean = _re.sub(r'```(?:json)?\s*', '', raw_response).strip()
+                clean = _re.sub(r'```\s*$', '', clean).strip()
+                arr_match = _re.search(r'\[.*\]', clean, _re.DOTALL)
+                if arr_match:
+                    try:
+                        parsed = json.loads(arr_match.group())
+                        if isinstance(parsed, list):
+                            for item in parsed:
+                                if not isinstance(item, dict) or not item.get("title"):
+                                    continue
+                                llm_cards.append(
+                                    _build_rich_llm_card(item, svc_by_name, svc_by_id, edges, services, raw_graph_data)
+                                )
+                    except json.JSONDecodeError as je:
+                        logger.warning("[LLM] JSON parse failed: %s", je)
+                # Fallback: try the existing parsers
+                if not llm_cards:
+                    llm_cards = _parse_structured_json_recommendations(raw_response)
                 if not llm_cards:
                     llm_cards = _parse_all_recommendations(raw_response)
-                logger.info("[PIPELINE] LLM parsed: %d recommendations", len(llm_cards))
 
-                if llm_cards:
-                    llm_cards = _deduplicate_cards(llm_cards)
-                    if raw_graph_data:
-                        llm_cards = _enrich_cards(llm_cards, raw_graph_data, pkg_dict)
-                        from src.llm._llm_card_aligner import align_llm_cards_to_engine_shape
-                        llm_cards = align_llm_cards_to_engine_shape(llm_cards, raw_graph_data)
-                        llm_cards = _apply_deterministic_quality_gates(
-                            llm_cards,
-                            raw_graph_data,
-                            min_monthly_savings=10.0,
-                            engine_cards=engine_cards,
-                        )
+                logger.info("[PIPELINE] LLM parsed: %d rich cards", len(llm_cards))
         except Exception as e:
-            logger.error("[LLM] Call failed with exception: %s — will fall back to engine", e, exc_info=True)
+            logger.error("[LLM] Call failed: %s — engine cards only", e, exc_info=True)
 
-        # ═══ STAGE 3: LLM cards bypass engine validator ═══
-        # LLM finds hidden architectural deficiencies the engine cannot detect.
-        # Engine validator only knows right-sizing/idle patterns — it would reject
-        # novel insights like caching gaps, Graviton migrations, VPC endpoints, etc.
-        # LLM cards stay as source=llm_proposed so the UI distinguishes them.
-        for lc in (llm_cards or []):
-            lc["source"] = "llm_proposed"
-            lc["validation_status"] = "llm_insight"
-            lc["is_ai_insight"] = True
-
-        logger.info("[STAGE 3] LLM cards: %d (bypassed engine validator — architectural insights)", len(llm_cards or []))
+        logger.info("[STAGE 3] LLM cards: %d (security/reliability/performance insights)", len(llm_cards or []))
 
         # ═══ STAGE 4: Merge engine truth + LLM architectural insights ═══
         cards = _merge_engine_and_llm_cards(engine_cards, llm_cards or [])
@@ -350,6 +367,284 @@ def generate_recommendations(context_package, architecture_name: str = "",
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════
+# LLM FINDING → RICH CARD BUILDER
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _build_rich_llm_card(
+    item: Dict[str, Any],
+    svc_by_name: Dict[str, dict],
+    svc_by_id: Dict[str, dict],
+    edges: List[dict],
+    all_services: List[dict],
+    raw_graph_data: dict,
+) -> Dict[str, Any]:
+    """Build a fully populated card from a lean LLM finding + graph enrichment.
+
+    Matches the EXACT shape that FullRecommendationCard in AnalysisPage.jsx reads:
+    graph_context, resource_identification, cost_breakdown, recommendations[], finops_best_practice.
+    """
+    title = item.get("title", "Security/Reliability Finding")
+    category = item.get("category", "security").lower()
+    severity = item.get("severity", "high").lower()
+    resource_ref = item.get("resource", "")
+    finding = item.get("finding", "")
+    remediation = item.get("remediation", "")
+    impl_steps = item.get("implementation_steps", [])
+    perf_impact = item.get("performance_impact", "")
+    risk_assessment = item.get("risk_assessment", "")
+    confidence = item.get("confidence", "medium").lower()
+    complexity = item.get("complexity", "medium").lower()
+
+    # ── Resolve the resource from graph data ──
+    svc = svc_by_name.get(resource_ref) or svc_by_id.get(resource_ref)
+    # Fuzzy match: try partial name match
+    if not svc and resource_ref:
+        ref_lower = resource_ref.lower()
+        for name, s in svc_by_name.items():
+            if ref_lower in name.lower() or name.lower() in ref_lower:
+                svc = s
+                break
+
+    resource_id = svc.get("id", resource_ref) if svc else resource_ref
+    resource_name = svc.get("name", resource_ref) if svc else resource_ref
+    svc_type = svc.get("type", svc.get("service_type", "AWS")) if svc else "AWS"
+    region = svc.get("region", (raw_graph_data or {}).get("metadata", {}).get("region", "us-east-1")) if svc else "us-east-1"
+    env = svc.get("environment", "production") if svc else "production"
+    cost_monthly = float(svc.get("cost_monthly", 0) or 0) if svc else 0
+
+    # ── Build config string from service data ──
+    config_parts = [f"Service: {svc_type}", f"Region: {region}", f"Environment: {env}"]
+    if svc:
+        cfg = svc.get("config", {})
+        for key in ["instance_type", "instance_class", "engine", "engine_version", "storage_type",
+                     "multi_az", "encrypted", "publicly_accessible", "backup_retention_period"]:
+            val = cfg.get(key)
+            if val is not None:
+                config_parts.append(f"{key}: {val}")
+    current_config = " | ".join(config_parts)
+
+    # ── Compute graph context (dependencies, blast radius, SPOF) ──
+    deps_in = []   # services that depend ON this resource
+    deps_out = []  # services this resource depends ON
+    for e in edges:
+        if e.get("target") == resource_id:
+            src_svc = svc_by_id.get(e.get("source", ""))
+            deps_in.append(src_svc.get("name", e.get("source", "")) if src_svc else e.get("source", ""))
+        if e.get("source") == resource_id:
+            tgt_svc = svc_by_id.get(e.get("target", ""))
+            deps_out.append(tgt_svc.get("name", e.get("target", "")) if tgt_svc else e.get("target", ""))
+
+    n_total = max(len(all_services), 1)
+    blast_radius_pct = round((len(deps_in) / n_total) * 100, 1) if deps_in else 0
+    is_spof = len(deps_in) >= 3  # 3+ services depend on it → SPOF risk
+    cascade_risk = "critical" if len(deps_in) >= 5 else ("high" if len(deps_in) >= 3 else ("medium" if len(deps_in) >= 1 else "low"))
+
+    # ── Build rich narrative (why this matters — business impact) ──
+    narrative_sentences = []
+
+    # Opening: what the resource is and what's wrong
+    narrative_sentences.append(
+        f"{resource_name} is a {svc_type} resource running in {env} ({region})"
+        + (f", currently costing ${cost_monthly:,.2f}/month" if cost_monthly > 0 else "")
+        + f". {finding}"
+    )
+
+    # Dependency impact
+    if deps_in:
+        dep_list = ", ".join(deps_in[:5])
+        narrative_sentences.append(
+            f"This resource is critical to the architecture — {len(deps_in)} service(s) "
+            f"depend on it ({dep_list}), meaning a {category} incident here would "
+            f"ripple across the entire stack."
+        )
+
+    # Blast radius
+    if blast_radius_pct > 5:
+        narrative_sentences.append(
+            f"The blast radius is significant: approximately {blast_radius_pct:.0f}% of the "
+            f"architecture would be affected by a failure or compromise of this resource, "
+            f"potentially impacting user-facing services and data integrity."
+        )
+
+    # SPOF
+    if is_spof:
+        narrative_sentences.append(
+            f"This is a single point of failure with no redundancy path — if this "
+            f"resource goes down or is compromised, dependent services have no fallback, "
+            f"leading to potential outages and data loss."
+        )
+
+    # Cascade risk
+    if cascade_risk in ("critical", "high"):
+        narrative_sentences.append(
+            f"The cascading failure risk is {cascade_risk.upper()}: a partial outage or "
+            f"security breach here could trigger sequential failures across connected services."
+        )
+
+    # Category-specific business context
+    if category == "security":
+        narrative_sentences.append(
+            f"Addressing this security vulnerability is essential to protect sensitive data, "
+            f"maintain compliance, and prevent unauthorized access to the {env} environment."
+        )
+    elif category == "reliability":
+        narrative_sentences.append(
+            f"Improving reliability for this resource reduces downtime risk and ensures "
+            f"high availability for the services that depend on it in {env}."
+        )
+    elif category == "performance":
+        narrative_sentences.append(
+            f"Resolving this performance bottleneck will improve response times and throughput "
+            f"for {resource_name} and its {len(deps_in)} dependent service(s), "
+            f"directly impacting end-user experience."
+        )
+
+    # Fallback if no graph data
+    if len(narrative_sentences) <= 1:
+        narrative_sentences.append(
+            f"While no critical graph dependencies were detected, addressing this {category} "
+            f"finding aligns with the AWS Well-Architected {category.title()} Pillar and "
+            f"strengthens the overall posture of the {env} environment."
+        )
+
+    narrative = " ".join(narrative_sentences)
+
+    # ── FinOps best practice mapping ──
+    bp_map = {
+        "security": f"AWS Well-Architected Security Pillar — {title}",
+        "reliability": f"AWS Well-Architected Reliability Pillar — {title}",
+        "performance": f"AWS Well-Architected Performance Efficiency Pillar — {title}",
+    }
+    best_practice = bp_map.get(category, f"AWS FinOps - {category.upper()} optimization")
+
+    # ── Build full analysis text ──
+    analysis_lines = [
+        f"Finding: {finding}",
+        f"Category: {category.title()} | Severity: {severity.upper()}",
+        f"Affected Resource: {resource_name} ({svc_type})",
+        "",
+    ]
+    if remediation:
+        analysis_lines.append(f"Remediation: {remediation}")
+    if risk_assessment:
+        analysis_lines.append(f"Risk: {risk_assessment}")
+    if deps_in:
+        analysis_lines.append(f"Dependent services ({len(deps_in)}): {', '.join(deps_in[:8])}")
+    if is_spof:
+        analysis_lines.append("WARNING: This resource is a Single Point of Failure.")
+    full_analysis = "\n".join(analysis_lines)
+
+    # ── Risk mitigation text ──
+    risk_parts = [f"Risk level: {severity}"]
+    if risk_assessment:
+        risk_parts.append(risk_assessment)
+    if deps_in:
+        risk_parts.append(f"Impact: {len(deps_in)} dependent service(s)")
+    if is_spof:
+        risk_parts.append("SPOF: Add redundancy or failover before this resource fails")
+    risk_parts.append("Always test changes in a staging environment first")
+    risk_mitigation = ". ".join(risk_parts)
+
+    # ── Performance impact text ──
+    if not perf_impact:
+        if category == "performance":
+            perf_impact = f"Addressing this will improve response times and throughput for {resource_name} and its {len(deps_in)} dependent services."
+        elif category == "reliability":
+            perf_impact = f"Implementing this improves availability and reduces downtime risk for {resource_name}."
+        else:
+            perf_impact = f"No negative performance impact expected. Improves {category} posture for {resource_name}."
+
+    # ── Assemble the full card matching engine card shape ──
+    return {
+        # ── Core fields ──
+        "title": title,
+        "service_type": svc_type,
+        "total_estimated_savings": 0,
+        "priority": severity.upper(),
+        "severity": severity,
+        "category": category,
+        "implementation_complexity": complexity,
+        "risk_level": severity.upper(),
+        "source": "llm_proposed",
+        "validation_status": "llm_insight",
+        "is_ai_insight": True,
+
+        # ── Resource identification ──
+        "resource_identification": {
+            "resource_id": resource_id,
+            "resource_name": resource_name,
+            "service_type": svc_type,
+            "service_name": resource_name,
+            "environment": env,
+            "region": region,
+            "current_config": current_config,
+            "tags": {
+                "Environment": env,
+                "Service": svc_type,
+                "Name": resource_name,
+                "Region": region,
+                "Category": category.title(),
+            },
+        },
+
+        # ── Cost breakdown ──
+        "cost_breakdown": {
+            "current_monthly": cost_monthly,
+            "projected_monthly": cost_monthly,
+            "savings_percentage": 0,
+            "annual_impact": 0,
+            "line_items": [
+                {"item": f"Current {svc_type} cost", "usage": f"{env} ({region})", "cost": cost_monthly},
+            ] if cost_monthly > 0 else [],
+        },
+
+        # ── Graph context (business impact) ──
+        "graph_context": {
+            "blast_radius_pct": blast_radius_pct,
+            "blast_radius_services": len(deps_in),
+            "dependency_count": len(deps_in),
+            "depends_on_count": len(deps_out),
+            "dependent_services": deps_in[:10],
+            "cross_az_count": 0,
+            "cross_az_dependencies": [],
+            "is_spof": is_spof,
+            "cascading_failure_risk": cascade_risk,
+            "centrality": min(len(deps_in) / max(n_total, 1), 1.0),
+            "narrative": narrative,
+            "severity_label": f"{category} {'vulnerability' if category == 'security' else 'risk'}",
+        },
+
+        # ── Recommendations array (inner — frontend iterates this) ──
+        "recommendations": [{
+            "title": title,
+            "description": finding,
+            "full_analysis": full_analysis,
+            "implementation_steps": impl_steps if impl_steps else [
+                f"1. Identify affected resource: {resource_name}",
+                f"2. {remediation}" if remediation else "2. Apply recommended fix",
+                "3. Validate in staging environment",
+                "4. Deploy to production with monitoring",
+                "5. Verify fix with validation checks",
+            ],
+            "performance_impact": perf_impact,
+            "risk_mitigation": risk_mitigation,
+            "estimated_monthly_savings": 0,
+            "confidence": confidence,
+            "validation_steps": [
+                f"Verify {category} posture for {resource_name}",
+                "Run AWS Config compliance check",
+            ],
+        }],
+
+        # ── Best practice ──
+        "finops_best_practice": best_practice,
+        "linked_best_practice": best_practice,
+        "why_it_matters": narrative,
+        "pattern_id": f"llm-{category}-{severity}",
+    }
+
+
 # ENGINE → CARD CONVERSION
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -2385,6 +2680,10 @@ def _build_best_practices(pkg: dict = None, graph_data: dict = None) -> str:
                 detected_families.add("Lambda")
             if "ecs" in stype or "fargate" in stype or "ecs" in sname or "fargate" in sname:
                 detected_families.add("ECS_Fargate")
+                if "ec2" in sname or "cluster" in sname:
+                    detected_families.add("ECS_EC2")
+            if "eks" in stype or "eks" in sname or "kubernetes" in stype:
+                detected_families.add("EKS")
             if "dynamo" in stype or "dynamo" in sname:
                 detected_families.add("DynamoDB")
             if "elasticache" in stype or "redis" in sname or "cache" in stype or "memcached" in sname:
@@ -2404,13 +2703,49 @@ def _build_best_practices(pkg: dict = None, graph_data: dict = None) -> str:
             if "vpc" in stype or "endpoint" in stype or "elastic_ip" in stype:
                 detected_families.add("Data_Transfer")
                 detected_families.add("Elastic_IP")
+            if "api" in stype or "gateway" in stype or "apigateway" in sname or "api-gateway" in sname:
+                detected_families.add("API_Gateway")
+            if "route53" in stype or "route53" in sname or "dns" in stype:
+                detected_families.add("Route53")
+            if "sqs" in stype or "sqs" in sname or "queue" in stype:
+                detected_families.add("SQS")
+            if "sns" in stype or "sns" in sname or "topic" in stype:
+                detected_families.add("SNS")
+            if "kinesis" in stype or "kinesis" in sname or "stream" in stype:
+                detected_families.add("Kinesis")
+            if "eventbridge" in stype or "eventbridge" in sname or "event" in stype:
+                detected_families.add("EventBridge")
+            if "step" in stype or "stepfunction" in sname or "state-machine" in sname:
+                detected_families.add("Step_Functions")
+            if "cloudwatch" in stype or "cloudwatch" in sname or "logs" in stype:
+                detected_families.add("CloudWatch")
+            if "emr" in stype or "emr" in sname or "hadoop" in sname or "spark" in sname:
+                detected_families.add("EMR")
+            if "glue" in stype or "glue" in sname or "etl" in stype:
+                detected_families.add("Glue")
+            if "athena" in stype or "athena" in sname:
+                detected_families.add("Athena")
+            if "sagemaker" in stype or "sagemaker" in sname or "ml" in stype:
+                detected_families.add("SageMaker")
+            if "redshift" in stype or "redshift" in sname or "warehouse" in stype:
+                detected_families.add("Redshift")
+            if "waf" in stype or "waf" in sname or "firewall" in stype:
+                detected_families.add("WAF")
+            if "guardduty" in stype or "guardduty" in sname:
+                detected_families.add("GuardDuty")
+            if "config" in stype or "config" in sname:
+                detected_families.add("Config")
+            if "kms" in stype or "kms" in sname or "key" in stype:
+                detected_families.add("KMS")
+            if "secret" in stype or "secretsmanager" in sname:
+                detected_families.add("Secrets_Manager")
 
     # Always include data transfer (cross-AZ is universal)
     detected_families.add("Data_Transfer")
 
-    # If no services detected, include all families
+    # If no services detected, include common families
     if len(detected_families) <= 1:
-        detected_families = {"EC2", "RDS", "S3", "Lambda", "Data_Transfer", "EBS"}
+        detected_families = {"EC2", "RDS", "S3", "Lambda", "Data_Transfer", "EBS", "CloudWatch"}
 
     # ── Build service-specific best practices from KB ──
     all_kb = {
@@ -2418,6 +2753,11 @@ def _build_best_practices(pkg: dict = None, graph_data: dict = None) -> str:
         **DATABASE_BEST_PRACTICES,
         **STORAGE_BEST_PRACTICES,
         **NETWORKING_BEST_PRACTICES,
+        **SERVERLESS_BEST_PRACTICES,
+        **MESSAGING_BEST_PRACTICES,
+        **ANALYTICS_BEST_PRACTICES,
+        **SECURITY_BEST_PRACTICES,
+        **MANAGEMENT_BEST_PRACTICES,
     }
 
     lines.append("AWS FINOPS BEST PRACTICES (from knowledge base, matched to YOUR architecture):")
@@ -2435,22 +2775,44 @@ def _build_best_practices(pkg: dict = None, graph_data: dict = None) -> str:
         lines.append(f"{'='*60}")
 
         # Extract the most actionable guidance per service
-        _render_kb_section(lines, kb_entry, "right_sizing", "RIGHT-SIZING")
-        _render_kb_section(lines, kb_entry, "purchasing_options", "PURCHASING OPTIONS")
-        _render_kb_section(lines, kb_entry, "auto_scaling", "AUTO-SCALING")
-        _render_kb_section(lines, kb_entry, "waste_elimination", "WASTE ELIMINATION")
-        _render_kb_section(lines, kb_entry, "storage_classes", "STORAGE CLASSES")
-        _render_kb_section(lines, kb_entry, "lifecycle_policies", "LIFECYCLE POLICIES")
-        _render_kb_section(lines, kb_entry, "capacity_modes", "CAPACITY MODES")
-        _render_kb_section(lines, kb_entry, "multi_az", "MULTI-AZ")
-        _render_kb_section(lines, kb_entry, "reserved_instances", "RESERVED INSTANCES")
-        _render_kb_section(lines, kb_entry, "reserved_nodes", "RESERVED NODES")
-        _render_kb_section(lines, kb_entry, "optimization", "OPTIMIZATION")
-        _render_kb_section(lines, kb_entry, "pricing", "PRICING")
-        _render_kb_section(lines, kb_entry, "volume_types", "VOLUME TYPES")
-        _render_kb_section(lines, kb_entry, "storage_optimization", "STORAGE OPTIMIZATION")
-        _render_kb_section(lines, kb_entry, "data_transfer_costs", "DATA TRANSFER")
-        _render_kb_section(lines, kb_entry, "best_practices", "BEST PRACTICES")
+        # Render all known KB section keys (each call is a no-op if key absent)
+        for sec_key, sec_label in [
+            ("right_sizing", "RIGHT-SIZING"),
+            ("purchasing_options", "PURCHASING OPTIONS"),
+            ("auto_scaling", "AUTO-SCALING"),
+            ("autoscaling", "AUTO-SCALING"),
+            ("waste_elimination", "WASTE ELIMINATION"),
+            ("storage_classes", "STORAGE CLASSES"),
+            ("lifecycle_policies", "LIFECYCLE POLICIES"),
+            ("lifecycle_management", "LIFECYCLE MANAGEMENT"),
+            ("capacity_modes", "CAPACITY MODES"),
+            ("capacity_providers", "CAPACITY PROVIDERS"),
+            ("multi_az", "MULTI-AZ"),
+            ("reserved_instances", "RESERVED INSTANCES"),
+            ("reserved_nodes", "RESERVED NODES"),
+            ("savings_plans", "SAVINGS PLANS"),
+            ("optimization", "OPTIMIZATION"),
+            ("cost_optimization", "COST OPTIMIZATION"),
+            ("pricing", "PRICING"),
+            ("pricing_optimization", "PRICING OPTIMIZATION"),
+            ("volume_types", "VOLUME TYPES"),
+            ("storage_optimization", "STORAGE OPTIMIZATION"),
+            ("data_transfer_costs", "DATA TRANSFER"),
+            ("best_practices", "BEST PRACTICES"),
+            ("architecture", "ARCHITECTURE"),
+            ("invocation_optimization", "INVOCATION OPTIMIZATION"),
+            ("cluster_costs", "CLUSTER COSTS"),
+            ("monitoring", "MONITORING"),
+            ("networking", "NETWORKING"),
+            ("storage", "STORAGE"),
+            ("node_types", "NODE TYPES"),
+            ("read_replicas", "READ REPLICAS"),
+            ("engine_specific", "ENGINE-SPECIFIC"),
+            ("request_optimization", "REQUEST OPTIMIZATION"),
+            ("throughput_modes", "THROUGHPUT MODES"),
+            ("versioning_optimization", "VERSIONING"),
+        ]:
+            _render_kb_section(lines, kb_entry, sec_key, sec_label)
 
     # ── Cross-cutting rules ──
     lines.append("\n" + "="*60)

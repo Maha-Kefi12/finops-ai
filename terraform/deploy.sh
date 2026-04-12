@@ -10,6 +10,18 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 TFVARS="$SCRIPT_DIR/environments/${ENV}.tfvars"
 
+# ── Load AWS credentials from .env ────────────────────────────────────
+ENV_FILE="$PROJECT_ROOT/.env"
+if [[ -f "$ENV_FILE" ]]; then
+  echo "Loading credentials from .env..."
+  set -a
+  source "$ENV_FILE"
+  set +a
+else
+  echo "WARNING: No .env file found at $ENV_FILE"
+  echo "         Make sure AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set."
+fi
+
 if [[ ! -f "$TFVARS" ]]; then
   echo "ERROR: $TFVARS not found. Use: dev, staging, or prod"
   exit 1

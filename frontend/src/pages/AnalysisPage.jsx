@@ -15,7 +15,7 @@ import {
     Lightbulb, Wrench, ArrowUpRight, Cloud, Loader2,
     Network, Database, Server, ChevronUp, AlertCircle,
     Hash, Gauge, Box, ArrowDown, Code, BarChart2,
-    CircleDot, TrendingDown, Flame, HardDrive, Workflow, BookOpen, History
+    CircleDot, TrendingDown, Flame, HardDrive, Workflow, BookOpen, History, Settings
 } from 'lucide-react'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -23,16 +23,24 @@ import {
  ═══════════════════════════════════════════════════════════════ */
 const AWS_STAGES = [
     { key: 'queued', label: 'Queued', icon: Clock, pct: 5 },
-    { key: 'discovery', label: 'Discovery', icon: Search, pct: 30 },
-    { key: 'graph_build', label: 'Graph Build', icon: Network, pct: 55 },
-    { key: 'storing', label: 'Storage', icon: Database, pct: 75 },
-    { key: 'llm_report', label: 'LLM Report', icon: BrainCircuit, pct: 90 },
+    { key: 'discovery', label: 'Discovery', icon: Search, pct: 20 },
+    { key: 'graph_build', label: 'Graph', icon: Network, pct: 35 },
+    { key: 'security_scan', label: 'Security', icon: Shield, pct: 50 },
+    { key: 'neo4j_store', label: 'Storage', icon: Database, pct: 65 },
+    { key: 'llm_report', label: 'LLM Report', icon: BrainCircuit, pct: 85 },
     { key: 'completed', label: 'Done', icon: CheckCircle2, pct: 100 },
 ]
 
 function stagePct(stage) {
     if (stage === 'failed') return 0
-    const norm = stage?.replace(/_done$/, '').replace(/^stored$/, 'storing').replace(/^llm_done$/, 'llm_report') || 'queued'
+    const norm = stage
+        ?.replace(/_done$/, '')
+        .replace(/^stored$/, 'neo4j_store')
+        .replace(/^graph_done$/, 'graph_build')
+        .replace(/^security_done$/, 'security_scan')
+        .replace(/^neo4j_done$/, 'neo4j_store')
+        .replace(/^llm_done$/, 'llm_report')
+        || 'queued'
     return AWS_STAGES.find(s => s.key === norm)?.pct || 10
 }
 
@@ -217,6 +225,12 @@ const CATEGORY_THEMES = {
     'caching': { color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc', icon: Database, label: 'Caching' },
     'reserved-capacity': { color: '#d97706', bg: '#fffbeb', border: '#fde68a', icon: DollarSign, label: 'Reserved Capacity' },
     'networking': { color: '#e11d48', bg: '#fff1f2', border: '#fecdd3', icon: Network, label: 'Networking' },
+    'security': { color: '#dc2626', bg: '#fef2f2', border: '#fecaca', icon: Shield, label: 'Security' },
+    'reliability': { color: '#0d9488', bg: '#f0fdfa', border: '#99f6e4', icon: Activity, label: 'Reliability' },
+    'performance': { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe', icon: Zap, label: 'Performance' },
+    'network-optimization': { color: '#e11d48', bg: '#fff1f2', border: '#fecdd3', icon: Network, label: 'Network Optimization' },
+    'storage-optimization': { color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc', icon: Database, label: 'Storage Optimization' },
+    'configuration': { color: '#d97706', bg: '#fffbeb', border: '#fde68a', icon: Settings, label: 'Configuration' },
 }
 
 const SEVERITY_BADGE = {
@@ -1407,7 +1421,9 @@ export default function AnalysisPage() {
                             <button onClick={handleAwsLiveAnalysis}
                                 className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-amber-700 hover:bg-amber-50 transition-colors border-b border-gray-100 mb-1 flex items-center gap-2">
                                 <Cloud className="w-4 h-4 text-amber-600" /> AWS Live Discovery
-                                <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Live</span>
+                                <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    <Shield className="w-3 h-3" /> Live + Security
+                                </span>
                             </button>
                             {architectures.map(a => (
                                 <button key={a.filename || a.architecture_id}

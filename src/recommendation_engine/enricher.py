@@ -284,9 +284,15 @@ def _render_aws_native(match: dict, enrichment: dict) -> str:
 
 
 def _render_why_it_matters(match: dict, enrichment: dict) -> str:
-    """Render the business context from graph analysis."""
-    parts = []
-    
+    """Render a rich business-impact narrative from graph analysis."""
+    resource_name = match.get("resource_name", match.get("resource_id", "this resource"))
+    aws_service = match.get("aws_service", "AWS service")
+    category = match.get("category", "optimization")
+    savings = match.get("estimated_savings_monthly", 0)
+    cost = match.get("current_monthly_cost", 0)
+    env = match.get("environment", "production")
+    region = match.get("region", "us-east-1")
+
     in_deg = enrichment.get("services_powered", 0)
     blast = enrichment.get("blast_radius_pct", 0)
     spof = enrichment.get("is_spof", False)
@@ -294,36 +300,88 @@ def _render_why_it_matters(match: dict, enrichment: dict) -> str:
     traffic = enrichment.get("traffic", {})
     cross_az = enrichment.get("cross_az", {})
     redundancy = enrichment.get("redundancy", {})
-    
-    if in_deg > 0:
-        parts.append(f"Powers {in_deg} downstream service(s)")
-    
-    if blast > 5:
-        parts.append(f"failure affects {blast:.0f}% of architecture")
-    
-    if spof:
-        parts.append("⚠️ SINGLE POINT OF FAILURE — no redundancy path")
-    
-    if cascade != "low":
-        parts.append(f"cascade failure risk: {cascade.upper()}")
-    
-    qps = traffic.get("total_qps", 0)
-    if qps > 0:
-        parts.append(f"handling {qps:.0f} queries/sec")
-    
-    if cross_az.get("has_cross_az"):
-        parts.append(f"cross-AZ traffic detected ({cross_az.get('cross_az_count', 0)} edges, ~${cross_az.get('estimated_monthly_cost', 0):.2f}/mo)")
-    
-    if not redundancy.get("has_full_redundancy", True):
-        parts.append(f"no alternative path for {redundancy.get('dependent_count', 0)} dependent(s)")
-    
-    # Dependency details
     deps_in = enrichment.get("dependencies_in", [])
-    if deps_in:
-        dep_names = [d["resource"] for d in deps_in[:3]]
-        parts.append(f"depended on by: {', '.join(dep_names)}")
-    
-    return ". ".join(parts) + "." if parts else "Standard optimization opportunity."
+
+    sentences = []
+
+    # Opening: resource context
+    sentences.append(
+        f"{resource_name} is a {aws_service} resource running in {env} ({region})"
+        + (f", currently costing ${cost:,.2f}/month" if cost > 0 else "")
+        + "."
+    )
+
+    # Dependency impact
+    if in_deg > 0:
+        dep_names = [d.get("resource", "") for d in deps_in[:4] if d.get("resource")]
+        dep_str = ", ".join(dep_names) if dep_names else f"{in_deg} service(s)"
+        sentences.append(
+            f"It powers {in_deg} downstream service(s) ({dep_str}), "
+            f"meaning any disruption here would ripple across the architecture."
+        )
+
+    # Blast radius
+    if blast > 5:
+        sentences.append(
+            f"A failure or misconfiguration would impact approximately {blast:.0f}% "
+            f"of the entire architecture, affecting service availability and user experience."
+        )
+
+    # SPOF
+    if spof:
+        sentences.append(
+            f"This resource is a single point of failure with no redundancy path — "
+            f"if it goes down, dependent services have no fallback."
+        )
+
+    # Cascade risk
+    if cascade not in ("low", "none"):
+        sentences.append(
+            f"The cascading failure risk is {cascade.upper()}: a partial outage here "
+            f"could trigger sequential failures in connected services."
+        )
+
+    # Traffic
+    qps = traffic.get("total_qps", 0)
+    latency = traffic.get("avg_latency_ms", 0)
+    if qps > 0:
+        traffic_str = f"It handles approximately {qps:.0f} queries/second"
+        if latency > 0:
+            traffic_str += f" with an average latency of {latency:.0f}ms"
+        sentences.append(traffic_str + ".")
+
+    # Cross-AZ
+    if cross_az.get("has_cross_az"):
+        xaz_count = cross_az.get("cross_az_count", 0)
+        xaz_cost = cross_az.get("estimated_monthly_cost", 0)
+        sentences.append(
+            f"Cross-AZ data transfer is detected across {xaz_count} edge(s), "
+            f"adding approximately ${xaz_cost:,.2f}/month in transfer costs."
+        )
+
+    # Redundancy
+    if not redundancy.get("has_full_redundancy", True):
+        dep_count = redundancy.get("dependent_count", 0)
+        sentences.append(
+            f"There is no alternative path for {dep_count} dependent service(s) — "
+            f"adding a failover or replica is strongly recommended before making changes."
+        )
+
+    # Savings closing
+    if savings > 0:
+        sentences.append(
+            f"Addressing this recommendation would save approximately ${savings:,.2f}/month "
+            f"(${savings * 12:,.2f}/year), improving cost efficiency without sacrificing reliability."
+        )
+
+    if not sentences or len(sentences) == 1:
+        sentences.append(
+            f"While no critical graph dependencies were detected, optimizing {resource_name} "
+            f"aligns with AWS Well-Architected best practices for {category.replace('_', ' ')} "
+            f"and reduces operational overhead in the {env} environment."
+        )
+
+    return " ".join(sentences)
 
 
 def _render_implementation(match: dict) -> str:

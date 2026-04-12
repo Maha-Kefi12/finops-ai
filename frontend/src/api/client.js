@@ -30,6 +30,12 @@ export const ingestFromCur = (region = 'us-east-1', curBucket = null, curPrefix 
 export const getCurPipelineStatus = (snapshotId) =>
     api.get(`/ingest/cur/status/${snapshotId}`)
 
+// ── Security Scan Pipeline ───────────────────────────────────────────
+export const ingestSecurityScan = (region = 'us-east-1') =>
+    api.post('/ingest/security-scan', { region }, { timeout: 30000 })
+export const getSecurityScanStatus = (snapshotId) =>
+    api.get(`/ingest/security-scan/status/${snapshotId}`)
+
 // ── Neo4j ───────────────────────────────────────────────────────────
 export const getNeo4jStatus = () => api.get('/neo4j/status')
 export const getNeo4jGraph = (archId) => api.get(`/neo4j/graph/${archId}`)

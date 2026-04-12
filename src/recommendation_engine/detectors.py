@@ -91,8 +91,22 @@ def _parse_service(node: dict) -> str:
             ("kinesis", "kinesis"),
             ("lambda", "lambda"),
             ("glue", "glue"),
+            ("athena", "athena"),
+            ("emr", "emr"),
+            ("sagemaker", "sagemaker"),
+            ("step-function", "states"),
+            ("stepfunction", "states"),
+            ("state-machine", "states"),
+            ("api-gateway", "apigateway"),
+            ("apigateway", "apigateway"),
+            ("api_gateway", "apigateway"),
+            ("eventbridge", "eventbridge"),
+            ("eks", "eks"),
+            ("ecs", "ecs"),
+            ("fargate", "ecs"),
             ("ec2", "ec2"),
             ("rds", "rds"),
+            ("aurora", "rds"),
             ("s3", "s3"),
             ("alb", "alb"),
             ("load-balancer", "alb"),
@@ -102,6 +116,13 @@ def _parse_service(node: dict) -> str:
             ("sqs", "sqs"),
             ("sns", "sns"),
             ("ebs", "ebs"),
+            ("cloudwatch", "cloudwatch"),
+            ("waf", "waf"),
+            ("guardduty", "guardduty"),
+            ("config", "config"),
+            ("route53", "route53"),
+            ("kms", "kms"),
+            ("secrets", "secretsmanager"),
         ]
         for token, short in token_map:
             if token in t:
@@ -170,7 +191,11 @@ BASELINE_COSTS = {
     "elasticache": 180.0, "opensearch": 280.0, "redshift": 450.0,
     "cloudfront": 120.0, "vpc": 95.0, "sqs": 25.0, "sns": 15.0,
     "dynamodb": 100.0, "ecs": 200.0, "eks": 300.0, "nat": 95.0,
-    "alb": 65.0, "service": 80.0,
+    "alb": 65.0, "service": 80.0, "apigateway": 35.0, "kinesis": 55.0,
+    "states": 30.0, "cloudwatch": 60.0, "glue": 80.0, "athena": 40.0,
+    "emr": 250.0, "sagemaker": 350.0, "eventbridge": 10.0,
+    "waf": 20.0, "guardduty": 15.0, "config": 10.0, "route53": 10.0,
+    "kms": 5.0, "secretsmanager": 8.0,
 }
 
 INSTANCE_TYPES = {
@@ -179,6 +204,13 @@ INSTANCE_TYPES = {
     "elasticache": ("cache.r6g.large", "cache.r6g.medium"),
     "opensearch": ("m5.large.search", "m5.medium.search"),
     "redshift": ("ra3.xlarge", "ra3.large"),
+    "ecs": ("Fargate-1vCPU-2GB", "Fargate-0.5vCPU-1GB"),
+    "eks": ("m5.xlarge", "m7g.xlarge"),
+    "dynamodb": ("On-Demand", "Provisioned"),
+    "apigateway": ("REST-API", "HTTP-API"),
+    "kinesis": ("4-shards", "2-shards"),
+    "emr": ("m5.xlarge", "m7g.xlarge"),
+    "sagemaker": ("ml.m5.xlarge", "ml.m7g.xlarge"),
 }
 
 
@@ -420,6 +452,137 @@ def _detect_cloudfront_price_class(node, edges, all_nodes):
 def _detect_sqs_overprovisioned(node, edges, all_nodes):
     """SQS queue overprovisioned → review message volume."""
     return _parse_service(node) == "sqs"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ECS DETECTORS
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _detect_ecs_fargate_spot(node, edges, all_nodes):
+    """ECS Fargate task in dev/test → use Fargate Spot (70% savings)."""
+    svc = _parse_service(node)
+    if svc not in ("ecs", "fargate"):
+        return False
+    name = _parse_resource_name(node).lower()
+    return any(tag in name for tag in ("dev", "test", "staging", "sandbox", "qa"))
+
+def _detect_ecs_idle_service(node, edges, all_nodes):
+    """ECS service with 0 traffic → candidate for deletion."""
+    svc = _parse_service(node)
+    if svc not in ("ecs", "fargate"):
+        return False
+    node_edges = _get_edges_for_node(node, edges)
+    total_qps = sum(e.get("traffic_properties", {}).get("queries_per_second", 0) for e in node_edges)
+    return total_qps < 1 and node.get("utilization_score", 0) < 5
+
+def _detect_ecs_graviton(node, edges, all_nodes):
+    """ECS task not on Graviton → migrate for 20% savings."""
+    svc = _parse_service(node)
+    return svc in ("ecs", "fargate")
+
+def _detect_ecs_overprovisioned(node, edges, all_nodes):
+    """ECS task/service with low CPU/memory utilization → right-size."""
+    svc = _parse_service(node)
+    if svc not in ("ecs", "fargate"):
+        return False
+    return node.get("utilization_score", 0) < 40
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# EKS DETECTORS
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _detect_eks_node_underutil(node, edges, all_nodes):
+    """EKS node group with <50% utilization → downsize or consolidate."""
+    if _parse_service(node) != "eks":
+        return False
+    return node.get("utilization_score", 0) < 50
+
+def _detect_eks_idle_cluster(node, edges, all_nodes):
+    """EKS cluster with minimal workload → consolidate or delete ($73/mo control plane)."""
+    if _parse_service(node) != "eks":
+        return False
+    node_edges = _get_edges_for_node(node, edges)
+    return len(node_edges) < 2
+
+def _detect_eks_no_spot(node, edges, all_nodes):
+    """EKS worker nodes all On-Demand → use Spot for stateless workloads (70% savings)."""
+    if _parse_service(node) != "eks":
+        return False
+    return True  # Always recommend Spot review for EKS
+
+def _detect_eks_dev_scheduling(node, edges, all_nodes):
+    """EKS dev/staging cluster running 24x7 → schedule scale-down (65% savings)."""
+    if _parse_service(node) != "eks":
+        return False
+    name = _parse_resource_name(node).lower()
+    return any(tag in name for tag in ("dev", "test", "staging", "sandbox", "qa"))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DYNAMODB DETECTORS
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _detect_dynamodb_on_demand(node, edges, all_nodes):
+    """DynamoDB in On-Demand mode for steady traffic → switch to Provisioned (60-85% cheaper)."""
+    if _parse_service(node) != "dynamodb":
+        return False
+    return True  # Always recommend capacity mode review
+
+def _detect_dynamodb_no_ttl(node, edges, all_nodes):
+    """DynamoDB table without TTL → enable to auto-delete expired items."""
+    if _parse_service(node) != "dynamodb":
+        return False
+    return True  # Always recommend TTL review
+
+def _detect_dynamodb_no_ia(node, edges, all_nodes):
+    """DynamoDB table without Standard-IA storage class → 60% cheaper storage."""
+    if _parse_service(node) != "dynamodb":
+        return False
+    return True
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# API GATEWAY DETECTORS
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _detect_apigw_rest_to_http(node, edges, all_nodes):
+    """API Gateway REST API → migrate to HTTP API (71% cheaper)."""
+    svc = _parse_service(node)
+    name = _parse_resource_name(node).lower()
+    return svc == "apigateway" or "api-gateway" in name or "apigateway" in name or "api_gateway" in name
+
+def _detect_apigw_no_cache(node, edges, all_nodes):
+    """API Gateway without caching → enable for read-heavy endpoints."""
+    svc = _parse_service(node)
+    name = _parse_resource_name(node).lower()
+    if svc != "apigateway" and "api-gateway" not in name and "apigateway" not in name:
+        return False
+    node_edges = _get_edges_for_node(node, edges)
+    read_qps = sum(e.get("traffic_properties", {}).get("queries_per_second", 0)
+                   for e in node_edges if e.get("target") == (node.get("node_id") or node.get("id", "")))
+    return read_qps > 50
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# KINESIS / CLOUDWATCH / STEP FUNCTIONS DETECTORS
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _detect_kinesis_over_sharded(node, edges, all_nodes):
+    """Kinesis stream with too many shards → reduce ($11/shard/month)."""
+    svc = _parse_service(node)
+    return svc == "kinesis"
+
+def _detect_cloudwatch_log_retention(node, edges, all_nodes):
+    """CloudWatch log groups without retention → set retention (biggest CW cost driver)."""
+    svc = _parse_service(node)
+    return svc == "cloudwatch"
+
+def _detect_step_functions_standard(node, edges, all_nodes):
+    """Step Functions Standard workflows for high-volume → migrate to Express (90% savings)."""
+    svc = _parse_service(node)
+    name = _parse_resource_name(node).lower()
+    return svc == "states" or "step-function" in name or "stepfunction" in name or "state-machine" in name
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -682,6 +845,221 @@ PATTERNS: List[Dict[str, Any]] = [
         "savings_estimator": lambda n: _node_cost(n) * 0.20,
         "risk_level": "LOW",
         "implementation_template": "aws cloudfront update-distribution --id {resource_id} --distribution-config PriceClass=PriceClass_100",
+    },
+    # ────── ECS/Fargate ──────
+    {
+        "pattern_id": "ecs_fargate_spot",
+        "service": "ecs",
+        "category": "purchasing",
+        "priority": "MEDIUM",
+        "detector": _detect_ecs_fargate_spot,
+        "threshold": {"env": "non-production"},
+        "linked_best_practice": "AWS FinOps - ECS Fargate Spot: 70% discount for fault-tolerant/dev workloads. Use Spot capacity providers for non-critical tasks",
+        "recommendation_template": "Switch {resource} to Fargate Spot — 70% savings for dev/test ECS tasks. Configure capacity provider with Spot base",
+        "savings_estimator": lambda n: _node_cost(n) * 0.70,
+        "risk_level": "LOW",
+        "implementation_template": "aws ecs put-cluster-capacity-providers --cluster {resource_name} --capacity-providers FARGATE_SPOT --default-capacity-provider-strategy capacityProvider=FARGATE_SPOT,weight=1",
+    },
+    {
+        "pattern_id": "ecs_idle_service",
+        "service": "ecs",
+        "category": "waste_elimination",
+        "priority": "HIGH",
+        "detector": _detect_ecs_idle_service,
+        "threshold": {"traffic_min_qps": 1, "util_max": 5},
+        "linked_best_practice": "AWS FinOps - ECS Waste: Services with 0 traffic and <5% utilization for 14+ days should be deleted or scaled to 0",
+        "recommendation_template": "Delete idle ECS service {resource} — 0 traffic and <5% utilization. Scale desiredCount to 0 or delete entirely",
+        "savings_estimator": lambda n: _node_cost(n) * 0.95,
+        "risk_level": "MEDIUM",
+        "implementation_template": "aws ecs update-service --cluster {cluster} --service {resource_name} --desired-count 0",
+    },
+    {
+        "pattern_id": "ecs_graviton_migration",
+        "service": "ecs",
+        "category": "right_sizing",
+        "priority": "MEDIUM",
+        "detector": _detect_ecs_graviton,
+        "threshold": {"savings_pct": 20},
+        "linked_best_practice": "AWS FinOps - ECS Graviton: ARM-based Fargate/EC2 tasks are 20% cheaper. Use Graviton for all new ECS task definitions",
+        "recommendation_template": "Migrate {resource} to Graviton (ARM64) — 20% cheaper compute. Update task definition CPU architecture to ARM64",
+        "savings_estimator": lambda n: _node_cost(n) * 0.20,
+        "risk_level": "LOW",
+        "implementation_template": "aws ecs register-task-definition --family {resource_name} --runtime-platform cpuArchitecture=ARM64,operatingSystemFamily=LINUX",
+    },
+    {
+        "pattern_id": "ecs_overprovisioned",
+        "service": "ecs",
+        "category": "right_sizing",
+        "priority": "HIGH",
+        "detector": _detect_ecs_overprovisioned,
+        "threshold": {"util_max": 40},
+        "linked_best_practice": "AWS FinOps - ECS Right-Sizing: Monitor CPU/memory via Container Insights. Target 60-70% utilization. Below 40% = over-provisioned",
+        "recommendation_template": "Right-size {resource} task CPU/memory — utilization below 40%. Reduce task definition CPU/memory allocation to match actual usage",
+        "savings_estimator": lambda n: _node_cost(n) * 0.40,
+        "risk_level": "LOW",
+        "implementation_template": "aws ecs register-task-definition --family {resource_name} --cpu {recommended_cpu} --memory {recommended_memory}",
+    },
+    # ────── EKS ──────
+    {
+        "pattern_id": "eks_node_underutil",
+        "service": "eks",
+        "category": "right_sizing",
+        "priority": "HIGH",
+        "detector": _detect_eks_node_underutil,
+        "threshold": {"util_max": 50},
+        "linked_best_practice": "AWS FinOps - EKS Node Sizing: Target 65-80% CPU/memory allocation. Below 50% = over-provisioned. Use Karpenter for automatic right-sizing",
+        "recommendation_template": "Consolidate {resource} EKS nodes — utilization below 50%. Use Karpenter for automatic bin-packing or downsize node group instance type",
+        "savings_estimator": lambda n: _node_cost(n) * 0.35,
+        "risk_level": "MEDIUM",
+        "implementation_template": "aws eks update-nodegroup-config --cluster-name {cluster} --nodegroup-name {resource_name} --scaling-config minSize=1,maxSize=3,desiredSize=2",
+    },
+    {
+        "pattern_id": "eks_idle_cluster",
+        "service": "eks",
+        "category": "waste_elimination",
+        "priority": "HIGH",
+        "detector": _detect_eks_idle_cluster,
+        "threshold": {"min_workload_edges": 2},
+        "linked_best_practice": "AWS FinOps - EKS Waste: Each cluster costs $73/month control plane minimum. Consolidate workloads to fewer clusters",
+        "recommendation_template": "Consolidate or delete idle EKS cluster {resource} — $73/month control plane with minimal workloads. Merge into another cluster",
+        "savings_estimator": lambda n: 73.0 + _node_cost(n) * 0.50,
+        "risk_level": "HIGH",
+        "implementation_template": "aws eks delete-cluster --name {resource_name}  # After migrating workloads",
+    },
+    {
+        "pattern_id": "eks_spot_nodes",
+        "service": "eks",
+        "category": "purchasing",
+        "priority": "MEDIUM",
+        "detector": _detect_eks_no_spot,
+        "threshold": {"savings_pct": 70},
+        "linked_best_practice": "AWS FinOps - EKS Spot: Use Spot for stateless workloads (70% savings). Diversify across 10+ instance types. Use Karpenter for automatic Spot management",
+        "recommendation_template": "Add Spot instances to {resource} node groups — 70% savings for stateless workloads. Configure pod disruption budgets and diversify instance types",
+        "savings_estimator": lambda n: _node_cost(n) * 0.40,
+        "risk_level": "MEDIUM",
+        "implementation_template": "aws eks create-nodegroup --cluster-name {cluster} --nodegroup-name {resource_name}-spot --capacity-type SPOT --instance-types m7g.xlarge m6i.xlarge c7g.xlarge",
+    },
+    {
+        "pattern_id": "eks_dev_scheduling",
+        "service": "eks",
+        "category": "scheduling",
+        "priority": "MEDIUM",
+        "detector": _detect_eks_dev_scheduling,
+        "threshold": {"schedule": "Scale down after hours"},
+        "linked_best_practice": "AWS FinOps - EKS Scheduling: Dev/staging clusters running 24x7 waste 65% of compute. Schedule node scale-down after business hours",
+        "recommendation_template": "Schedule {resource} EKS dev/staging to scale down after hours — 65% savings. Use Karpenter or CronJob to scale nodes to 0 off-hours",
+        "savings_estimator": lambda n: _node_cost(n) * 0.65,
+        "risk_level": "LOW",
+        "implementation_template": "kubectl apply -f cronjob-scale-down.yaml  # Scale node group to 0 at 7PM, back up at 7AM",
+    },
+    # ────── DynamoDB ──────
+    {
+        "pattern_id": "dynamodb_capacity_mode",
+        "service": "dynamodb",
+        "category": "configuration",
+        "priority": "HIGH",
+        "detector": _detect_dynamodb_on_demand,
+        "threshold": {"steady_state_days": 30},
+        "linked_best_practice": "AWS FinOps - DynamoDB Capacity: On-Demand is 5-7x more expensive for steady workloads. Switch to Provisioned after 30 days of stable traffic",
+        "recommendation_template": "Switch {resource} from On-Demand to Provisioned capacity — 60-85% savings for steady-state workloads. Monitor ConsumedReadCapacityUnits first",
+        "savings_estimator": lambda n: _node_cost(n) * 0.60,
+        "risk_level": "MEDIUM",
+        "implementation_template": "aws dynamodb update-table --table-name {resource_name} --billing-mode PROVISIONED --provisioned-throughput ReadCapacityUnits=100,WriteCapacityUnits=50",
+    },
+    {
+        "pattern_id": "dynamodb_ttl",
+        "service": "dynamodb",
+        "category": "waste_elimination",
+        "priority": "MEDIUM",
+        "detector": _detect_dynamodb_no_ttl,
+        "threshold": {},
+        "linked_best_practice": "AWS FinOps - DynamoDB TTL: Auto-delete expired items (sessions, logs, temp data) at no cost. Reduces storage and RCU/WCU consumption",
+        "recommendation_template": "Enable TTL on {resource} — auto-delete expired items at no cost. Reduces storage ($0.25/GB) and capacity consumption",
+        "savings_estimator": lambda n: _node_cost(n) * 0.15,
+        "risk_level": "LOW",
+        "implementation_template": "aws dynamodb update-time-to-live --table-name {resource_name} --time-to-live-specification Enabled=true,AttributeName=ttl",
+    },
+    {
+        "pattern_id": "dynamodb_standard_ia",
+        "service": "dynamodb",
+        "category": "storage_optimization",
+        "priority": "MEDIUM",
+        "detector": _detect_dynamodb_no_ia,
+        "threshold": {"cold_data_pct": 80},
+        "linked_best_practice": "AWS FinOps - DynamoDB Standard-IA: 60% cheaper storage ($0.10 vs $0.25/GB). Enable for tables with >80% cold data",
+        "recommendation_template": "Enable Standard-IA storage class on {resource} — 60% cheaper storage for infrequently accessed data. Items auto-move after 30 days inactivity",
+        "savings_estimator": lambda n: _node_cost(n) * 0.25,
+        "risk_level": "LOW",
+        "implementation_template": "aws dynamodb update-table --table-name {resource_name} --table-class STANDARD_INFREQUENT_ACCESS",
+    },
+    # ────── API Gateway ──────
+    {
+        "pattern_id": "apigw_rest_to_http",
+        "service": "apigateway",
+        "category": "configuration",
+        "priority": "MEDIUM",
+        "detector": _detect_apigw_rest_to_http,
+        "threshold": {"savings_pct": 71},
+        "linked_best_practice": "AWS FinOps - API Gateway: HTTP API is 71% cheaper than REST API ($1 vs $3.50/million). Migrate unless you need REST-only features (WAF, caching, usage plans)",
+        "recommendation_template": "Migrate {resource} from REST API to HTTP API — 71% cheaper ($1 vs $3.50/million requests). HTTP API supports Lambda proxy, JWT auth, CORS",
+        "savings_estimator": lambda n: _node_cost(n) * 0.50,
+        "risk_level": "MEDIUM",
+        "implementation_template": "aws apigatewayv2 create-api --name {resource_name}-http --protocol-type HTTP --target {lambda_arn}",
+    },
+    {
+        "pattern_id": "apigw_caching",
+        "service": "apigateway",
+        "category": "performance",
+        "priority": "LOW",
+        "detector": _detect_apigw_no_cache,
+        "threshold": {"min_read_qps": 50},
+        "linked_best_practice": "AWS FinOps - API Gateway Caching: Enable cache for GET endpoints to reduce Lambda invocations by 80-95%. 0.5GB cache = $14/month",
+        "recommendation_template": "Enable API cache for {resource} — high read traffic ({qps} QPS). 0.5GB cache ($14/month) reduces backend invocations by 80-95%",
+        "savings_estimator": lambda n: _node_cost(n) * 0.30,
+        "risk_level": "LOW",
+        "implementation_template": "aws apigateway update-stage --rest-api-id {api_id} --stage-name prod --patch-operations op=replace,path=/cacheClusterEnabled,value=true",
+    },
+    # ────── Kinesis ──────
+    {
+        "pattern_id": "kinesis_shard_rightsizing",
+        "service": "kinesis",
+        "category": "right_sizing",
+        "priority": "MEDIUM",
+        "detector": _detect_kinesis_over_sharded,
+        "threshold": {"util_target": "60-80"},
+        "linked_best_practice": "AWS FinOps - Kinesis: Each shard costs $11/month. Monitor IncomingBytes/IncomingRecords to right-size. Consider SQS for <1MB/s throughput",
+        "recommendation_template": "Right-size {resource} Kinesis shards — each unused shard costs $11/month. Monitor IncomingBytes to find optimal shard count. Consider SQS if <1MB/s",
+        "savings_estimator": lambda n: _node_cost(n) * 0.40,
+        "risk_level": "MEDIUM",
+        "implementation_template": "aws kinesis update-shard-count --stream-name {resource_name} --target-shard-count {optimal_count} --scaling-type UNIFORM_SCALING",
+    },
+    # ────── CloudWatch ──────
+    {
+        "pattern_id": "cloudwatch_log_retention",
+        "service": "cloudwatch",
+        "category": "waste_elimination",
+        "priority": "HIGH",
+        "detector": _detect_cloudwatch_log_retention,
+        "threshold": {"retention_days": {"dev": 7, "staging": 30, "prod": 90}},
+        "linked_best_practice": "AWS FinOps - CloudWatch Logs: Set retention policies (default is NEVER expire = infinite cost). $0.50/GB ingestion + $0.03/GB storage. Biggest CW cost driver",
+        "recommendation_template": "Set log retention on {resource} — default 'never expire' accumulates infinite cost ($0.03/GB/month storage). Set 7d dev, 30d staging, 90d prod",
+        "savings_estimator": lambda n: _node_cost(n) * 0.60,
+        "risk_level": "LOW",
+        "implementation_template": "aws logs put-retention-policy --log-group-name {resource_name} --retention-in-days 30",
+    },
+    # ────── Step Functions ──────
+    {
+        "pattern_id": "step_functions_express",
+        "service": "stepfunctions",
+        "category": "configuration",
+        "priority": "MEDIUM",
+        "detector": _detect_step_functions_standard,
+        "threshold": {"daily_executions_min": 10000},
+        "linked_best_practice": "AWS FinOps - Step Functions: Express Workflows are 80-90% cheaper than Standard for high-volume (<5min duration). $0.000001/request vs $0.025/1000 transitions",
+        "recommendation_template": "Migrate {resource} from Standard to Express Workflow — 80-90% savings for high-volume, short-duration executions (<5 min)",
+        "savings_estimator": lambda n: _node_cost(n) * 0.80,
+        "risk_level": "MEDIUM",
+        "implementation_template": "aws stepfunctions create-state-machine --name {resource_name}-express --type EXPRESS --definition file://state-machine.json --role-arn {role_arn}",
     },
     # ────── Architectural (graph-native) ──────
     {
