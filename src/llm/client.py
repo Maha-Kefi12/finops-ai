@@ -66,7 +66,7 @@ OLLAMA_MODEL = os.getenv("FINOPS_MODEL", "qwen2.5:7b")  # Use Qwen 2.5 7B as pri
 USE_GEMINI = os.getenv("USE_GEMINI", "false").lower() == "true" and GEMINI_API_KEY
 
 MAX_RETRIES = 3
-TIMEOUT = 120  # Keep tight — prompt is capped to ~16K chars for Ollama 7B
+TIMEOUT = int(os.getenv("LLM_TIMEOUT", "1800"))  # Allow override via env var, default 30 minutes
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -144,35 +144,300 @@ def _call_ollama(system_prompt: str, user_prompt: str, temperature: float, max_t
     
     logger.info("Calling Ollama (%s)...", OLLAMA_MODEL)
     
-    try:
-        resp = requests.post(
-            f"{OLLAMA_URL}/api/chat",
-            json={
-                "model": OLLAMA_MODEL,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                "stream": False,
-                "options": {
-                    "temperature": temperature,
-                    "num_predict": max_tokens,
+    last_err = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            resp = requests.post(
+                f"{OLLAMA_URL}/api/chat",
+                json={
+                    "model": OLLAMA_MODEL,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    "stream": False,
+                    "options": {
+                        "temperature": temperature,
+                        "num_predict": max_tokens,
+                        "num_ctx": 16384,
+                    },
                 },
-            },
-            timeout=TIMEOUT,
-        )
+                timeout=TIMEOUT,
+            )
+            
+            if resp.status_code == 200:
+                text = resp.json().get("message", {}).get("content", "")
+                logger.info("Ollama response: %d chars", len(text))
+                return text
+            else:
+                last_err = f"Ollama returned {resp.status_code}"
         
-        if resp.status_code == 200:
-            text = resp.json().get("message", {}).get("content", "")
-            logger.info("Ollama response: %d chars", len(text))
-            return text
+        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
+            last_err = f"Connection error: {e}"
+            logger.warning("[OLLAMA] Attempt %d/%d failed with connection error, retrying...", attempt+1, MAX_RETRIES)
+            time.sleep(2)
+        except requests.exceptions.Timeout as e:
+            last_err = f"Timeout after {TIMEOUT}s"
+            logger.warning("[OLLAMA] Attempt %d/%d timed out, retrying...", attempt+1, MAX_RETRIES)
+            time.sleep(5)  # Wait longer on timeout
+            if attempt == MAX_RETRIES - 1:  # Last attempt
+                raise RuntimeError(f"Ollama timeout after {TIMEOUT}s on all {MAX_RETRIES} attempts")
+        except Exception as e:
+            raise RuntimeError(f"Ollama error: {e}")
+            
+    raise RuntimeError(f"Ollama error after {MAX_RETRIES} attempts: {last_err}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TIER 1: SERVICE → ACTIONS MAPPER (LLM Call 1)
+# ═══════════════════════════════════════════════════════════════════════════
+
+def map_services_to_actions(
+    service_inventory: List[Dict[str, Any]],
+    cost_anchors: Dict[str, Any],
+    graph_data: Dict[str, Any],
+    kb_context: Dict[str, Any],
+) -> Dict[str, List[str]]:
+    """
+    Tier 1: Use LLM to map each service to applicable optimization actions.
+
+    This creates a strict contract: Tier 2 can ONLY use actions from this mapping.
+
+    Args:
+        service_inventory: List of services with metrics
+        cost_anchors: Cost baseline data
+        graph_data: Architecture graph with dependencies
+        kb_context: KB best practices for all services
+
+    Returns:
+        Dict mapping resource_id → list of allowed actions
+        Example: {"finops-ai-dev-postgres": ["disable_multi_az", "rightsize_rds"]}
+    """
+    from src.llm.prompts import ACTION_MAPPER_SYSTEM_PROMPT, ACTION_MAPPER_USER_PROMPT
+
+    logger.info("[TIER 1] Starting service → actions mapping for %d services", len(service_inventory))
+
+    # Format service inventory for LLM
+    service_context_lines = []
+    for svc in service_inventory:
+        svc_id = svc.get("id") or svc.get("resource_id") or ""
+        svc_type = svc.get("type") or svc.get("service_type") or ""
+        svc_cost = svc.get("cost_monthly", 0)
+
+        # Include metrics if available
+        metrics_str = ""
+        if svc.get("metrics"):
+            metrics = svc["metrics"]
+            cpu = metrics.get("cpu_percent") or metrics.get("cpu_p95_percent", 0)
+            mem = metrics.get("memory_percent") or metrics.get("memory_p95_percent", 0)
+            metrics_str = f" - CPU: {cpu}%, Memory: {mem}%"
+
+        service_context_lines.append(
+            f"• {svc_id} ({svc_type}): ${svc_cost:.2f}/mo{metrics_str}"
+        )
+
+    service_summary = "\n".join(service_context_lines[:50])  # Limit to first 50
+
+    # Format KB context
+    kb_summary = ""
+    if kb_context:
+        if isinstance(kb_context, str):
+            kb_summary = kb_context[:1500]  # Limit to 1500 chars
         else:
-            raise RuntimeError(f"Ollama returned {resp.status_code}")
-    
-    except requests.exceptions.Timeout:
-        raise RuntimeError(f"Ollama timeout after {TIMEOUT}s")
+            try:
+                kb_summary = json.dumps(kb_context, indent=2)[:1500]
+            except:
+                kb_summary = str(kb_context)[:1500]
+
+    # Format cost anchors
+    cost_summary = ""
+    if cost_anchors:
+        if isinstance(cost_anchors, str):
+            cost_summary = cost_anchors[:500]
+        elif isinstance(cost_anchors, dict):
+            cost_summary = cost_anchors.get("raw", str(cost_anchors))[:500]
+        else:
+            cost_summary = str(cost_anchors)[:500]
+
+    # Format graph context
+    graph_summary = ""
+    if graph_data:
+        services_in_graph = len(graph_data.get("services", graph_data.get("nodes", [])))
+        edges_in_graph = len(graph_data.get("dependencies", graph_data.get("edges", [])))
+        graph_summary = f"Architecture: {services_in_graph} services, {edges_in_graph} dependencies"
+
+    # Build user prompt using template
+    user_prompt = ACTION_MAPPER_USER_PROMPT.format(
+        kb_context=kb_summary or "No KB context available",
+        service_inventory=service_summary,
+        graph_context=graph_summary or "No graph data available",
+        cost_anchors=cost_summary or "No cost data available",
+    )
+
+    # Call LLM Tier 1
+    t_tier1 = time.time()
+    try:
+        tier1_response = call_llm(
+            system_prompt=ACTION_MAPPER_SYSTEM_PROMPT,
+            user_prompt=user_prompt,
+            temperature=0.2,  # Low temp for deterministic mapping
+            max_tokens=2000,
+            architecture_name="tier1_action_mapper",
+        )
+        elapsed_tier1 = time.time() - t_tier1
+        logger.info("[TIER 1] LLM response received in %.1fs", elapsed_tier1)
     except Exception as e:
-        raise RuntimeError(f"Ollama error: {e}")
+        logger.error("[TIER 1] Failed to call LLM: %s", e, exc_info=True)
+        # Fallback: return empty mapping (Tier 2 will handle gracefully)
+        return {}
+
+    # Parse JSON response
+    try:
+        # Extract JSON from response
+        clean = tier1_response.strip()
+        start_idx = clean.find("{")
+        end_idx = clean.rfind("}")
+
+        if start_idx >= 0 and end_idx > start_idx:
+            json_str = clean[start_idx:end_idx + 1]
+            action_mapping = json.loads(json_str)
+            logger.info("[TIER 1] Parsed mapping for %d resources", len(action_mapping))
+        else:
+            logger.warning("[TIER 1] Could not find JSON in response")
+            return {}
+    except json.JSONDecodeError as e:
+        logger.warning("[TIER 1] Failed to parse JSON response: %s", e)
+        return {}
+
+    # Validate mapping
+    ALLOWED_ACTIONS = {
+        # EC2
+        "rightsize_ec2", "migrate_ec2_graviton", "terminate_ec2", "schedule_ec2_stop",
+        # RDS
+        "rightsize_rds", "disable_multi_az", "migrate_rds_gp2_to_gp3", "add_read_replica",
+        # ElastiCache
+        "rightsize_elasticache", "migrate_cache_graviton",
+        # S3
+        "s3_add_lifecycle", "s3_enable_intelligent_tiering",
+        # EBS
+        "ebs_migrate_gp2_to_gp3",
+        # NAT
+        "replace_nat_with_endpoints",
+        # EKS
+        "consolidate_eks_nodes", "eks_nodegroup_rightsizing",
+        # CloudWatch
+        "cloudwatch_log_retention_policy",
+        # Other
+        "lambda_tune_memory", "lambda_migrate_arm64", "cloudfront_restrict_price_class",
+    }
+
+    validated_mapping = {}
+    invalid_count = 0
+
+    for resource_id, actions in action_mapping.items():
+        if not isinstance(actions, list):
+            actions = [actions]
+
+        # Filter to only allowed actions
+        valid_actions = [a for a in actions if a in ALLOWED_ACTIONS]
+        invalid_actions = [a for a in actions if a not in ALLOWED_ACTIONS]
+
+        if invalid_actions:
+            logger.warning(
+                "[TIER 1] Resource %s has invalid actions (removed): %s",
+                resource_id, invalid_actions
+            )
+            invalid_count += len(invalid_actions)
+
+        if valid_actions:
+            validated_mapping[resource_id] = valid_actions
+
+    logger.info(
+        "[TIER 1] ✓ Mapping complete: %d resources, %d invalid actions filtered",
+        len(validated_mapping), invalid_count
+    )
+
+    return validated_mapping
+
+
+def validate_recommendations(
+    recommendations: List[Dict[str, Any]],
+    services: List[Dict[str, Any]],
+    action_mapping: Dict[str, List[str]],
+) -> List[Dict[str, Any]]:
+    """
+    Post-generation validation: filter out obviously bad recommendations.
+
+    Removes recommendations that:
+    - Have estimated_savings_monthly <= 0
+    - Have estimated_savings_monthly > current_monthly_cost (>100% savings)
+    - Reference a resource not in the graph
+    - Use an action not in the Tier 1 mapping
+
+    Args:
+        recommendations: List of recommendations from Tier 2
+        services: List of known services from graph
+        action_mapping: Tier 1 mapping of resource_id → allowed actions
+
+    Returns:
+        Filtered list of valid recommendations
+    """
+    service_ids = {s.get("id") or s.get("resource_id") for s in services}
+    filtered = []
+    removed_count = 0
+
+    for rec in recommendations:
+        resource_id = rec.get("resource_id")
+        action = rec.get("action")
+        savings = rec.get("estimated_savings_monthly", 0)
+        current_cost = rec.get("current_monthly_cost", 0)
+
+        # Check 1: savings > 0
+        if savings <= 0:
+            logger.debug(
+                "[VALIDATE] Removed %s (action %s): savings <= 0 (%.2f)",
+                resource_id, action, savings
+            )
+            removed_count += 1
+            continue
+
+        # Check 2: savings <= current cost (no >100% savings)
+        if savings > current_cost:
+            logger.debug(
+                "[VALIDATE] Removed %s (action %s): savings (%.2f) > current cost (%.2f)",
+                resource_id, action, savings, current_cost
+            )
+            removed_count += 1
+            continue
+
+        # Check 3: resource exists in graph
+        if resource_id not in service_ids:
+            logger.debug(
+                "[VALIDATE] Removed %s (action %s): resource not in graph",
+                resource_id, action
+            )
+            removed_count += 1
+            continue
+
+        # Check 4: action matches mapping (if mapping exists)
+        if action_mapping and resource_id in action_mapping:
+            if action not in action_mapping.get(resource_id, []):
+                logger.debug(
+                    "[VALIDATE] Removed %s (action %s): not in Tier 1 mapping",
+                    resource_id, action
+                )
+                removed_count += 1
+                continue
+
+        # All checks passed
+        filtered.append(rec)
+
+    logger.info(
+        "[VALIDATE] ✓ Filtered %d recommendations: %d kept, %d removed",
+        len(recommendations), len(filtered), removed_count
+    )
+
+    return filtered
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -181,167 +446,232 @@ def _call_ollama(system_prompt: str, user_prompt: str, temperature: float, max_t
 
 def generate_recommendations(context_package, architecture_name: str = "",
                             raw_graph_data: Optional[dict] = None) -> RecommendationResult:
-    """Generate recommendations using engine-grounded LLM + deterministic controls."""
-    
+    """Generate FinOps cost optimization recommendations — two-agent LangChain pipeline.
+
+    Pipeline:
+      1. Index graph data (services, edges, lookups)
+      2. Assemble rich context (inventory, cost anchors, waste signals, deps, KB, RAG)
+      3. Run LangChain SequentialChain: Agent 1 (KB Linker) → Agent 2 (Generator)
+         Fallback: raw HTTP call_llm() if LangChain unavailable
+      4. Parse JSON → build rich cards via _build_rich_llm_card()
+      5. Guard validate → normalize
+    """
+
     from src.llm.prompts import (
-        RECOMMENDATION_SYSTEM_PROMPT,
-        RECOMMENDATION_USER_PROMPT,
-        ENGINE_NARRATIVE_SYSTEM_PROMPT,
-        ENGINE_NARRATIVE_USER_PROMPT,
+        FINOPS_KB_LINKER_SYSTEM_PROMPT,
+        FINOPS_KB_LINKER_USER_PROMPT,
+        FINOPS_GENERATOR_SYSTEM_PROMPT,
+        FINOPS_GENERATOR_USER_PROMPT,
     )
-    from src.llm.security_context_builder import build_security_context as _build_security_context
-    
+
     start = time.time()
     result = RecommendationResult(architecture_name=architecture_name)
-    
+
     logger.info("=" * 70)
-    logger.info("GENERATING RECOMMENDATIONS (Engine-grounded LLM)")
+    logger.info("GENERATING RECOMMENDATIONS (LangChain Two-Agent FinOps Pipeline)")
     logger.info("Backend: %s", "Gemini Flash" if USE_GEMINI else "Qwen 2.5 (Ollama)")
     logger.info("=" * 70)
     try:
         pkg_dict = asdict(context_package) if hasattr(context_package, '__dataclass_fields__') else context_package
 
-        # ═══ STAGE 0: Deterministic engine facts (grounding + fallback) ═══
-        engine_cards: List[Dict[str, Any]] = []
-        if raw_graph_data:
-            try:
-                from src.recommendation_engine.scanner import scan_architecture
-                from src.recommendation_engine.enricher import enrich_matches
-
-                matches = scan_architecture(raw_graph_data)
-                enriched = enrich_matches(matches, raw_graph_data)
-                engine_cards = _engine_to_cards(enriched)
-                logger.info("[ENGINE] %d matches -> %d cards", len(matches), len(engine_cards))
-            except Exception as e:
-                logger.warning("[ENGINE] failed to build grounding facts: %s", e)
-
-        # ═══ STAGE 1+2: Lean LLM call for security/reliability/performance ═══
-        # The full RECOMMENDATION_SYSTEM_PROMPT + context is ~31K chars which
-        # Ollama 7B cannot process within any reasonable timeout.  Instead we
-        # use a compact, purpose-built prompt (~5K chars total) that asks the
-        # LLM specifically for security, reliability and performance findings.
-        # Then we ENRICH each finding with graph_context, resource_identification,
-        # cost_breakdown, recommendations, and finops_best_practice from raw_graph_data.
-        llm_cards: List[Dict[str, Any]] = []
-
-        # Build service lookup and compact service list for prompt
+        # ═══ STAGE 1: Index graph data ═══
         services = (raw_graph_data or {}).get("services", (raw_graph_data or {}).get("nodes", []))
         edges = (raw_graph_data or {}).get("dependencies", (raw_graph_data or {}).get("edges", []))
         svc_by_name: Dict[str, dict] = {}
         svc_by_id: Dict[str, dict] = {}
-        svc_lines = []
         for s in services:
             svc_by_name[s.get("name", "")] = s
             svc_by_id[s.get("id", "")] = s
-            cfg = s.get("config", {})
-            flags = []
-            if cfg.get("multi_az") is not None:
-                flags.append(f"multi_az={cfg['multi_az']}")
-            if cfg.get("encrypted") is not None:
-                flags.append(f"encrypted={cfg['encrypted']}")
-            if cfg.get("publicly_accessible") is not None:
-                flags.append(f"public={cfg['publicly_accessible']}")
-            if cfg.get("backup_retention_period") is not None:
-                flags.append(f"backup={cfg['backup_retention_period']}d")
-            flag_str = f" [{', '.join(flags)}]" if flags else ""
-            svc_lines.append(f"- {s.get('name', s.get('id','?'))} ({s.get('type','?')}){flag_str}")
-        svc_text = "\n".join(svc_lines[:40])
 
-        lean_system = (
-            "You are an AWS security and reliability architect. "
-            "Analyze the services and return a JSON array of 5-8 findings. "
-            "Focus ONLY on security vulnerabilities, reliability risks, and performance issues. "
-            "Do NOT suggest cost savings. Respond with ONLY a JSON array, no markdown."
+        # ═══ STAGE 2: Assemble rich FinOps context ═══
+        context_parts = _assemble_finops_context(
+            pkg_dict, raw_graph_data, svc_by_name, svc_by_id, services, edges
         )
 
-        lean_user = (
-            f"Architecture: {architecture_name}\n"
-            f"Services ({len(svc_lines)}):\n{svc_text}\n\n"
-            "Return a JSON array. Each item MUST have ALL these fields:\n"
-            '{"title":"Enable encryption at rest for RDS",'
-            '"category":"security",'
-            '"severity":"critical",'
-            '"resource":"exact_resource_name_from_list_above",'
-            '"finding":"RDS instance has no encryption at rest, exposing data to unauthorized access",'
-            '"remediation":"aws rds modify-db-instance --db-instance-identifier X --storage-encrypted",'
-            '"implementation_steps":["Create snapshot","Restore with encryption","Switch DNS"],'
-            '"performance_impact":"No performance degradation expected from enabling encryption",'
-            '"risk_assessment":"Data breach risk if instance storage is compromised",'
-            '"confidence":"high",'
-            '"complexity":"medium"}\n\n'
-            "Analyze for:\n"
-            "1. SECURITY: public exposure, missing encryption, no MFA, overly permissive IAM, open security groups\n"
-            "2. RELIABILITY: no multi-AZ, no backups, single points of failure, no health checks, no failover\n"
-            "3. PERFORMANCE: missing caches, no read replicas, synchronous bottlenecks, undersized instances\n"
-        )
+        # ═══ STAGE 3: Two-Agent Pipeline (LangChain → fallback to raw HTTP) ═══
+        raw_response = None
+        used_langchain = False
+        action_mapping: Dict[str, List[str]] = {}  # Tier 1 action mapping (initialized for validation later)
 
-        total_prompt = len(lean_system) + len(lean_user)
-        logger.info("[PROMPT SIZE] lean: %d chars (~%d tokens)", total_prompt, total_prompt // 4)
-
+        # ── Try LangChain pipeline first ──
         try:
-            logger.info("[STAGE 2] Calling LLM (lean security/reliability/performance)...")
-            t3 = time.time()
-            raw_response = call_llm(
-                system_prompt=lean_system,
-                user_prompt=lean_user,
-                temperature=0.3,
-                max_tokens=2500,
+            from src.llm.langchain_chain import run_finops_chain
+
+            logger.info("[LANGCHAIN] Attempting LangChain two-agent pipeline...")
+            raw_response = run_finops_chain(
+                context_parts=context_parts,
                 architecture_name=architecture_name,
             )
-            elapsed_llm = time.time() - t3
-            logger.info("[TIMING] LLM completed in %.1fs (%d chars)", elapsed_llm, len(raw_response or ""))
+            used_langchain = True
+            logger.info("[LANGCHAIN] ✓ Pipeline returned %d chars", len(raw_response or ""))
 
+        except ImportError as ie:
+            logger.warning("[LANGCHAIN] LangChain not available, falling back to raw HTTP: %s", ie)
+        except Exception as lc_err:
+            logger.warning("[LANGCHAIN] Pipeline failed, falling back to raw HTTP: %s", lc_err, exc_info=True)
+
+        # ── Fallback: raw HTTP call_llm() (original path) ──
+        if not raw_response or len(raw_response.strip()) < 5:
+            if used_langchain:
+                logger.warning("[FALLBACK] LangChain returned empty output, trying raw HTTP path...")
+
+            logger.info("[FALLBACK] Running raw HTTP two-agent pipeline...")
+
+            # Agent 1: KB Linker
+            linker_user_prompt = FINOPS_KB_LINKER_USER_PROMPT.format(
+                service_inventory=context_parts.get("service_inventory", ""),
+                cost_anchors=context_parts.get("cost_anchors", ""),
+                best_practices=context_parts.get("best_practices", ""),
+                rag_knowledge=context_parts.get("rag_knowledge", ""),
+            )
+
+            logger.info("[AGENT 1] Calling KB Linker (raw HTTP)...")
+            t_agent1 = time.time()
+            kb_mapping_response = call_llm(
+                system_prompt=FINOPS_KB_LINKER_SYSTEM_PROMPT,
+                user_prompt=linker_user_prompt,
+                temperature=0.2,
+                max_tokens=4000,
+                architecture_name=architecture_name + "_linker",
+            )
+            logger.info("[AGENT 1] Completed in %.1fs (%d chars)", time.time() - t_agent1, len(kb_mapping_response or ""))
+
+            # ═══════ TIER 1: SERVICE → ACTIONS MAPPER (NEW) ═══════
+            # Before Agent 2 (Generator), map services to actions to create contract
+            logger.info("[TIER 1] Starting service → actions mapper...")
+            t_tier1 = time.time()
+
+            action_mapping = map_services_to_actions(
+                service_inventory=services,
+                cost_anchors={"raw": context_parts.get("cost_anchors", "")},  # Pass raw formatted string
+                graph_data=raw_graph_data or {},
+                kb_context=context_parts.get("best_practices", {}),
+            )
+
+            tier1_elapsed = time.time() - t_tier1
+            logger.info(
+                "[TIER 1] ✓ Completed in %.1fs: %d resources with actions",
+                tier1_elapsed, len(action_mapping)
+            )
+
+            # Agent 2: Generator
+            generator_user_prompt = FINOPS_GENERATOR_USER_PROMPT.format(
+                cost_anchors=context_parts.get("cost_anchors", ""),
+                dependency_map=context_parts.get("dependency_map", ""),
+                kb_mappings=kb_mapping_response or "[]",
+            )
+
+            logger.info("[AGENT 2] Calling Generator (raw HTTP)...")
+            t_agent2 = time.time()
+            raw_response = call_llm(
+                system_prompt=FINOPS_GENERATOR_SYSTEM_PROMPT,
+                user_prompt=generator_user_prompt,
+                temperature=0.2,
+                max_tokens=6000,
+                architecture_name=architecture_name,
+            )
+            logger.info("[AGENT 2] Completed in %.1fs (%d chars)", time.time() - t_agent2, len(raw_response or ""))
+
+        # ═══ STAGE 4: Parse Agent 2 output → rich cards ═══
+        llm_cards: List[Dict[str, Any]] = []
+        try:
             if raw_response:
                 import re as _re
-                clean = _re.sub(r'```(?:json)?\s*', '', raw_response).strip()
-                clean = _re.sub(r'```\s*$', '', clean).strip()
-                arr_match = _re.search(r'\[.*\]', clean, _re.DOTALL)
-                if arr_match:
+                clean = raw_response.strip()
+                # Find the first '[' and last ']' to extract the JSON array
+                start_idx = clean.find('[')
+                end_idx = clean.rfind(']')
+
+                if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                    json_str = clean[start_idx:end_idx+1]
                     try:
-                        parsed = json.loads(arr_match.group())
+                        parsed = json.loads(json_str)
                         if isinstance(parsed, list):
                             for item in parsed:
-                                if not isinstance(item, dict) or not item.get("title"):
+                                if not isinstance(item, dict):
                                     continue
+                                # Allow both 'title' and 'summary' to be used interchangeably
+                                title = item.get("title") or item.get("summary")
+                                if not title:
+                                    continue
+                                item["title"] = title # Ensure _build_rich_llm_card finds it
                                 llm_cards.append(
                                     _build_rich_llm_card(item, svc_by_name, svc_by_id, edges, services, raw_graph_data)
                                 )
                     except json.JSONDecodeError as je:
-                        logger.warning("[LLM] JSON parse failed: %s", je)
-                # Fallback: try the existing parsers
+                        logger.warning("[LLM] JSON parse failed on extracted array: %s", je)
+
+                # Fallback parsers if direct parsing failed or returned no valid cards
                 if not llm_cards:
                     llm_cards = _parse_structured_json_recommendations(raw_response)
                 if not llm_cards:
                     llm_cards = _parse_all_recommendations(raw_response)
 
-                logger.info("[PIPELINE] LLM parsed: %d rich cards", len(llm_cards))
+                pipeline_label = "LANGCHAIN" if used_langchain else "RAW-HTTP"
+                logger.info("[%s] Parsed: %d rich cards", pipeline_label, len(llm_cards))
         except Exception as e:
-            logger.error("[LLM] Call failed: %s — engine cards only", e, exc_info=True)
+            logger.error("[LLM] Card parsing failed: %s", e, exc_info=True)
 
-        logger.info("[STAGE 3] LLM cards: %d (security/reliability/performance insights)", len(llm_cards or []))
 
-        # ═══ STAGE 4: Merge engine truth + LLM architectural insights ═══
-        cards = _merge_engine_and_llm_cards(engine_cards, llm_cards or [])
-        
+        # ═══ STAGE 5: Populate metrics + Guard validate ═══
         if raw_graph_data:
-            cards = [_populate_card_metrics(c, raw_graph_data) for c in cards]
-        
-        logger.info(
-            "[PIPELINE] Final: %d cards (engine=%d, llm_insights=%d) with metrics hardened",
-            len(cards),
-            len(engine_cards),
-            len(llm_cards or [])
-        )
+            llm_cards = [_populate_card_metrics(c, raw_graph_data) for c in llm_cards]
 
-        if not cards:
-            logger.warning("⚠️  No recommendations generated from engine/LLM — returning empty set")
+        llm_cards = _guard_validate_cards(llm_cards, raw_graph_data or {})
 
-        # ═══ STAGE 5: Normalise to unified flat schema ═══
-        # Maps engine + LLM cards to consistent shape; marks duplicates & conflicts.
-        cards = normalize_recommendations(cards)
+        if not llm_cards:
+            logger.warning("⚠️  No recommendations generated from LLM — returning empty set")
+
+        # ═══ STAGE 5.2: LIGHTWEIGHT VALIDATION (Tier-based filtering) ═══
+        # Filter recommendations against Tier 1 action mapping
+        if llm_cards and action_mapping:
+            logger.info("[VALIDATE] Applying lightweight validation filter (%d recommendations)...", len(llm_cards))
+
+            # Convert cards to dicts for validation
+            card_dicts_for_validation = []
+            for c in llm_cards:
+                if hasattr(c, '__dataclass_fields__'):
+                    card_dicts_for_validation.append(asdict(c))
+                else:
+                    card_dicts_for_validation.append(c)
+
+            # Apply validation
+            card_dicts_for_validation = validate_recommendations(
+                recommendations=card_dicts_for_validation,
+                services=services,
+                action_mapping=action_mapping,
+            )
+
+            # Convert back to original format if needed
+            llm_cards = card_dicts_for_validation
+            logger.info("[VALIDATE] ✓ After validation: %d recommendations remain", len(llm_cards))
+        else:
+            logger.debug("[VALIDATE] No action mapping available, skipping validation")
+
+        # ═══ STAGE 5.5: ENRICHMENT PASS (Pass 3) ═══
+        # For each recommendation, call LLM to generate deep analysis
+        if llm_cards and raw_graph_data:
+            logger.info("[ENRICHMENT] Starting Pass 3: Deep LLM analysis on %d recommendations...", len(llm_cards))
+            t_enrich = time.time()
+            try:
+                # Convert cards to dict format for enrichment
+                card_dicts = [asdict(c) if hasattr(c, '__dataclass_fields__') else c for c in llm_cards]
+                enriched_card_dicts = enrich_recommendations_pass_3(
+                    recommendations=card_dicts,
+                    raw_graph_data=raw_graph_data,
+                    context_parts=context_parts,
+                )
+                # Merge enriched fields back (the enrichment function modifies the dicts in-place via update())
+                llm_cards = enriched_card_dicts
+                logger.info("[ENRICHMENT] ✓ Completed in %.1fs", time.time() - t_enrich)
+            except Exception as enrich_err:
+                logger.warning("[ENRICHMENT] Failed, continuing with non-enriched recommendations: %s", enrich_err, exc_info=True)
+
+        # ═══ STAGE 6: Normalize to unified flat schema ═══
+        cards = normalize_recommendations(llm_cards)
 
         result.cards = cards
-        result.llm_used = bool(llm_cards)
+        result.llm_used = bool(cards)
         result.total_estimated_savings = sum(
             c.get("estimated_savings_monthly") or c.get("total_estimated_savings", 0)
             for c in cards
@@ -350,10 +680,11 @@ def generate_recommendations(context_package, architecture_name: str = "",
 
         logger.info("=" * 70)
         logger.info(
-            "COMPLETE: %d recommendations, $%.2f savings, %dms",
+            "COMPLETE: %d recommendations, $%.2f savings, %dms (%s)",
             len(cards),
             result.total_estimated_savings,
             result.generation_time_ms,
+            "LangChain" if used_langchain else "raw-HTTP",
         )
         logger.info("=" * 70)
 
@@ -367,6 +698,448 @@ def generate_recommendations(context_package, architecture_name: str = "",
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# FINOPS CONTEXT ASSEMBLY — builds the 5-section user prompt context
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _assemble_finops_context(
+    pkg_dict: dict,
+    raw_graph_data: Optional[dict],
+    svc_by_name: Dict[str, dict],
+    svc_by_id: Dict[str, dict],
+    services: List[dict],
+    edges: List[dict],
+) -> Dict[str, str]:
+    """Build the 5-section context string for the FinOps cost optimization prompt.
+
+    Sections:
+      1. Service inventory — all resources with type, cost, config
+      2. Cost anchors — sorted by spend descending
+      3. Waste signals — pre-computed from ContextAssembler
+      4. Dependency map — graph edges
+      5. Best practices — AWS KB matched to service types
+      6. PDF knowledge — doc chunks (with timeout)
+    """
+    # ── SECTION 1: Service inventory ──
+    inv_lines = []
+    for s in services:
+        name = s.get("name", s.get("id", "?"))
+        stype = s.get("type", "service")
+        cost = float(s.get("cost_monthly", 0) or 0)
+        attrs = s.get("attributes", s.get("config", {})) or {}
+        itype = attrs.get("instance_type", attrs.get("instance_class", ""))
+        icount = attrs.get("instance_count", "")
+        flags = []
+        if itype:
+            flags.append(f"instance={itype}")
+        if icount:
+            flags.append(f"count={icount}")
+        for key in ["storage_class", "multi_az", "encrypted", "engine", "size_gb", "lb_type",
+                     "messages_monthly", "publicly_accessible", "backup_retention_period"]:
+            val = attrs.get(key)
+            if val is not None:
+                flags.append(f"{key}={val}")
+        env = s.get("environment", "production")
+        flag_str = f" [{', '.join(flags)}]" if flags else ""
+        inv_lines.append(f"- {name} ({stype}) ${cost:,.0f}/mo | env={env}{flag_str}")
+    service_inventory = "\n".join(inv_lines) if inv_lines else "No services found."
+
+    # ── SECTION 2: Cost anchors ──
+    sorted_svcs = sorted(services, key=lambda x: float(x.get("cost_monthly", 0) or 0), reverse=True)
+    anchor_lines = ["Resource | Type | $/mo | Instance | Count"]
+    anchor_lines.append("-" * 70)
+    total_cost = 0.0
+    for s in sorted_svcs:
+        name = s.get("name", s.get("id", "?"))
+        stype = s.get("type", "service")
+        cost = float(s.get("cost_monthly", 0) or 0)
+        total_cost += cost
+        attrs = s.get("attributes", s.get("config", {})) or {}
+        itype = attrs.get("instance_type", attrs.get("instance_class", "-"))
+        icount = attrs.get("instance_count", "-")
+        anchor_lines.append(f"{name:<30} | {stype:<12} | ${cost:>8,.0f} | {itype or '-':<18} | {icount}")
+    anchor_lines.append(f"\nTOTAL MONTHLY SPEND: ${total_cost:,.0f}")
+    cost_anchors = "\n".join(anchor_lines)
+
+    # ── SECTION 3: Waste signals from ContextAssembler ──
+    waste_lines = []
+    # Extract from context package sections
+    for section_key in ["cost_analysis", "anti_patterns", "anomalies", "critical_services", "risks"]:
+        section = pkg_dict.get(section_key, "")
+        if isinstance(section, str) and section.strip():
+            waste_lines.append(f"[{section_key.upper()}]")
+            # Truncate long sections
+            text = section.strip()[:1500]
+            waste_lines.append(text)
+            waste_lines.append("")
+        elif isinstance(section, dict):
+            waste_lines.append(f"[{section_key.upper()}]")
+            for k, v in list(section.items())[:10]:
+                waste_lines.append(f"  {k}: {str(v)[:200]}")
+            waste_lines.append("")
+        elif isinstance(section, list):
+            waste_lines.append(f"[{section_key.upper()}]")
+            for item in section[:10]:
+                waste_lines.append(f"  - {str(item)[:200]}")
+            waste_lines.append("")
+
+    # Add computed waste signals
+    for s in services:
+        cost = float(s.get("cost_monthly", 0) or 0)
+        attrs = s.get("attributes", s.get("config", {})) or {}
+        itype = attrs.get("instance_type", "")
+        icount = int(attrs.get("instance_count", 1) or 1)
+        name = s.get("name", "?")
+        stype = s.get("type", "")
+
+        # Detect x86 instances eligible for Graviton
+        if itype and any(itype.startswith(p) for p in ("c5", "m5", "r5", "t3", "c5a", "m5a")):
+            waste_lines.append(f"⚠ GRAVITON CANDIDATE: {name} uses {itype} (x86) — eligible for ~20% savings with Graviton")
+        # Detect high instance count
+        if icount >= 10 and cost > 500:
+            waste_lines.append(f"⚠ CONSOLIDATION CANDIDATE: {name} has {icount}× {itype} instances at ${cost:,.0f}/mo")
+        # Detect S3 Standard with large size
+        storage_class = str(attrs.get("storage_class", "")).upper()
+        size_gb = float(attrs.get("size_gb", 0) or 0)
+        if storage_class == "STANDARD" and size_gb > 1000:
+            waste_lines.append(f"⚠ STORAGE TIERING: {name} has {size_gb:.0f}GB in STANDARD — consider Intelligent-Tiering")
+        # Detect over-provisioned databases
+        if stype == "database" and itype and ("xlarge" in itype or "2xlarge" in itype):
+            waste_lines.append(f"⚠ DB RIGHT-SIZING: {name} uses {itype} at ${cost:,.0f}/mo — evaluate smaller instance class")
+
+    waste_signals = "\n".join(waste_lines) if waste_lines else "No waste signals detected."
+
+    # ── SECTION 4: Dependency map ──
+    dep_lines = []
+    for e in edges:
+        src = svc_by_id.get(e.get("source", ""), {}).get("name", e.get("source", "?"))
+        tgt = svc_by_id.get(e.get("target", ""), {}).get("name", e.get("target", "?"))
+        etype = e.get("type", "calls")
+        dep_lines.append(f"  {src} → {tgt} ({etype})")
+    dependency_map = "\n".join(dep_lines) if dep_lines else "No dependencies found."
+
+    # ── SECTION 5: Best practices ──
+    bp_lines = []
+    detected_types = set()
+    for s in services:
+        stype = s.get("type", "").lower()
+        detected_types.add(stype)
+        itype = (s.get("attributes") or s.get("config") or {}).get("instance_type", "")
+        if itype:
+            if itype.startswith(("c5", "c6", "m5", "m6", "r5", "r6")):
+                detected_types.add("compute")
+            elif itype.startswith("db."):
+                detected_types.add("database")
+            elif itype.startswith("cache."):
+                detected_types.add("cache")
+
+    try:
+        from src.knowledge_base.aws_finops_best_practices import get_best_practices_for_service
+        for stype in detected_types:
+            practices = get_best_practices_for_service(stype)
+            if practices:
+                bp_lines.append(f"[{stype.upper()}]")
+                for bp in practices[:10]:
+                    if isinstance(bp, dict):
+                        bp_lines.append(f"  • {bp.get('title', '')}: {bp.get('description', '')[:250]}")
+                    else:
+                        bp_lines.append(f"  • {str(bp)[:250]}")
+                bp_lines.append("")
+    except Exception as e:
+        logger.warning("[KB] Failed to load best practices: %s", e)
+
+    best_practices = "\n".join(bp_lines) if bp_lines else "AWS FinOps Best Practices: rightsize, Graviton, Savings Plans, storage tiering."
+
+    # ── SECTION 6: RAG Knowledge (Pgvector Search) ──
+    rag_knowledge = ""
+    try:
+        from src.rag.retrieval_service import retrieve
+        # Construct a search query focused on the top spenders
+        top_types = list(detected_types)[:10]
+        top_names = [s.get("name", s.get("id")) for s in sorted_svcs[:10]]
+        query = f"AWS FinOps cost optimization and right-sizing strategies for {', '.join(top_types)} and {', '.join(top_names)}"
+        
+        chunks = retrieve(query, top_k=6)
+        if chunks:
+            rag_parts = []
+            for i, c in enumerate(chunks):
+                # Ensure we don't blow up the prompt size
+                rag_parts.append(f"[Source: {c.source_file}]\n{c.text[:600]}")
+            
+            combined_rag = "\n\n".join(rag_parts)
+            rag_knowledge = f"\n━━━ RETRIEVED FINOPS STRATEGIES ━━━\n{combined_rag}\n"
+            logger.info("[RAG] Injected %d chars from %d chunks for query: %s", len(combined_rag), len(chunks), query)
+        else:
+            logger.warning("[RAG] No chunks retrieved for query")
+            
+    except Exception as e:
+        logger.warning("[RAG] Failed to retrieve vector chunks: %s", e)
+
+    logger.info(
+        "[CONTEXT] inventory=%d svcs, anchors=%d lines, waste=%d lines, deps=%d edges, bp=%d lines",
+        len(inv_lines), len(anchor_lines), len(waste_lines), len(dep_lines), len(bp_lines),
+    )
+
+    return {
+        "service_inventory": service_inventory,
+        "cost_anchors": cost_anchors,
+        "waste_signals": waste_signals,
+        "dependency_map": dependency_map,
+        "best_practices": best_practices,
+        "rag_knowledge": rag_knowledge,
+    }
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GUARD VALIDATOR — confidence scoring + misclassification filter
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Services that CANNOT be right-sized, terminated, scheduled, or have costs
+_NON_ACTIONABLE_SERVICES = {"iam", "security_group", "unknown"}
+
+# Known misclassification patterns: prefix → true service
+_MISCLASS_RULES = [
+    (r"^iam[-_]", "iam"),
+    (r"^sg[-_]", "security_group"),
+    (r"^launch-wizard", "security_group"),
+]
+
+
+def _compute_confidence_score(card: Dict[str, Any], graph_data: dict) -> int:
+    """Compute a 0-100 confidence score for a recommendation card.
+
+    Engine cards score on: pattern-match quality, utilization metrics, savings realism.
+    LLM cards score on: finding detail quality, resource identification, graph grounding.
+    Both benefit from: graph evidence, service verification, dependency data.
+    """
+    score = 0
+    source = card.get("source", "")
+    is_llm = source in ("llm_proposed", "llm")
+    rid = card.get("resource_identification", {}) or {}
+    gc = card.get("graph_context", {}) or {}
+    cb = card.get("cost_breakdown", {}) or {}
+    recs = card.get("recommendations", [{}])
+    rec0 = recs[0] if recs else {}
+
+    # ── Source base ──
+    if source in ("engine", "engine_backed"):
+        score += 25
+    elif is_llm:
+        score += 20  # LLM findings are AI-grounded, not guesses
+
+    # ── Engine-specific: utilization metrics ──
+    if not is_llm:
+        ms = card.get("metrics_summary", {}) or {}
+        if ms.get("cpu_utilization_percent") is not None:
+            score += 10
+        if ms.get("memory_utilization_percent") is not None:
+            score += 5
+        if ms.get("iops_read") is not None or ms.get("iops_write") is not None:
+            score += 5
+
+    # ── LLM-specific: finding quality ──
+    if is_llm:
+        # Has a meaningful description (not just a title)
+        desc = rec0.get("description") or card.get("description") or ""
+        if len(str(desc)) > 30:
+            score += 12
+        # Has implementation steps
+        steps = rec0.get("implementation_steps") or []
+        if len(steps) >= 2:
+            score += 10
+        elif len(steps) >= 1:
+            score += 5
+        # Has a why_it_matters / narrative
+        if card.get("why_it_matters") or gc.get("narrative"):
+            score += 8
+
+    # ── Service classification verified against graph ──
+    resource_name = (rid.get("resource_name") or rid.get("service_name") or "").lower()
+    svc_type = (rid.get("service_type") or card.get("service_type") or "").lower()
+    services = graph_data.get("services", graph_data.get("nodes", []))
+    node_found = False
+    for s in services:
+        s_name = (s.get("name") or "").lower()
+        if s_name and s_name == resource_name:
+            node_found = True
+            graph_type = (s.get("type") or "").lower()
+            if graph_type and svc_type and (graph_type in svc_type or svc_type in graph_type):
+                score += 10
+            break
+    if node_found:
+        score += 10
+    elif resource_name:
+        score += 5  # At least has a named resource
+
+    # ── Savings realism (both card types) ──
+    savings = float(card.get("total_estimated_savings", 0) or 0)
+    cost = float(cb.get("current_monthly", 0) or 0)
+    if savings > 0 and cost > 0 and savings <= cost:
+        score += 10
+    elif savings > 0:
+        score += 5
+
+    # ── Graph evidence (both card types) ──
+    if gc.get("dependency_count", 0) > 0 or gc.get("dependent_services"):
+        score += 10
+    if gc.get("is_spof"):
+        score += 5
+
+    return min(score, 100)
+
+
+def _is_misclassified(card: Dict[str, Any]) -> Optional[str]:
+    """Check if a resource is misclassified. Returns the true service if misclassified, None otherwise."""
+    import re
+    rid = card.get("resource_identification", {}) or {}
+    resource_name = (rid.get("resource_name") or rid.get("service_name") or "").lower()
+    svc_type = (rid.get("service_type") or card.get("service_type") or "").upper()
+    category = (card.get("category") or "").lower()
+
+    for pattern, true_svc in _MISCLASS_RULES:
+        if re.search(pattern, resource_name):
+            # Resource starts with this prefix — check if current classification differs
+            if true_svc.upper() != svc_type and true_svc != svc_type.lower():
+                return true_svc
+    return None
+
+
+def _guard_validate_cards(
+    cards: List[Dict[str, Any]], graph_data: dict
+) -> List[Dict[str, Any]]:
+    """Guard validator: score, filter misclassified, resolve conflicts, prune low-confidence.
+
+    Steps:
+      1. Compute confidence score for each card
+      2. Filter out misclassified resources (IAM roles detected as EKS clusters, etc.)
+      3. Filter non-actionable services from cost-optimization categories
+      4. Resolve same-resource conflicts: keep highest-confidence card per resource
+      5. Remove cards below minimum confidence threshold
+    """
+    if not cards:
+        return cards
+
+    MIN_CONFIDENCE = 20
+    scored: List[Dict[str, Any]] = []
+    dropped_misclass = 0
+    dropped_non_actionable = 0
+    dropped_low_conf = 0
+
+    for card in cards:
+        # 1. Compute confidence
+        conf = _compute_confidence_score(card, graph_data)
+        card["confidence_score"] = conf
+        # Also set on nested recommendation
+        for rec in card.get("recommendations", []):
+            if isinstance(rec, dict):
+                rec["confidence"] = "high" if conf >= 70 else ("medium" if conf >= 40 else "low")
+
+        # 2. Check misclassification
+        true_svc = _is_misclassified(card)
+        if true_svc:
+            rid = card.get("resource_identification", {}) or {}
+            rname = rid.get("resource_name", "?")
+            old_svc = rid.get("service_type", "?")
+            category = card.get("category", "")
+            # IAM/SG resources should not get right-sizing or waste-elimination recs
+            if true_svc in _NON_ACTIONABLE_SERVICES and category in (
+                "right-sizing", "waste-elimination", "scheduling", "right_sizing",
+                "waste_elimination", "reserved-capacity",
+            ):
+                logger.info(
+                    "[GUARD] Dropped misclassified card: %s is %s (not %s), category=%s",
+                    rname, true_svc, old_svc, category,
+                )
+                dropped_misclass += 1
+                continue
+
+        # 3. Filter non-actionable services from cost categories
+        svc_type = (
+            (card.get("resource_identification") or {}).get("service_type") or
+            card.get("service_type") or ""
+        ).lower()
+        category = (card.get("category") or "").lower().replace("_", "-")
+        if svc_type in _NON_ACTIONABLE_SERVICES and category in (
+            "right-sizing", "waste-elimination", "scheduling", "reserved-capacity",
+        ):
+            dropped_non_actionable += 1
+            logger.info("[GUARD] Dropped non-actionable: %s (%s) in %s", svc_type, 
+                       (card.get("resource_identification") or {}).get("resource_name", "?"), category)
+            continue
+
+        # 4. Low confidence filter
+        if conf < MIN_CONFIDENCE:
+            dropped_low_conf += 1
+            logger.info("[GUARD] Dropped low-confidence (%d): %s", conf, card.get("title", "?")[:60])
+            continue
+
+        scored.append(card)
+
+    # 5. Resolve same-resource conflicts: if same resource has contradictory actions,
+    #    keep only the highest-confidence card
+    by_resource: Dict[str, List[Dict[str, Any]]] = {}
+    for card in scored:
+        rid = ((card.get("resource_identification") or {}).get("resource_id") or
+               (card.get("resource_identification") or {}).get("resource_name") or "")
+        if rid:
+            by_resource.setdefault(rid.lower(), []).append(card)
+
+    final: List[Dict[str, Any]] = []
+    conflict_resolved = 0
+    seen_rids: set = set()
+
+    for rid, group in by_resource.items():
+        if len(group) <= 1:
+            final.extend(group)
+            seen_rids.add(rid)
+            continue
+
+        # Check for terminate vs right-size conflicts
+        categories = {(c.get("category") or "").lower().replace("_", "-") for c in group}
+        has_terminate = any("waste" in (c.get("category") or "").lower() or
+                          "terminate" in (c.get("title") or "").lower() or
+                          "delete" in (c.get("title") or "").lower() or
+                          "idle" in (c.get("title") or "").lower()
+                          for c in group)
+        has_rightsize = any("right" in (c.get("category") or "").lower() or
+                          "downsize" in (c.get("title") or "").lower()
+                          for c in group)
+
+        if has_terminate and has_rightsize:
+            # Conflict: sort by confidence, keep best
+            group.sort(key=lambda c: c.get("confidence_score", 0), reverse=True)
+            winner = group[0]
+            winner.setdefault("conflict_resolution", {})
+            winner["conflict_resolution"]["resolved"] = True
+            winner["conflict_resolution"]["dropped_alternatives"] = len(group) - 1
+            winner["conflict_resolution"]["reason"] = (
+                f"Chose highest-confidence action (score={winner.get('confidence_score', 0)}) "
+                f"over {len(group)-1} conflicting alternative(s)"
+            )
+            final.append(winner)
+            conflict_resolved += len(group) - 1
+        else:
+            # Different categories — keep all (max 2 per resource)
+            group.sort(key=lambda c: c.get("confidence_score", 0), reverse=True)
+            final.extend(group[:2])
+
+        seen_rids.add(rid)
+
+    # Add cards that had no resource_id (shouldn't happen but safety net)
+    for card in scored:
+        rid = ((card.get("resource_identification") or {}).get("resource_id") or
+               (card.get("resource_identification") or {}).get("resource_name") or "")
+        if not rid:
+            final.append(card)
+
+    logger.info(
+        "[GUARD] in=%d → out=%d | dropped: misclass=%d non_actionable=%d low_conf=%d conflicts_resolved=%d",
+        len(cards), len(final), dropped_misclass, dropped_non_actionable,
+        dropped_low_conf, conflict_resolved,
+    )
+    return final
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # LLM FINDING → RICH CARD BUILDER
 # ═══════════════════════════════════════════════════════════════════════════
@@ -379,10 +1152,12 @@ def _build_rich_llm_card(
     all_services: List[dict],
     raw_graph_data: dict,
 ) -> Dict[str, Any]:
-    """Build a fully populated card from a lean LLM finding + graph enrichment.
+    """Build a comprehensive card from a lean LLM finding + graph enrichment.
 
-    Matches the EXACT shape that FullRecommendationCard in AnalysisPage.jsx reads:
-    graph_context, resource_identification, cost_breakdown, recommendations[], finops_best_practice.
+    Produces RICH, category-specific content for every section that
+    FullRecommendationCard renders: graph_context.narrative, full_analysis,
+    performance_impact, risk_mitigation, inefficiencies, validation_steps.
+    Every dependent service is named explicitly.
     """
     title = item.get("title", "Security/Reliability Finding")
     category = item.get("category", "security").lower()
@@ -390,15 +1165,15 @@ def _build_rich_llm_card(
     resource_ref = item.get("resource", "")
     finding = item.get("finding", "")
     remediation = item.get("remediation", "")
-    impl_steps = item.get("implementation_steps", [])
-    perf_impact = item.get("performance_impact", "")
+    impl_steps_raw = item.get("implementation_steps", [])
+    perf_impact_llm = item.get("performance_impact", "")
     risk_assessment = item.get("risk_assessment", "")
     confidence = item.get("confidence", "medium").lower()
     complexity = item.get("complexity", "medium").lower()
+    why_it_matters_llm = item.get("why_it_matters", "")
 
     # ── Resolve the resource from graph data ──
     svc = svc_by_name.get(resource_ref) or svc_by_id.get(resource_ref)
-    # Fuzzy match: try partial name match
     if not svc and resource_ref:
         ref_lower = resource_ref.lower()
         for name, s in svc_by_name.items():
@@ -413,20 +1188,22 @@ def _build_rich_llm_card(
     env = svc.get("environment", "production") if svc else "production"
     cost_monthly = float(svc.get("cost_monthly", 0) or 0) if svc else 0
 
-    # ── Build config string from service data ──
+    # ── Build config string from ALL service properties ──
     config_parts = [f"Service: {svc_type}", f"Region: {region}", f"Environment: {env}"]
     if svc:
         cfg = svc.get("config", {})
-        for key in ["instance_type", "instance_class", "engine", "engine_version", "storage_type",
-                     "multi_az", "encrypted", "publicly_accessible", "backup_retention_period"]:
+        for key in ["instance_type", "instance_class", "engine", "engine_version",
+                     "storage_type", "multi_az", "encrypted", "publicly_accessible",
+                     "backup_retention_period", "auto_minor_version_upgrade",
+                     "deletion_protection", "performance_insights_enabled"]:
             val = cfg.get(key)
             if val is not None:
                 config_parts.append(f"{key}: {val}")
     current_config = " | ".join(config_parts)
 
     # ── Compute graph context (dependencies, blast radius, SPOF) ──
-    deps_in = []   # services that depend ON this resource
-    deps_out = []  # services this resource depends ON
+    deps_in = []   # services that depend ON this resource (named)
+    deps_out = []  # services this resource depends ON (named)
     for e in edges:
         if e.get("target") == resource_id:
             src_svc = svc_by_id.get(e.get("source", ""))
@@ -437,130 +1214,343 @@ def _build_rich_llm_card(
 
     n_total = max(len(all_services), 1)
     blast_radius_pct = round((len(deps_in) / n_total) * 100, 1) if deps_in else 0
-    is_spof = len(deps_in) >= 3  # 3+ services depend on it → SPOF risk
+    is_spof = len(deps_in) >= 3
     cascade_risk = "critical" if len(deps_in) >= 5 else ("high" if len(deps_in) >= 3 else ("medium" if len(deps_in) >= 1 else "low"))
 
-    # ── Build rich narrative (why this matters — business impact) ──
-    narrative_sentences = []
+    dep_names_str = ", ".join(deps_in[:8]) if deps_in else "none detected"
+    up_names_str = ", ".join(deps_out[:6]) if deps_out else "none detected"
 
-    # Opening: what the resource is and what's wrong
-    narrative_sentences.append(
-        f"{resource_name} is a {svc_type} resource running in {env} ({region})"
-        + (f", currently costing ${cost_monthly:,.2f}/month" if cost_monthly > 0 else "")
-        + f". {finding}"
-    )
+    # ══════════════════════════════════════════════════════════════
+    # NARRATIVE — category-specific, names all deps, unique per card
+    # ══════════════════════════════════════════════════════════════
+    ns = []  # narrative sentences
 
-    # Dependency impact
-    if deps_in:
-        dep_list = ", ".join(deps_in[:5])
-        narrative_sentences.append(
-            f"This resource is critical to the architecture — {len(deps_in)} service(s) "
-            f"depend on it ({dep_list}), meaning a {category} incident here would "
-            f"ripple across the entire stack."
-        )
-
-    # Blast radius
-    if blast_radius_pct > 5:
-        narrative_sentences.append(
-            f"The blast radius is significant: approximately {blast_radius_pct:.0f}% of the "
-            f"architecture would be affected by a failure or compromise of this resource, "
-            f"potentially impacting user-facing services and data integrity."
-        )
-
-    # SPOF
-    if is_spof:
-        narrative_sentences.append(
-            f"This is a single point of failure with no redundancy path — if this "
-            f"resource goes down or is compromised, dependent services have no fallback, "
-            f"leading to potential outages and data loss."
-        )
-
-    # Cascade risk
-    if cascade_risk in ("critical", "high"):
-        narrative_sentences.append(
-            f"The cascading failure risk is {cascade_risk.upper()}: a partial outage or "
-            f"security breach here could trigger sequential failures across connected services."
-        )
-
-    # Category-specific business context
     if category == "security":
-        narrative_sentences.append(
-            f"Addressing this security vulnerability is essential to protect sensitive data, "
-            f"maintain compliance, and prevent unauthorized access to the {env} environment."
+        ns.append(
+            f"{resource_name} is a {svc_type} resource in the {env} environment ({region}). "
+            f"A security analysis has identified a vulnerability: {finding} "
+            f"Left unaddressed, this exposes the environment to unauthorized access, "
+            f"data exfiltration, or compliance violations."
+        )
+        if deps_in:
+            ns.append(
+                f"This resource is depended upon by {len(deps_in)} service(s): {dep_names_str}. "
+                f"A security breach here would not only compromise {resource_name} itself, "
+                f"but could provide an attacker with a lateral movement path into these "
+                f"dependent services, amplifying the blast radius of any incident."
+            )
+        if deps_out:
+            ns.append(
+                f"It also connects upstream to {len(deps_out)} service(s) ({up_names_str}), "
+                f"meaning compromised credentials or tokens could propagate to upstream systems."
+            )
+        ns.append(
+            f"Remediation is straightforward: {remediation} "
+            f"This aligns with the AWS Well-Architected Security Pillar and CIS AWS "
+            f"Foundations Benchmark, which mandate encryption, least-privilege access, "
+            f"and defense-in-depth for all {env} workloads."
+        )
+
+    elif category == "reliability":
+        ns.append(
+            f"{resource_name} is a {svc_type} resource in {env} ({region}) "
+            + (f"with a monthly spend of ${cost_monthly:,.2f}. " if cost_monthly > 0 else ". ")
+            + f"A reliability gap has been identified: {finding} "
+            f"Without mitigation, this resource is vulnerable to unplanned outages, "
+            f"data loss, or degraded availability during infrastructure failures."
+        )
+        if deps_in:
+            ns.append(
+                f"{len(deps_in)} downstream service(s) depend on {resource_name}: "
+                f"{dep_names_str}. If this resource experiences downtime, all of these "
+                f"services will be directly impacted — potentially causing user-facing "
+                f"errors, failed transactions, or complete service unavailability."
+            )
+        if is_spof:
+            ns.append(
+                f"Critically, {resource_name} is a single point of failure. There is no "
+                f"redundancy path, meaning a failure here leaves {len(deps_in)} service(s) "
+                f"with zero fallback. This is a high-priority reliability gap."
+            )
+        ns.append(
+            f"The recommended fix — {remediation} — follows the AWS Well-Architected "
+            f"Reliability Pillar, which emphasizes Multi-AZ deployments, automated backups, "
+            f"and fault-tolerant architectures for production workloads."
+        )
+
+    elif category == "performance":
+        ns.append(
+            f"{resource_name} is a {svc_type} resource in {env} ({region}) "
+            + (f"costing ${cost_monthly:,.2f}/month. " if cost_monthly > 0 else ". ")
+            + f"A performance bottleneck has been identified: {finding} "
+            f"This can lead to increased latency, reduced throughput, and degraded "
+            f"user experience under load."
+        )
+        if deps_in:
+            ns.append(
+                f"Performance degradation here cascades to {len(deps_in)} downstream "
+                f"service(s): {dep_names_str}. Each of these services will experience "
+                f"increased response times and potential timeout errors when {resource_name} "
+                f"becomes a bottleneck."
+            )
+        ns.append(
+            f"Applying the recommended optimization — {remediation} — will improve "
+            f"throughput and reduce p95/p99 latency for {resource_name} and all services "
+            f"in its dependency chain, directly benefiting end-user experience."
+        )
+
+    elif category == "cost-optimization" or category == "cost":
+        est_savings = float(item.get("estimated_savings_monthly", 0) or 0)
+        # Guard: savings never exceed current cost
+        if est_savings > cost_monthly and cost_monthly > 0:
+            est_savings = cost_monthly * 0.5
+        savings_pct = (est_savings / cost_monthly * 100) if cost_monthly > 0 else 0
+        ns.append(
+            f"{resource_name} is a {svc_type} resource in {env} ({region}) "
+            f"currently costing ${cost_monthly:,.2f}/month. "
+            f"A cost optimization opportunity has been identified: {finding} "
+            f"Implementing this change would save approximately ${est_savings:,.2f}/month "
+            f"({savings_pct:.0f}% reduction), or ${est_savings * 12:,.2f} annually."
+        )
+        if deps_in:
+            ns.append(
+                f"{len(deps_in)} downstream service(s) depend on {resource_name}: "
+                f"{dep_names_str}. Changes should be validated against these dependencies "
+                f"to ensure no performance degradation."
+            )
+        ns.append(
+            f"The recommended approach — {remediation} — aligns with the AWS Cost "
+            f"Optimization Hub recommendations and FinOps Foundation best practices "
+            f"for eliminating waste while maintaining service quality."
+        )
+
+    else:
+        ns.append(
+            f"{resource_name} is a {svc_type} resource in {env} ({region}). "
+            f"Analysis identified: {finding}"
+        )
+        if deps_in:
+            ns.append(
+                f"{len(deps_in)} service(s) depend on it: {dep_names_str}."
+            )
+
+    # Blast radius + cascade risk (all categories)
+    if blast_radius_pct > 5:
+        ns.append(
+            f"The blast radius covers approximately {blast_radius_pct:.0f}% of the "
+            f"architecture, making this a high-impact finding that should be prioritized."
+        )
+    if cascade_risk in ("critical", "high") and not is_spof:
+        ns.append(
+            f"Cascading failure risk is rated {cascade_risk.upper()} — a partial "
+            f"outage could propagate through connected services."
+        )
+
+    narrative = " ".join(ns)
+
+    # ══════════════════════════════════════════════════════════════
+    # FULL ANALYSIS — comprehensive multi-section text
+    # ══════════════════════════════════════════════════════════════
+    al = []  # analysis lines
+    al.append(f"=== {category.upper()} FINDING: {title} ===")
+    al.append("")
+    al.append(f"Affected Resource: {resource_name}")
+    al.append(f"Service Type: {svc_type} | Region: {region} | Environment: {env}")
+    al.append(f"Severity: {severity.upper()} | Confidence: {confidence.upper()} | Complexity: {complexity.upper()}")
+    if cost_monthly > 0:
+        al.append(f"Current Monthly Cost: ${cost_monthly:,.2f}")
+    al.append("")
+    al.append("--- Issue Description ---")
+    al.append(finding)
+    al.append("")
+    al.append("--- Recommended Remediation ---")
+    al.append(remediation if remediation else "Apply category-specific best practices.")
+    al.append("")
+    if risk_assessment:
+        al.append("--- Risk Assessment ---")
+        al.append(risk_assessment)
+        al.append("")
+    al.append("--- Dependency Impact ---")
+    al.append(f"Downstream (depend on this resource): {len(deps_in)} — {dep_names_str}")
+    al.append(f"Upstream (this depends on): {len(deps_out)} — {up_names_str}")
+    if is_spof:
+        al.append("*** SINGLE POINT OF FAILURE — no redundancy path detected ***")
+    al.append(f"Blast Radius: {blast_radius_pct}% | Cascade Risk: {cascade_risk.upper()}")
+    al.append("")
+    al.append("--- Configuration Snapshot ---")
+    al.append(current_config)
+    full_analysis = "\n".join(al)
+
+    # ══════════════════════════════════════════════════════════════
+    # PERFORMANCE IMPACT — rich, category-aware
+    # ══════════════════════════════════════════════════════════════
+    if perf_impact_llm:
+        perf_text = perf_impact_llm
+    elif category == "security":
+        perf_text = (
+            f"Applying this security fix has minimal performance overhead. Enabling encryption "
+            f"or tightening access controls on {resource_name} ({svc_type}) does not degrade "
+            f"throughput or latency. However, the {len(deps_in)} dependent service(s) "
+            f"({dep_names_str}) benefit from a hardened security posture, reducing the risk of "
+            f"service disruptions caused by security incidents."
         )
     elif category == "reliability":
-        narrative_sentences.append(
-            f"Improving reliability for this resource reduces downtime risk and ensures "
-            f"high availability for the services that depend on it in {env}."
+        perf_text = (
+            f"Implementing this reliability improvement on {resource_name} will increase "
+            f"availability from the current single-zone deployment to a fault-tolerant "
+            f"configuration. The {len(deps_in)} downstream service(s) ({dep_names_str}) will "
+            f"experience fewer timeout errors and connection failures during AZ outages or "
+            f"maintenance windows. Expected improvement: 99.9%+ availability SLA."
         )
-    elif category == "performance":
-        narrative_sentences.append(
-            f"Resolving this performance bottleneck will improve response times and throughput "
-            f"for {resource_name} and its {len(deps_in)} dependent service(s), "
-            f"directly impacting end-user experience."
-        )
-
-    # Fallback if no graph data
-    if len(narrative_sentences) <= 1:
-        narrative_sentences.append(
-            f"While no critical graph dependencies were detected, addressing this {category} "
-            f"finding aligns with the AWS Well-Architected {category.title()} Pillar and "
-            f"strengthens the overall posture of the {env} environment."
+    else:
+        perf_text = (
+            f"Resolving this performance issue on {resource_name} ({svc_type}) will reduce "
+            f"p95 latency and increase throughput capacity. The {len(deps_in)} dependent "
+            f"service(s) ({dep_names_str}) will see reduced response times and fewer "
+            f"timeout errors under peak load."
         )
 
-    narrative = " ".join(narrative_sentences)
+    # ══════════════════════════════════════════════════════════════
+    # RISK MITIGATION — comprehensive
+    # ══════════════════════════════════════════════════════════════
+    rm = []
+    rm.append(f"Severity: {severity.upper()} | Complexity: {complexity.upper()}")
+    if risk_assessment:
+        rm.append(f"Risk: {risk_assessment}")
+    if deps_in:
+        rm.append(
+            f"Impact scope: {len(deps_in)} dependent service(s) ({dep_names_str}) "
+            f"must be monitored during and after implementation"
+        )
+    if is_spof:
+        rm.append(
+            f"CRITICAL: {resource_name} is a Single Point of Failure — establish a "
+            f"redundancy path or failover mechanism before making changes"
+        )
+    rm.append(f"Pre-change: snapshot current state, notify teams owning dependent services")
+    rm.append(f"Execute in staging/dev first, then promote to {env} with canary monitoring")
+    rm.append(f"Rollback plan: revert configuration if error rate exceeds 1% within 30 minutes")
+    risk_mitigation = ". ".join(rm)
 
-    # ── FinOps best practice mapping ──
+    # ══════════════════════════════════════════════════════════════
+    # IMPLEMENTATION STEPS — rich with numbered steps
+    # ══════════════════════════════════════════════════════════════
+    if impl_steps_raw and len(impl_steps_raw) >= 2:
+        impl_steps = impl_steps_raw
+    else:
+        impl_steps = [
+            f"1. Audit current configuration of {resource_name} ({svc_type}) in {region}",
+            f"2. Notify teams owning dependent services: {dep_names_str}",
+            f"3. Create a backup/snapshot of current state for rollback",
+            f"4. Apply fix in staging: {remediation}" if remediation else "4. Apply recommended remediation in staging",
+            f"5. Validate fix with automated checks (AWS Config, CloudWatch alarms)",
+            f"6. Promote to {env} with canary deployment and monitoring",
+            f"7. Monitor CloudWatch metrics for 24h: error rate, latency, availability",
+            f"8. Close finding and update compliance dashboard",
+        ]
+
+    # ══════════════════════════════════════════════════════════════
+    # VALIDATION STEPS — actionable
+    # ══════════════════════════════════════════════════════════════
+    validation = []
+    if category == "security":
+        validation = [
+            f"Run AWS Config rule evaluation for {resource_name}",
+            f"Verify encryption status: aws {svc_type.lower()} describe-* --query 'Encrypted'",
+            f"Check IAM policy: aws iam get-policy --policy-arn <arn>",
+            f"Run AWS Security Hub findings check for {resource_name}",
+            f"Confirm no public access: aws {svc_type.lower()} describe-* --query 'PubliclyAccessible'",
+        ]
+    elif category == "reliability":
+        validation = [
+            f"Verify Multi-AZ: aws rds describe-db-instances --query 'MultiAZ'",
+            f"Check backup status: aws rds describe-db-instances --query 'BackupRetentionPeriod'",
+            f"Test failover: aws rds failover-db-cluster (in staging first)",
+            f"Monitor CloudWatch: CPUUtilization, DatabaseConnections, ReplicaLag",
+            f"Confirm health checks pass for all {len(deps_in)} dependent services",
+        ]
+    else:
+        validation = [
+            f"Benchmark latency before/after: measure p50, p95, p99 for {resource_name}",
+            f"Load test: verify throughput under 2x expected peak",
+            f"Monitor CloudWatch: CPUUtilization, ReadLatency, WriteLatency",
+            f"Verify dependent services ({dep_names_str}) show improved response times",
+        ]
+
+    # ══════════════════════════════════════════════════════════════
+    # INEFFICIENCIES — structured findings
+    # ══════════════════════════════════════════════════════════════
+    inefficiencies = [{
+        "id": f"llm-{category}-001",
+        "severity": severity,
+        "description": finding,
+        "evidence": current_config,
+    }]
+    if is_spof:
+        inefficiencies.append({
+            "id": f"llm-{category}-002",
+            "severity": "critical",
+            "description": f"Single point of failure: {resource_name} has no redundancy path",
+            "evidence": f"{len(deps_in)} services depend on it: {dep_names_str}",
+        })
+
+    # ══════════════════════════════════════════════════════════════
+    # BEST PRACTICE — category-specific
+    # ══════════════════════════════════════════════════════════════
     bp_map = {
-        "security": f"AWS Well-Architected Security Pillar — {title}",
-        "reliability": f"AWS Well-Architected Reliability Pillar — {title}",
-        "performance": f"AWS Well-Architected Performance Efficiency Pillar — {title}",
+        "security": (
+            f"AWS Well-Architected Security Pillar (SEC-01): {title}. "
+            f"All {env} resources must enforce encryption at rest and in transit, "
+            f"implement least-privilege IAM, and restrict network exposure. "
+            f"Reference: CIS AWS Foundations Benchmark v1.5."
+        ),
+        "reliability": (
+            f"AWS Well-Architected Reliability Pillar (REL-09): {title}. "
+            f"Production workloads must be deployed across multiple Availability Zones "
+            f"with automated backups and health-check-driven failover. "
+            f"Reference: AWS Reliability Pillar whitepaper."
+        ),
+        "performance": (
+            f"AWS Well-Architected Performance Efficiency Pillar (PERF-04): {title}. "
+            f"Resources should be sized to workload demand with caching, read replicas, "
+            f"and async processing to minimize latency and maximize throughput. "
+            f"Reference: AWS Performance Efficiency whitepaper."
+        ),
+        "cost-optimization": (
+            f"AWS Well-Architected Cost Optimization Pillar (COST-06): {title}. "
+            f"Resources should be right-sized to workload demand, leverage Graviton "
+            f"processors where applicable, and use Savings Plans or Reserved Instances "
+            f"for steady-state workloads. Reference: AWS Cost Optimization Hub."
+        ),
     }
-    best_practice = bp_map.get(category, f"AWS FinOps - {category.upper()} optimization")
+    best_practice = bp_map.get(category, bp_map.get("cost-optimization", f"AWS Well-Architected — {category.title()}: {title}"))
 
-    # ── Build full analysis text ──
-    analysis_lines = [
-        f"Finding: {finding}",
-        f"Category: {category.title()} | Severity: {severity.upper()}",
-        f"Affected Resource: {resource_name} ({svc_type})",
-        "",
-    ]
-    if remediation:
-        analysis_lines.append(f"Remediation: {remediation}")
-    if risk_assessment:
-        analysis_lines.append(f"Risk: {risk_assessment}")
-    if deps_in:
-        analysis_lines.append(f"Dependent services ({len(deps_in)}): {', '.join(deps_in[:8])}")
-    if is_spof:
-        analysis_lines.append("WARNING: This resource is a Single Point of Failure.")
-    full_analysis = "\n".join(analysis_lines)
+    # ══════════════════════════════════════════════════════════════
+    # ASSEMBLE CARD
+    # ══════════════════════════════════════════════════════════════
+    # ══════════════════════════════════════════════════════════════
+    # COST OPTIMIZATION: compute real savings from LLM JSON
+    # ══════════════════════════════════════════════════════════════
+    est_savings = float(item.get("estimated_savings_monthly", 0) or 0)
+    llm_current_cost = float(item.get("current_monthly_cost", 0) or 0)
+    # Use LLM cost if available, otherwise fall back to graph cost
+    effective_cost = llm_current_cost if llm_current_cost > 0 else cost_monthly
+    # Guard: savings never exceed current cost
+    if est_savings > effective_cost and effective_cost > 0:
+        est_savings = effective_cost * 0.5
+    savings_pct = (est_savings / effective_cost * 100) if effective_cost > 0 else 0
+    projected_monthly = max(effective_cost - est_savings, 0)
+    annual_impact = est_savings * 12
 
-    # ── Risk mitigation text ──
-    risk_parts = [f"Risk level: {severity}"]
-    if risk_assessment:
-        risk_parts.append(risk_assessment)
-    if deps_in:
-        risk_parts.append(f"Impact: {len(deps_in)} dependent service(s)")
-    if is_spof:
-        risk_parts.append("SPOF: Add redundancy or failover before this resource fails")
-    risk_parts.append("Always test changes in a staging environment first")
-    risk_mitigation = ". ".join(risk_parts)
+    # Use validated effective_cost for the card
+    card_cost = effective_cost if effective_cost > 0 else cost_monthly
 
-    # ── Performance impact text ──
-    if not perf_impact:
-        if category == "performance":
-            perf_impact = f"Addressing this will improve response times and throughput for {resource_name} and its {len(deps_in)} dependent services."
-        elif category == "reliability":
-            perf_impact = f"Implementing this improves availability and reduces downtime risk for {resource_name}."
-        else:
-            perf_impact = f"No negative performance impact expected. Improves {category} posture for {resource_name}."
-
-    # ── Assemble the full card matching engine card shape ──
     return {
-        # ── Core fields ──
         "title": title,
         "service_type": svc_type,
-        "total_estimated_savings": 0,
+        "total_estimated_savings": est_savings,
+        "estimated_savings_monthly": est_savings,
+        "current_monthly_cost": card_cost,
         "priority": severity.upper(),
         "severity": severity,
         "category": category,
@@ -570,7 +1560,6 @@ def _build_rich_llm_card(
         "validation_status": "llm_insight",
         "is_ai_insight": True,
 
-        # ── Resource identification ──
         "resource_identification": {
             "resource_id": resource_id,
             "resource_name": resource_name,
@@ -588,18 +1577,18 @@ def _build_rich_llm_card(
             },
         },
 
-        # ── Cost breakdown ──
         "cost_breakdown": {
-            "current_monthly": cost_monthly,
-            "projected_monthly": cost_monthly,
-            "savings_percentage": 0,
-            "annual_impact": 0,
+            "current_monthly": card_cost,
+            "projected_monthly": projected_monthly,
+            "savings_percentage": savings_pct,
+            "annual_impact": annual_impact,
             "line_items": [
-                {"item": f"Current {svc_type} cost", "usage": f"{env} ({region})", "cost": cost_monthly},
-            ] if cost_monthly > 0 else [],
+                {"item": f"Current {svc_type} cost", "usage": f"{env} ({region})", "cost": card_cost},
+                {"item": "Projected after optimization", "usage": "post-change", "cost": projected_monthly},
+                {"item": "Monthly savings", "usage": "delta", "cost": est_savings},
+            ] if card_cost > 0 else [],
         },
 
-        # ── Graph context (business impact) ──
         "graph_context": {
             "blast_radius_pct": blast_radius_pct,
             "blast_radius_services": len(deps_in),
@@ -612,35 +1601,26 @@ def _build_rich_llm_card(
             "cascading_failure_risk": cascade_risk,
             "centrality": min(len(deps_in) / max(n_total, 1), 1.0),
             "narrative": narrative,
-            "severity_label": f"{category} {'vulnerability' if category == 'security' else 'risk'}",
+            "severity_label": f"{category} {'opportunity' if 'cost' in category else 'risk'}",
         },
 
-        # ── Recommendations array (inner — frontend iterates this) ──
+        "inefficiencies": inefficiencies,
+
         "recommendations": [{
             "title": title,
             "description": finding,
             "full_analysis": full_analysis,
-            "implementation_steps": impl_steps if impl_steps else [
-                f"1. Identify affected resource: {resource_name}",
-                f"2. {remediation}" if remediation else "2. Apply recommended fix",
-                "3. Validate in staging environment",
-                "4. Deploy to production with monitoring",
-                "5. Verify fix with validation checks",
-            ],
-            "performance_impact": perf_impact,
+            "implementation_steps": impl_steps,
+            "performance_impact": perf_text,
             "risk_mitigation": risk_mitigation,
-            "estimated_monthly_savings": 0,
+            "estimated_monthly_savings": est_savings,
             "confidence": confidence,
-            "validation_steps": [
-                f"Verify {category} posture for {resource_name}",
-                "Run AWS Config compliance check",
-            ],
+            "validation_steps": validation,
         }],
 
-        # ── Best practice ──
         "finops_best_practice": best_practice,
         "linked_best_practice": best_practice,
-        "why_it_matters": narrative,
+        "why_it_matters": why_it_matters_llm if why_it_matters_llm else narrative,
         "pattern_id": f"llm-{category}-{severity}",
     }
 
@@ -1128,9 +2108,6 @@ def _dedupe_and_resolve_conflicts(cards: List[Dict[str, Any]]) -> List[Dict[str,
     if not cards:
         return cards
 
-    # 1) True duplicate removal: same resource + same action family = duplicate.
-    # Engine cards always win over LLM cards. Different action families on the
-    # same resource are kept as distinct recommendations.
     _DEDUP_FAMILIES = {
         "DOWNSIZE": "rightsize", "STOP": "rightsize", "TERMINATE": "decommission",
         "MOVE_TO_GRAVITON": "graviton",
@@ -1144,6 +2121,7 @@ def _dedupe_and_resolve_conflicts(cards: List[Dict[str, Any]]) -> List[Dict[str,
     deduped: List[Dict[str, Any]] = []
     seen: Dict[Tuple[str, str], int] = {}
     dropped_dups = 0
+    dropped_cards_log = []
 
     def _canonical_action(card: Dict[str, Any]) -> str:
         """Return canonical action string for dedup keying."""
@@ -1169,18 +2147,59 @@ def _dedupe_and_resolve_conflicts(cards: List[Dict[str, Any]]) -> List[Dict[str,
             prev_is_engine = prev_source in ("engine", "engine_backed")
             # Engine always wins over LLM
             if is_engine and not prev_is_engine:
+                dropped_cards_log.append({
+                    "reason": "engine_override",
+                    "resource_id": rid,
+                    "action_family": family,
+                    "dropped_source": prev_source,
+                    "kept_source": source,
+                    "dropped_title": prev.get("title", ""),
+                })
                 deduped[seen[key]] = card
             elif is_engine == prev_is_engine:
                 # Same tier — keep higher savings
                 prev_sav = float(prev.get("total_estimated_savings", 0) or 0)
                 new_sav = float(card.get("total_estimated_savings", 0) or 0)
                 if new_sav > prev_sav:
+                    dropped_cards_log.append({
+                        "reason": "lower_savings",
+                        "resource_id": rid,
+                        "action_family": family,
+                        "dropped_savings": prev_sav,
+                        "kept_savings": new_sav,
+                        "source": source,
+                        "dropped_title": prev.get("title", ""),
+                    })
                     deduped[seen[key]] = card
+                else:
+                    dropped_cards_log.append({
+                        "reason": "lower_savings",
+                        "resource_id": rid,
+                        "action_family": family,
+                        "dropped_savings": new_sav,
+                        "kept_savings": prev_sav,
+                        "source": source,
+                        "dropped_title": card.get("title", ""),
+                    })
+            else:
+                dropped_cards_log.append({
+                    "reason": "duplicate",
+                    "resource_id": rid,
+                    "action_family": family,
+                    "source": source,
+                    "dropped_title": card.get("title", ""),
+                })
             dropped_dups += 1
             continue
 
         seen[key] = len(deduped)
         deduped.append(card)
+
+    if dropped_dups > 0:
+        logger.info(
+            f"Deduplication: removed {dropped_dups} duplicate/conflicting cards "
+            f"(kept {len(deduped)} unique cards). Details: {json.dumps(dropped_cards_log, default=str)}"
+        )
 
     # 2) Conflict resolution: same resource has terminate and right-size options.
     by_resource: Dict[str, List[Dict[str, Any]]] = {}
@@ -1192,6 +2211,7 @@ def _dedupe_and_resolve_conflicts(cards: List[Dict[str, Any]]) -> List[Dict[str,
 
     resolved: List[Dict[str, Any]] = []
     conflict_resolved = 0
+    conflict_log = []
 
     for rid, group in by_resource.items():
         terminate_cards = [c for c in group if _extract_primary_action_bucket(c) == "terminate"]
@@ -1209,6 +2229,26 @@ def _dedupe_and_resolve_conflicts(cards: List[Dict[str, Any]]) -> List[Dict[str,
                 drop = terminate_cards
                 reason = "resource still needed/oversized or terminate confirmation missing"
 
+            conflict_log.append({
+                "resource_id": rid,
+                "decision": decision if decision != "ambiguous" else "right_size",
+                "reason": reason,
+                "kept_count": len(keep),
+                "dropped_count": len(drop),
+                "dropped_titles": [c.get("title", "") for c in drop],
+            })
+            conflict_resolved += len(drop)
+
+            conflict_log.append({
+                "resource_id": rid,
+                "decision": decision if decision != "ambiguous" else "right_size",
+                "reason": reason,
+                "kept_count": len(keep),
+                "dropped_count": len(drop),
+                "dropped_titles": [c.get("title", "") for c in drop],
+            })
+            conflict_resolved += len(drop)
+
             for c in keep:
                 c.setdefault("conflict_resolution", {})
                 c["conflict_resolution"].update({
@@ -1221,10 +2261,15 @@ def _dedupe_and_resolve_conflicts(cards: List[Dict[str, Any]]) -> List[Dict[str,
             for c in group:
                 if c not in keep and c not in drop:
                     resolved.append(c)
-            conflict_resolved += len(drop)
             continue
 
         resolved.extend(group)
+
+    if conflict_log:
+        logger.info(
+            f"Conflict resolution: processed {len(conflict_log)} resources with conflicts, "
+            f"dropped {conflict_resolved} alternatives. Details: {json.dumps(conflict_log, default=str)}"
+        )
 
     logger.info(
         "[DEDUP/CONFLICT] in=%d true_duplicates_removed=%d conflict_alternatives_removed=%d out=%d",
@@ -3970,6 +5015,237 @@ def _generate_significant_title_and_plan_with_qwen(
     except Exception as e:
         logger.debug("[TITLE REWRITE] Qwen title generation failed: %s", e)
         return "", []
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PASS 3: ENRICHMENT AGENT — LLM-driven deep analysis on recommendations
+# ═══════════════════════════════════════════════════════════════════════════
+
+def enrich_recommendations_pass_3(
+    recommendations: List[Dict[str, Any]],
+    raw_graph_data: Optional[Dict[str, Any]],
+    context_parts: Dict[str, str],
+) -> List[Dict[str, Any]]:
+    """Pass 3: Enrich each recommendation with deep LLM analysis.
+
+    For each recommendation, extract resource context and call LLM with enrichment prompt
+    to generate: detailed metrics analysis, cost breakdown, implementation steps, risk assessment,
+    business narrative, and KB mapping.
+
+    Args:
+        recommendations: List of initial recommendations from Agent 2
+        raw_graph_data: Full architecture graph with metrics and dependencies
+        context_parts: Pre-assembled context sections with KB, cost anchors, etc.
+
+    Returns:
+        Enhanced recommendations with additional fields per recommendation
+    """
+    from src.llm.prompts import ENRICHMENT_SYSTEM_PROMPT, ENRICHMENT_USER_PROMPT
+
+    if not recommendations:
+        logger.info("[PASS 3] No recommendations to enrich")
+        return recommendations
+
+    logger.info("[PASS 3] Enriching %d recommendations with deep LLM analysis...", len(recommendations))
+    enriched = []
+
+    for idx, rec in enumerate(recommendations, 1):
+        try:
+            resource_id = rec.get("resource") or rec.get("resource_id") or ""
+            service_type = rec.get("service") or rec.get("service_type") or "unknown"
+
+            if not resource_id:
+                logger.warning("[PASS 3] Recommendation %d missing resource_id, skipping enrichment", idx)
+                enriched.append(rec)
+                continue
+
+            logger.info("[PASS 3] Enriching %d/%d: %s (%s)", idx, len(recommendations), resource_id, service_type)
+
+            # Extract resource context from graph
+            resource_context = _extract_resource_context(resource_id, raw_graph_data or {})
+            dependencies = _extract_dependencies(resource_id, raw_graph_data or {})
+            kb_for_service = _get_kb_for_service(service_type)
+
+            # Build enrichment prompt
+            enrichment_prompt = ENRICHMENT_USER_PROMPT.format(
+                initial_recommendation_json=json.dumps(rec, indent=2, default=str),
+                detailed_resource_data=resource_context,
+                graph_dependencies=dependencies,
+                kb_for_service=kb_for_service,
+            )
+
+            # Call LLM for enrichment
+            t_enrich = time.time()
+            enrichment_response = call_llm(
+                system_prompt=ENRICHMENT_SYSTEM_PROMPT,
+                user_prompt=enrichment_prompt,
+                temperature=0.2,  # Lower temp for factual analysis
+                max_tokens=3000,
+                architecture_name=f"enrichment_{resource_id}",
+            )
+            elapsed = time.time() - t_enrich
+
+            # Parse enriched response
+            enriched_data = _parse_enrichment_response(enrichment_response)
+
+            if enriched_data:
+                # Merge enriched fields into original recommendation
+                rec.update(enriched_data)
+                logger.info("[PASS 3] ✓ Enriched %s in %.1fs", resource_id, elapsed)
+            else:
+                logger.warning("[PASS 3] ✗ Failed to parse enrichment for %s, keeping original", resource_id)
+
+            enriched.append(rec)
+
+        except Exception as e:
+            logger.warning("[PASS 3] Enrichment failed for recommendation %d: %s", idx, e, exc_info=True)
+            enriched.append(rec)  # Keep original if enrichment fails
+
+    logger.info("[PASS 3] Enrichment complete: %d recommendations enhanced", len(enriched))
+    return enriched
+
+
+def _clean_resource_id(resource_id: str) -> str:
+    """Clean resource ID by stripping ARNs and prefixes, keeping just the base ID.
+
+    Examples:
+        arn:aws:rds:us-east-1:123456789:db:finops-ai-dev-postgres → finops-ai-dev-postgres
+        arn:aws:ec2:us-east-1:123456789:instance/i-abc123 → i-abc123
+        /aws/sagemaker/studio → studio
+    """
+    if not resource_id:
+        return ""
+
+    resource_id = resource_id.strip()
+
+    # If it's an ARN, extract the last component
+    if resource_id.startswith("arn:aws:"):
+        parts = resource_id.split(":")
+        if len(parts) >= 6:
+            # For most AWS resources: arn:aws:service:region:account:resource-type/id
+            # Get everything after the account ID
+            resource_part = ":".join(parts[5:])
+            # Remove resource-type prefix if present (e.g., "db:" or "instance/")
+            if "/" in resource_part:
+                return resource_part.split("/", 1)[1]
+            elif ":" in resource_part:
+                return resource_part.split(":", 1)[1]
+            return resource_part
+
+    # If it's a path like /aws/service/name, extract the last part
+    if resource_id.startswith("/"):
+        return resource_id.split("/")[-1]
+
+    return resource_id
+
+
+def _extract_resource_context(resource_id: str, graph_data: Dict[str, Any]) -> str:
+    """Extract detailed context for a specific resource from the graph."""
+    services = graph_data.get("services", graph_data.get("nodes", []))
+
+    for svc in services:
+        if svc.get("id") == resource_id or svc.get("name") == resource_id:
+            # Build a detailed context string with all available metrics
+            lines = [f"Resource ID: {svc.get('id', '?')}"]
+            lines.append(f"Name: {svc.get('name', '?')}")
+            lines.append(f"Type: {svc.get('type', '?')}")
+            lines.append(f"Region: {svc.get('region', '?')}")
+            lines.append(f"Environment: {svc.get('environment', '?')}")
+            lines.append(f"Monthly Cost: ${float(svc.get('cost_monthly', 0)) or 0:.2f}")
+
+            # Add metrics if available
+            if "metrics" in svc:
+                lines.append("\nMetrics:")
+                metrics = svc["metrics"]
+                if isinstance(metrics, dict):
+                    for k, v in metrics.items():
+                        if v is not None:
+                            lines.append(f"  {k}: {v}")
+
+            # Add configuration
+            attrs = svc.get("attributes", svc.get("config", {})) or {}
+            if attrs:
+                lines.append("\nConfiguration:")
+                for k, v in attrs.items():
+                    if v is not None:
+                        lines.append(f"  {k}: {v}")
+
+            return "\n".join(lines)
+
+    return f"Resource {resource_id} not found in graph"
+
+
+def _extract_dependencies(resource_id: str, graph_data: Dict[str, Any]) -> str:
+    """Extract dependency information for a resource."""
+    edges = graph_data.get("dependencies", graph_data.get("edges", []))
+    services = graph_data.get("services", graph_data.get("nodes", []))
+
+    svc_names = {s.get("id"): s.get("name", s.get("id")) for s in services}
+
+    # Find incoming and outgoing edges
+    has_incoming = []
+    has_outgoing = []
+
+    for edge in edges:
+        source = edge.get("source", edge.get("from"))
+        target = edge.get("target", edge.get("to"))
+
+        if source == resource_id:
+            has_outgoing.append(svc_names.get(target, target))
+        elif target == resource_id:
+            has_incoming.append(svc_names.get(source, source))
+
+    lines = [f"Resource: {resource_id}"]
+
+    if has_incoming:
+        lines.append(f"\nServices that depend on this resource ({len(has_incoming)}):")
+        for dep in has_incoming[:10]:  # Limit to 10
+            lines.append(f"  - {dep}")
+
+    if has_outgoing:
+        lines.append(f"\nServices this resource depends on ({len(has_outgoing)}):")
+        for dep in has_outgoing[:10]:
+            lines.append(f"  - {dep}")
+
+    if not has_incoming and not has_outgoing:
+        lines.append("\nNo dependencies detected")
+
+    return "\n".join(lines)
+
+
+def _get_kb_for_service(service_type: str) -> str:
+    """Get KB best practices for a service type."""
+    from src.knowledge_base.aws_finops_best_practices import get_best_practices_for_service
+
+    try:
+        kb = get_best_practices_for_service(service_type)
+        if kb:
+            # Format KB as readable text
+            return json.dumps(kb, indent=2)[:2000]  # Limit to 2000 chars
+    except Exception as e:
+        logger.debug("Could not load KB for service %s: %s", service_type, e)
+
+    return f"No specific KB found for service type: {service_type}"
+
+
+def _parse_enrichment_response(response: str) -> Dict[str, Any]:
+    """Parse the enrichment LLM response and extract JSON fields."""
+    if not response:
+        return {}
+
+    try:
+        # Try to find JSON in response
+        clean = response.strip()
+        start_idx = clean.find('{')
+        end_idx = clean.rfind('}')
+
+        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+            json_str = clean[start_idx:end_idx+1]
+            return json.loads(json_str)
+    except Exception as e:
+        logger.warning("Failed to parse enrichment response: %s", e)
+
+    return {}
 
 
 def _save_response(text: str, arch_name: str):
