@@ -10,13 +10,16 @@ from typing import Any, Dict, List, Optional
 import json
 import os
 import hashlib
+import logging
 from pathlib import Path
 from sqlalchemy.orm import Session
 
 from src.storage.database import get_db
-from src.graph.models import IngestionSnapshot, RecommendationResult, LLMReport
+from src.graph.models import IngestionSnapshot, RecommendationResult, LLMReport, RecSnapshot
 from src.graph.neo4j_bridge import load_graph_from_neo4j, list_architectures_neo4j
 from src.api.schemas.persistence import LLMReportPayloadSchema, RecommendationPayloadSchema, model_to_dict
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["analyze"])
 
@@ -134,6 +137,110 @@ def _prune_recommendation_history_keep_latest(
         db.commit()
 
     return len(old_rows)
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  RecSnapshot helpers — scalable snapshot storage
+# ──────────────────────────────────────────────────────────────────────
+MAX_SNAPSHOTS_PER_ARCH = 50
+
+
+def _save_rec_snapshot(
+    db: Session,
+    architecture_id: str,
+    architecture_name: str,
+    cards: List[Dict[str, Any]],
+    generation_time_ms: int = 0,
+    llm_model: str = None,
+    status: str = "completed",
+    error_message: str = None,
+) -> RecSnapshot:
+    """Persist a recommendation run as a RecSnapshot row."""
+    engine_cards = [c for c in cards if c.get("source") in ("engine", "engine_backed")]
+    llm_cards = [c for c in cards if c.get("source") in ("llm_proposed", "llm")]
+    total_savings = sum(float(c.get("total_estimated_savings", 0) or 0) for c in cards)
+
+    has_engine = len(engine_cards) > 0
+    has_llm = len(llm_cards) > 0
+    source = "both" if (has_engine and has_llm) else ("engine" if has_engine else ("llm" if has_llm else "both"))
+
+    snap = RecSnapshot(
+        architecture_id=architecture_id,
+        architecture_name=architecture_name,
+        status=status,
+        source=source,
+        card_count=len(cards),
+        engine_card_count=len(engine_cards),
+        llm_card_count=len(llm_cards),
+        total_savings_monthly=round(total_savings, 2),
+        generation_time_ms=generation_time_ms,
+        llm_model=llm_model,
+        cards=cards,
+        error_message=error_message,
+    )
+    db.add(snap)
+    db.commit()
+    db.refresh(snap)
+
+    # Prune old snapshots beyond MAX_SNAPSHOTS_PER_ARCH
+    _prune_old_snapshots(db, architecture_id)
+    return snap
+
+
+def _prune_old_snapshots(db: Session, architecture_id: str):
+    """Keep only the latest MAX_SNAPSHOTS_PER_ARCH snapshots per architecture."""
+    all_snaps = (
+        db.query(RecSnapshot.id, RecSnapshot.created_at)
+        .filter(RecSnapshot.architecture_id == architecture_id)
+        .order_by(RecSnapshot.created_at.desc())
+        .all()
+    )
+    
+    if len(all_snaps) > MAX_SNAPSHOTS_PER_ARCH:
+        ids_to_delete = [s.id for s in all_snaps[MAX_SNAPSHOTS_PER_ARCH:]]
+        timestamps_to_delete = [s.created_at for s in all_snaps[MAX_SNAPSHOTS_PER_ARCH:]]
+        
+        logger.warning(
+            f"Pruning old recommendation snapshots: arch={architecture_id}, "
+            f"total={len(all_snaps)}, limit={MAX_SNAPSHOTS_PER_ARCH}, "
+            f"deleting={len(ids_to_delete)} snapshots "
+            f"(oldest: {min(timestamps_to_delete)}, newest: {max(timestamps_to_delete)})"
+        )
+        
+        deleted_count = db.query(RecSnapshot).filter(RecSnapshot.id.in_(ids_to_delete)).delete(synchronize_session=False)
+        db.commit()
+        
+        logger.info(
+            f"Successfully deleted {deleted_count} old recommendation snapshots for architecture {architecture_id}"
+        )
+
+
+def _snapshot_to_summary(snap: RecSnapshot) -> dict:
+    """Convert a RecSnapshot to a lightweight summary dict (no cards)."""
+    return {
+        "id": snap.id,
+        "architecture_id": snap.architecture_id,
+        "architecture_name": snap.architecture_name,
+        "status": snap.status,
+        "source": snap.source,
+        "card_count": snap.card_count,
+        "engine_card_count": snap.engine_card_count,
+        "llm_card_count": snap.llm_card_count,
+        "total_savings_monthly": snap.total_savings_monthly,
+        "total_estimated_savings": snap.total_savings_monthly,  # Alias for frontend compatibility
+        "generation_time_ms": snap.generation_time_ms,
+        "llm_model": snap.llm_model,
+        "created_at": snap.created_at.isoformat() if snap.created_at else None,
+        "error_message": snap.error_message,
+    }
+
+
+def _snapshot_to_full(snap: RecSnapshot) -> dict:
+    """Convert a RecSnapshot to full response dict (with cards)."""
+    summary = _snapshot_to_summary(snap)
+    summary["recommendations"] = snap.cards or []
+    summary["total_estimated_savings"] = snap.total_savings_monthly
+    return summary
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -488,36 +595,32 @@ async def generate_recommendations(req: RecommendationRequest, db: Session = Dep
 
         validated_payload = model_to_dict(RecommendationPayloadSchema, result)
 
-        # Store successful result in PostgreSQL for retry / history
-        row = RecommendationResult(
+        # Save to RecSnapshot (new scalable history table)
+        arch_name = validated_payload.get("architecture_name", "")
+        _save_rec_snapshot(
+            db=db,
             architecture_id=req.architecture_id or "",
-            architecture_file=req.architecture_file,
+            architecture_name=arch_name,
+            cards=validated_payload.get("recommendations", []),
+            generation_time_ms=validated_payload.get("generation_time_ms", 0),
+            llm_model="gpt-4o-mini",  # TODO: extract from rec_result if available
             status="completed",
-            payload=validated_payload,
-            generation_time_ms=validated_payload.get("generation_time_ms"),
-            total_estimated_savings=validated_payload.get("total_estimated_savings"),
-            card_count=len(validated_payload.get("recommendations", [])),
         )
-        db.add(row)
-        db.commit()
-        _prune_recommendation_history_keep_latest(
-            db,
-            architecture_id=req.architecture_id,
-            architecture_file=req.architecture_file,
-        )
+
         return validated_payload
     except HTTPException as e:
-        # Store failed run so user can retry or inspect
+        # Save failed run to RecSnapshot
         err_msg = e.detail if isinstance(e.detail, str) else str(e.detail) if e.detail else str(e)
-        row = RecommendationResult(
-            architecture_id=req.architecture_id or "",
-            architecture_file=req.architecture_file,
-            status="failed",
-            error_message=err_msg[:4096] if err_msg else None,
-        )
         try:
-            db.add(row)
-            db.commit()
+            _save_rec_snapshot(
+                db=db,
+                architecture_id=req.architecture_id or "",
+                architecture_name="",
+                cards=[],
+                generation_time_ms=0,
+                status="failed",
+                error_message=err_msg[:4096] if err_msg else None,
+            )
         except Exception:
             db.rollback()
         raise
@@ -529,22 +632,19 @@ async def get_last_recommendation(
     architecture_file: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    """Fetch the most recent recommendation result from the database.
+    """Fetch the most recent recommendation snapshot from RecSnapshot table.
     
-    Filters by architecture_id or architecture_file if provided.
-    Returns full recommendation data ready for display.
+    Returns full snapshot with cards for immediate display.
     """
-    query = db.query(RecommendationResult).filter(
-        RecommendationResult.status == "completed",
-        RecommendationResult.card_count > 0,
-    )
+    if not architecture_id and not architecture_file:
+        raise HTTPException(400, "Provide architecture_id or architecture_file")
+
+    query = db.query(RecSnapshot).filter(RecSnapshot.status == "completed", RecSnapshot.card_count > 0)
     
     if architecture_id:
-        query = query.filter(RecommendationResult.architecture_id == architecture_id)
-    elif architecture_file:
-        query = query.filter(RecommendationResult.architecture_file == architecture_file)
+        query = query.filter(RecSnapshot.architecture_id == architecture_id)
     
-    last = query.order_by(RecommendationResult.created_at.desc()).first()
+    last = query.order_by(RecSnapshot.created_at.desc()).first()
     
     if not last:
         return {
@@ -553,66 +653,55 @@ async def get_last_recommendation(
             "recommendations": []
         }
     
-    payload = last.payload if isinstance(last.payload, dict) else (json.loads(last.payload) if last.payload else {})
-    
-    return {
-        "id": str(last.id),
-        "status": last.status,
-        "created_at": last.created_at.isoformat() if last.created_at else None,
-        "recommendations": payload.get("recommendations", []),
-        "total_estimated_savings": payload.get("total_estimated_savings", 0),
-        "llm_used": payload.get("llm_used", False),
-        "generation_time_ms": last.generation_time_ms,
-        "card_count": last.card_count,
-        "architecture_name": payload.get("architecture_name", ""),
-        "error": last.error_message if last.status == "failed" else None
-    }
+    return _snapshot_to_full(last)
 
 
 @router.get("/analyze/recommendations/history")
 async def get_recommendations_history(
     architecture_id: Optional[str] = None,
     architecture_file: Optional[str] = None,
-    limit: int = 10,
+    limit: int = 50,
     db: Session = Depends(get_db)
 ):
     """Fetch recommendation history for an architecture.
     
-    Returns multiple recommendation results ordered by most recent first.
+    Returns lightweight summaries (no cards) for fast history tab rendering.
+    Use /load/{snapshot_id} to load full cards for a specific snapshot.
     """
-    query = db.query(RecommendationResult).filter(
-        RecommendationResult.status == "completed",
-        RecommendationResult.card_count > 0,
-    )
+    if not architecture_id and not architecture_file:
+        raise HTTPException(400, "Provide architecture_id or architecture_file")
+
+    query = db.query(RecSnapshot)
     
     if architecture_id:
-        query = query.filter(RecommendationResult.architecture_id == architecture_id)
-    elif architecture_file:
-        query = query.filter(RecommendationResult.architecture_file == architecture_file)
+        query = query.filter(RecSnapshot.architecture_id == architecture_id)
     
     # Order by most recent first and limit
-    results = query.order_by(RecommendationResult.created_at.desc()).limit(limit).all()
+    results = query.order_by(RecSnapshot.created_at.desc()).limit(limit).all()
     
-    history = []
-    for result in results:
-        payload = result.payload if isinstance(result.payload, dict) else (json.loads(result.payload) if result.payload else {})
-        history.append({
-            "id": str(result.id),
-            "status": result.status,
-            "created_at": result.created_at.isoformat() if result.created_at else None,
-            "recommendations": payload.get("recommendations", []),
-            "total_estimated_savings": payload.get("total_estimated_savings", 0),
-            "llm_used": payload.get("llm_used", False),
-            "generation_time_ms": result.generation_time_ms,
-            "card_count": result.card_count,
-            "architecture_name": payload.get("architecture_name", ""),
-            "error": result.error_message if result.status == "failed" else None
-        })
+    history = [_snapshot_to_summary(snap) for snap in results]
     
     return {
         "history": history,
         "total_count": len(history)
     }
+
+
+@router.get("/analyze/recommendations/load/{snapshot_id}")
+async def load_recommendation_snapshot(
+    snapshot_id: str,
+    db: Session = Depends(get_db)
+):
+    """Load a specific recommendation snapshot by ID with full cards.
+    
+    Used when user clicks 'Load' on a history item.
+    """
+    snap = db.query(RecSnapshot).filter(RecSnapshot.id == snapshot_id).first()
+    
+    if not snap:
+        raise HTTPException(404, f"Snapshot not found: {snapshot_id}")
+    
+    return _snapshot_to_full(snap)
 
 
 @router.post("/analyze/llm-report/save")

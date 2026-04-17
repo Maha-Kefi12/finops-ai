@@ -79,9 +79,35 @@ def _parse_service(node: dict) -> str:
     node_type = str(node.get("type", "") or "").lower().strip()
 
     def _infer_from_text(text: str, ntype: str) -> str:
+        import re
         t = text.lower()
 
-        # Prefer explicit service tokens in id/name before generic type mapping.
+        # ── PASS 1: Prefix-based detection (most reliable) ──
+        # Resource names typically start with the service prefix:
+        #   iam-finops-..., eks-cluster-..., rds-prod-..., sg-0abc...
+        prefix_map = [
+            (r"^iam[-_]", "iam"),
+            (r"^sg[-_]", "security_group"),
+            (r"^launch-wizard", "security_group"),
+            (r"^subnet[-_]", "vpc"),
+            (r"^nat[-_]", "vpc"),
+            (r"^vpc[-_]", "vpc"),
+            (r"^igw[-_]", "vpc"),
+            (r"^rtb[-_]", "vpc"),
+            (r"^acl[-_]", "vpc"),
+            (r"^vol[-_]", "ebs"),
+            (r"^snap[-_]", "ebs"),
+            (r"^i[-_][0-9a-f]", "ec2"),
+            (r"^log[-_].*ecs", "ecs"),
+            (r"^log[-_].*eks", "eks"),
+            (r"^log[-_]", "cloudwatch"),
+        ]
+        for pattern, svc in prefix_map:
+            if re.search(pattern, t):
+                return svc
+
+        # ── PASS 2: Explicit service tokens with word-boundary awareness ──
+        # Longer/more-specific tokens first to avoid false positives.
         token_map = [
             ("elasticache", "elasticache"),
             ("dynamodb", "dynamodb"),
@@ -101,34 +127,48 @@ def _parse_service(node: dict) -> str:
             ("apigateway", "apigateway"),
             ("api_gateway", "apigateway"),
             ("eventbridge", "eventbridge"),
-            ("eks", "eks"),
-            ("ecs", "ecs"),
+            ("security.group", "security_group"),
+            ("security_group", "security_group"),
             ("fargate", "ecs"),
-            ("ec2", "ec2"),
-            ("rds", "rds"),
             ("aurora", "rds"),
-            ("s3", "s3"),
-            ("alb", "alb"),
             ("load-balancer", "alb"),
             ("load_balancer", "alb"),
-            ("nat", "vpc"),
-            ("vpc", "vpc"),
-            ("sqs", "sqs"),
-            ("sns", "sns"),
-            ("ebs", "ebs"),
-            ("cloudwatch", "cloudwatch"),
-            ("waf", "waf"),
             ("guardduty", "guardduty"),
-            ("config", "config"),
             ("route53", "route53"),
-            ("kms", "kms"),
-            ("secrets", "secretsmanager"),
+            ("secretsmanager", "secretsmanager"),
+            ("cloudwatch", "cloudwatch"),
         ]
         for token, short in token_map:
             if token in t:
                 return short
 
-        # Last-resort mapping for coarse graph node types.
+        # ── PASS 3: Short tokens — match as delimited segments only ──
+        # "eks" should match "eks-cluster" but NOT "iam-...-eks-role".
+        # Use word-boundary regex to prevent false matches.
+        short_tokens = [
+            ("eks", "eks"),
+            ("ecs", "ecs"),
+            ("ec2", "ec2"),
+            ("rds", "rds"),
+            ("s3", "s3"),
+            ("alb", "alb"),
+            ("elb", "elb"),
+            ("nat", "vpc"),
+            ("vpc", "vpc"),
+            ("sqs", "sqs"),
+            ("sns", "sns"),
+            ("ebs", "ebs"),
+            ("waf", "waf"),
+            ("kms", "kms"),
+            ("iam", "iam"),
+        ]
+        # Split on delimiters to get individual segments
+        segments = set(re.split(r"[-_./: ]+", t))
+        for token, short in short_tokens:
+            if token in segments:
+                return short
+
+        # ── PASS 4: Last-resort mapping for coarse graph node types ──
         type_map = {
             "load_balancer": "alb",
             "cache": "elasticache",
@@ -137,6 +177,8 @@ def _parse_service(node: dict) -> str:
             "storage": "s3",
             "search": "opensearch",
             "batch": "glue",
+            "iam_role": "iam",
+            "security_group": "security_group",
             "service": "ec2",
         }
         if ntype in type_map:

@@ -858,6 +858,265 @@ def get_all_best_practices_text() -> str:
     return json.dumps(all_practices, indent=2)
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# COMPACT KB SNIPPETS — per-service-type, LLM-prompt-ready
+# Each snippet is a short, actionable string with top strategies + savings %
+# Used by the batched LLM pipeline to give each node only its relevant KB
+# ═══════════════════════════════════════════════════════════════════════════
+
+_COMPACT_KB = {
+    # ── COMPUTE ──
+    "ec2": (
+        "EC2: (1) CPU <40% for 30d → downsize to next smaller instance (50% savings/tier). "
+        "(2) x86 (c5/m5/r5/t3) → Graviton (c7g/m7g/r7g) for 20-40% savings. "
+        "(3) Dev/test → schedule stop/start for 65-75% savings. "
+        "(4) Spot for batch/CI = 70-90% savings. "
+        "(5) Savings Plans: commit 70-80% baseline = up to 66% off On-Demand."
+    ),
+    "lambda": (
+        "Lambda: (1) Memory sweet spot 1024-1792MB — more memory = faster = sometimes cheaper. "
+        "(2) ARM64/Graviton2 = 20% cheaper per GB-second. "
+        "(3) Over-provisioned memory (usage <30% of allocated) → reduce. "
+        "(4) 0 invocations for 30d → delete. "
+        "(5) Set CloudWatch log retention to 7-30d (default=forever = infinite cost)."
+    ),
+    "ecs": (
+        "ECS/Fargate: (1) Right-size to 60-70% utilization. "
+        "(2) Fargate Spot for dev/test = 70% discount. "
+        "(3) Graviton2 (ARM64 platform) = 20% savings. "
+        "(4) desiredCount=0 for 14d → delete service. "
+        "(5) Consolidate small services onto shared ALB target groups."
+    ),
+    "eks": (
+        "EKS: (1) Control plane $73/mo fixed — consolidate workloads to fewer clusters. "
+        "(2) Node utilization target 65-80%; <50% = over-provisioned, consolidate. "
+        "(3) Karpenter > Cluster Autoscaler for bin-packing + Spot diversification. "
+        "(4) Spot for stateless workloads = 70% savings. "
+        "(5) Single ALB Ingress vs multiple LoadBalancer services saves $16/mo each."
+    ),
+    # ── DATABASE ──
+    "database": (
+        "RDS: (1) CPU <40% for 30d → downsize instance class. "
+        "(2) Multi-AZ on dev/staging = pure waste → disable for 50% savings. "
+        "(3) gp2 → gp3 storage = 20% cheaper with 3K baseline IOPS. "
+        "(4) Reserved Instances: 69% off On-Demand (3yr All Upfront). "
+        "(5) Idle (0 connections 30d) → terminate. "
+        "(6) Delete old snapshots (>6mo for non-prod)."
+    ),
+    "aurora": (
+        "Aurora: (1) Variable workloads → Serverless v2 (scales 0.5-128 ACU, pauses to 0 for dev). "
+        "(2) High I/O cost → consider IO-Optimized (no I/O charges). "
+        "(3) Delete unused read replicas. "
+        "(4) Monitor replica lag (<1s target)."
+    ),
+    "dynamodb": (
+        "DynamoDB: (1) On-Demand is 5-7x more expensive than Provisioned for steady load → switch after 30d. "
+        "(2) Standard-IA storage = 60% cheaper for cold data. "
+        "(3) Enable TTL to auto-delete expired items. "
+        "(4) Use BatchWriteItem (10 msgs per request = 10x cost reduction). "
+        "(5) Query instead of Scan (Scan reads entire table)."
+    ),
+    "cache": (
+        "ElastiCache: (1) Memory usage <50% for 30d → downsize node type. "
+        "(2) r7g (Graviton) = 35% better price-performance vs r5/r6i. "
+        "(3) Reserved nodes: 55% discount (3yr All Upfront) for production. "
+        "(4) Dev/staging with replication → single-node = 40% savings. "
+        "(5) Disable persistence for ephemeral cache (saves I/O)."
+    ),
+    # ── STORAGE ──
+    "s3": (
+        "S3: (1) Lifecycle: Standard → IA after 30d → Glacier after 90d → delete after 365d = 70% cost reduction. "
+        "(2) Intelligent-Tiering for unknown access patterns = up to 95% savings. "
+        "(3) Delete noncurrent versions after 90d. "
+        "(4) Use CloudFront for public content (S3→CF free, 80-90% transfer cost reduction)."
+    ),
+    "storage": (
+        "S3/EBS: (1) S3 Lifecycle policies = 70% savings. (2) EBS gp2 → gp3 = 20% cheaper with free 3K IOPS. "
+        "(3) Delete unattached EBS volumes and orphaned snapshots. "
+        "(4) EFS → enable IA lifecycle (92% savings on cold files)."
+    ),
+    "ebs": (
+        "EBS: (1) gp2 → gp3 = 20% cheaper with baseline 3K IOPS + 125MB/s free. "
+        "(2) Delete unattached volumes (detached but still billing). "
+        "(3) Delete old snapshots (>90d for dev/test). "
+        "(4) Oversized volumes with low IOPS → create snapshot → smaller volume (50-70% savings)."
+    ),
+    # ── NETWORK ──
+    "nat_gateway": (
+        "NAT Gateway: (1) VPC Endpoints for S3/DynamoDB = $0/GB (vs $0.045/GB through NAT). "
+        "(2) Single NAT for dev/test instead of per-AZ. "
+        "(3) NAT costs $32/mo fixed + $0.045/GB processed — major hidden cost driver."
+    ),
+    "load_balancer": (
+        "ALB/NLB: (1) ALB base cost $16/mo + LCU charges. "
+        "(2) Consolidate: 1 ALB with multiple target groups vs multiple ALBs saves $16/mo each. "
+        "(3) Delete ALBs with 0 targets for >14d. "
+        "(4) Use NLB only for TCP/extreme performance needs."
+    ),
+    "elastic_ip": (
+        "Elastic IP: (1) Unattached/stopped = $3.60/mo waste. "
+        "(2) Release unused EIPs immediately. "
+        "(3) Dev/test → use dynamic public IPs (free)."
+    ),
+    "api_gateway": (
+        "API Gateway: (1) REST API → HTTP API migration = 71% cheaper ($1/M vs $3.50/M). "
+        "(2) Enable API cache for GET endpoints (80-95% fewer Lambda invocations). "
+        "(3) Set throttle limits to prevent runaway costs. "
+        "(4) Delete unused API stages."
+    ),
+    # ── LOGS / MONITORING ──
+    "logs": (
+        "CloudWatch Logs: (1) Default retention = FOREVER = infinite cost accumulation. "
+        "ACTION: Set retention to 7d dev, 30d staging, 90d prod → saves 40-60%. "
+        "(2) Log ingestion = $0.50/GB — use WARN/ERROR in prod (not DEBUG). "
+        "(3) Delete unused dashboards ($3/mo each)."
+    ),
+    "cloudwatch": (
+        "CloudWatch: (1) Log retention set to NEVER EXPIRE is the #1 CW cost driver. "
+        "Set 14-30d retention → 50% savings. CLI: aws logs put-retention-policy --retention-in-days 14. "
+        "(2) Detailed monitoring on dev/test → switch to basic (free). "
+        "(3) Delete unused alarms and dashboards."
+    ),
+    # ── CONTAINER REGISTRY ──
+    "ecr": (
+        "ECR: (1) No lifecycle policy = untagged images accumulate indefinitely. "
+        "ACTION: Add lifecycle policy to expire untagged images after 14d → 40% savings. "
+        "CLI: aws ecr put-lifecycle-policy. "
+        "(2) Delete unused repositories."
+    ),
+    # ── MESSAGING ──
+    "sqs": (
+        "SQS: (1) Batch operations (10 msgs/request) = 10x cost reduction. "
+        "(2) Long polling (WaitTimeSeconds=20) = 60-80% fewer empty receives. "
+        "(3) FIFO → Standard where ordering not needed = 20% cheaper. "
+        "(4) Queues with 0 messages for 30d → delete."
+    ),
+    "sns": (
+        "SNS: (1) Message filtering at SNS (free) instead of in Lambda (saves invocation cost). "
+        "(2) SNS→SQS fanout is free. (3) PublishBatch for 10x API cost reduction. "
+        "(4) Delete topics with 0 subscribers."
+    ),
+    "kinesis": (
+        "Kinesis: (1) Over-sharded streams (IncomingBytes <30% capacity) → reduce shards ($11/shard/mo wasted). "
+        "(2) On-demand vs Provisioned: steady traffic → Provisioned = 60% cheaper. "
+        "(3) Streams with 0 PutRecord for 7d → delete or switch to on-demand."
+    ),
+    # ── ANALYTICS / ML ──
+    "sagemaker": (
+        "SageMaker: (1) Notebook instances bill while running — auto-stop after 1h idle → 60% savings. "
+        "(2) Spot training = 60-90% savings for non-urgent experiments. "
+        "(3) Real-time endpoints with <1 req/hr → Serverless inference (scales to 0). "
+        "(4) ml.inf1 (Inferentia) = 70% cheaper inference."
+    ),
+    "redshift": (
+        "Redshift: (1) CPU <40% for 14d = over-provisioned → downsize or pause. "
+        "(2) Pause during off-hours = 50% savings. "
+        "(3) Reserved nodes: 75% off On-Demand (3yr). "
+        "(4) Spectrum: query S3 directly ($5/TB) — offload cold data."
+    ),
+    "emr": (
+        "EMR: (1) Spot for task nodes = 70% savings (keep master On-Demand). "
+        "(2) Transient clusters (launch→run→terminate) vs persistent = 50-80% savings for batch. "
+        "(3) Graviton instances (m7g/c7g) = 20-40% better price-performance."
+    ),
+    "glue": (
+        "Glue: (1) Right-size DPUs — start with 2, scale only if needed ($0.44/DPU-hour). "
+        "(2) Glue Flex = 35% cheaper for non-urgent ETL. "
+        "(3) Job bookmarks to process only new data (avoid reprocessing). "
+        "(4) Jobs not run in 30d → delete."
+    ),
+    # ── SECURITY ──
+    "waf": (
+        "WAF: (1) Consolidate to single Web ACL ($5/mo each). "
+        "(2) Rate-based rules instead of expensive third-party DDoS solutions. "
+        "(3) AWS Managed Rules = $1-20/mo each (cheaper than custom)."
+    ),
+    "secrets_manager": (
+        "Secrets Manager: $0.40/secret/mo. "
+        "Non-rotating secrets → use SSM Parameter Store SecureString (free standard tier)."
+    ),
+    "kms": (
+        "KMS: (1) Use AWS managed keys where possible (free key). "
+        "(2) Consolidate customer-managed keys ($1/key/mo). "
+        "(3) Delete unused keys after waiting period."
+    ),
+    # ── NETWORK GENERIC ──
+    "network": (
+        "Network: (1) Cross-AZ data transfer = $0.02/GB — can be 20-40% of bill for chatty architectures. "
+        "(2) VPC Endpoints for S3/DynamoDB eliminate $0.045/GB NAT charges. "
+        "(3) Co-locate tightly coupled services in same AZ."
+    ),
+    # ── GENERIC FALLBACKS ──
+    "service": (
+        "General: (1) Review resource utilization — target 60-70% for compute. "
+        "(2) Right-size based on actual metrics. "
+        "(3) Check for Graviton/ARM64 alternatives (20-40% savings). "
+        "(4) Ensure no idle resources billing 24/7."
+    ),
+    "iam": (
+        "IAM: (1) Delete unused IAM users and roles (attack surface reduction). "
+        "(2) Rotate access keys >90 days old. "
+        "(3) Enforce MFA for console users."
+    ),
+    "security_group": (
+        "Security Groups: (1) Review and consolidate rules. "
+        "(2) Remove 0.0.0.0/0 ingress on sensitive ports (22, 3306, 5432). "
+        "(3) Use VPC endpoints instead of public internet access."
+    ),
+}
+
+# Aliases: map graph node type variations to canonical KB keys
+_TYPE_ALIASES = {
+    "compute": "ec2", "ec2_instance": "ec2", "instance": "ec2",
+    "rds": "database", "postgres": "database", "mysql": "database",
+    "postgresql": "database", "sql": "database", "db": "database",
+    "redis": "cache", "elasticache": "cache", "memcached": "cache",
+    "fargate": "ecs", "ecs_service": "ecs", "container": "ecs",
+    "container_registry": "ecr", "registry": "ecr",
+    "log_group": "logs", "cloudwatch_logs": "logs",
+    "nat": "nat_gateway", "nat_gw": "nat_gateway",
+    "alb": "load_balancer", "nlb": "load_balancer", "elb": "load_balancer",
+    "eip": "elastic_ip",
+    "s3_bucket": "s3", "bucket": "s3",
+    "queue": "sqs", "topic": "sns",
+    "stream": "kinesis", "data_stream": "kinesis",
+    "notebook": "sagemaker", "ml": "sagemaker",
+    "data_warehouse": "redshift",
+    "etl": "glue", "crawler": "glue",
+    "cdn": "network", "cloudfront": "network", "route53": "network",
+    "dns": "network", "vpc": "network",
+    "firewall": "waf",
+    "secret": "secrets_manager",
+    "key": "kms", "encryption": "kms",
+    "unknown": "service",
+}
+
+
+def get_compact_kb_for_service_type(service_type: str) -> str:
+    """Return a compact, LLM-prompt-ready KB snippet for a given service type.
+
+    Maps graph node types (e.g., 'database', 'ecs', 'logs', 'nat_gateway')
+    to a short string (~200-400 chars) with the top 3-5 most impactful
+    optimization strategies and exact savings percentages.
+
+    Used by the batched LLM pipeline to give each node only its relevant KB.
+    """
+    key = service_type.strip().lower().replace(" ", "_").replace("-", "_")
+    # Direct match
+    if key in _COMPACT_KB:
+        return _COMPACT_KB[key]
+    # Alias match
+    alias = _TYPE_ALIASES.get(key)
+    if alias and alias in _COMPACT_KB:
+        return _COMPACT_KB[alias]
+    # Partial match: check if key starts with or contains a known type
+    for known_key in _COMPACT_KB:
+        if known_key in key or key in known_key:
+            return _COMPACT_KB[known_key]
+    # Fallback
+    return _COMPACT_KB.get("service", "Review resource for optimization opportunities.")
+
+
 __all__ = [
     "COMPUTE_BEST_PRACTICES",
     "DATABASE_BEST_PRACTICES",
@@ -870,4 +1129,5 @@ __all__ = [
     "MANAGEMENT_BEST_PRACTICES",
     "get_best_practices_for_service",
     "get_all_best_practices_text",
+    "get_compact_kb_for_service_type",
 ]

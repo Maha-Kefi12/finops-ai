@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from src.storage.database import get_db
-from src.graph.models import RecommendationResult
+from src.graph.models import RecommendationResult, RecSnapshot
 from src.storage.recommendation_cache import get_cache
 from src.background.tasks import generate_recommendations_bg, get_task_status
 
@@ -43,6 +43,9 @@ async def get_recommendation_history(
     
     Returns last N recommendation runs sorted by timestamp (newest first)
     Includes: status, card count, total savings, generation time, timestamp
+    
+    Primary: Queries RecSnapshot (new table)
+    Fallback: Queries RecommendationResult (legacy table for migration compat)
     """
     if not architecture_id and not architecture_file:
         raise HTTPException(400, "Provide architecture_id or architecture_file")
@@ -61,7 +64,47 @@ async def get_recommendation_history(
                 "total": len(cached_history),
             }
         
-        # Fall back to database
+        # Primary: Query new RecSnapshot table
+        query = db.query(RecSnapshot).filter(RecSnapshot.status == "completed")
+        
+        if architecture_id:
+            query = query.filter(RecSnapshot.architecture_id == architecture_id)
+        else:
+            # For file-based queries, we need to check both architecture_id and architecture_name
+            # since the file might be referenced by name or by a linked architecture
+            pass
+        
+        results = query.order_by(
+            RecSnapshot.created_at.desc()
+        ).limit(limit).all()
+        
+        # If found in RecSnapshot, use that
+        if results:
+            history = [
+                {
+                    "id": str(r.id),
+                    "timestamp": r.created_at.isoformat() if r.created_at else None,
+                    "status": r.status,
+                    "card_count": r.card_count,
+                    "engine_card_count": r.engine_card_count,
+                    "llm_card_count": r.llm_card_count,
+                    "total_estimated_savings": r.total_savings_monthly,
+                    "generation_time_ms": r.generation_time_ms,
+                    "llm_model": r.llm_model,
+                    "source": r.source,
+                }
+                for r in results
+            ]
+            
+            logger.info("Retrieved %d history entries from RecSnapshot", len(history))
+            return {
+                "source": "rec_snapshot",
+                "history": history,
+                "total": len(history),
+            }
+        
+        # Fallback: Query legacy RecommendationResult table (migration support)
+        logger.info("No entries found in RecSnapshot, falling back to RecommendationResult")
         query = db.query(RecommendationResult).filter(
             RecommendationResult.status == "completed"
         )
@@ -87,7 +130,7 @@ async def get_recommendation_history(
             for r in results
         ]
         
-        logger.info("Retrieved %d DB history entries", len(history))
+        logger.info("Retrieved %d DB history entries from RecommendationResult", len(history))
         return {
             "source": "database",
             "history": history,
@@ -339,6 +382,215 @@ async def get_recommendations_summary(
     except Exception as e:
         logger.error("Failed to get summary: %s", e)
         raise HTTPException(500, f"Failed to get summary: {str(e)}")
+
+
+# ─── Architecture Statistics ─────────────────────────────────────
+@router.get("/stats/{architecture_id}")
+async def get_architecture_stats(
+    architecture_id: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Get comprehensive statistics about recommendations for an architecture.
+    
+    Returns:
+    - Total snapshots and recommendations
+    - Engine vs LLM card counts
+    - Total and average savings
+    - Generation performance metrics
+    """
+    try:
+        snapshots = db.query(RecSnapshot).filter(
+            RecSnapshot.architecture_id == architecture_id,
+            RecSnapshot.status == "completed"
+        ).all()
+        
+        if not snapshots:
+            raise HTTPException(404, f"No recommendations found for architecture: {architecture_id}")
+        
+        total_engine_cards = sum(s.engine_card_count or 0 for s in snapshots)
+        total_llm_cards = sum(s.llm_card_count or 0 for s in snapshots)
+        total_cards = sum(s.card_count or 0 for s in snapshots)
+        total_savings = sum(s.total_savings_monthly or 0 for s in snapshots)
+        avg_savings = total_savings / len(snapshots) if snapshots else 0
+        avg_generation_time = sum(s.generation_time_ms or 0 for s in snapshots) / len(snapshots) if snapshots else 0
+        
+        source_breakdown = {}
+        for snap in snapshots:
+            source = snap.source or "unknown"
+            source_breakdown[source] = source_breakdown.get(source, 0) + 1
+        
+        return {
+            "architecture_id": architecture_id,
+            "total_snapshots": len(snapshots),
+            "total_recommendations": total_cards,
+            "total_engine_cards": total_engine_cards,
+            "total_llm_cards": total_llm_cards,
+            "total_savings_monthly": round(total_savings, 2),
+            "total_savings_annual": round(total_savings * 12, 2),
+            "avg_savings_per_snapshot": round(avg_savings, 2),
+            "avg_generation_time_ms": round(avg_generation_time, 0),
+            "source_breakdown": source_breakdown,
+            "oldest_snapshot": min(s.created_at for s in snapshots).isoformat() if snapshots else None,
+            "newest_snapshot": max(s.created_at for s in snapshots).isoformat() if snapshots else None,
+        }
+    except Exception as e:
+        logger.error("Failed to get stats: %s", e)
+        raise HTTPException(500, f"Failed to get statistics: {str(e)}")
+
+
+# ─── Export Recommendation History ───────────────────────────────
+@router.get("/export/{architecture_id}")
+async def export_recommendation_history(
+    architecture_id: str,
+    format: str = "json",
+    db: Session = Depends(get_db),
+):
+    """
+    Export recommendation history for an architecture.
+    
+    Formats:
+    - json: JSON array of all snapshots with full cards (for backup/analysis)
+    - csv: CSV summary (one row per snapshot)
+    - detailed: Comprehensive JSON with full details
+    
+    Returns all completed snapshots (not limited by default)
+    """
+    try:
+        snapshots = db.query(RecSnapshot).filter(
+            RecSnapshot.architecture_id == architecture_id,
+            RecSnapshot.status == "completed"
+        ).order_by(RecSnapshot.created_at.desc()).all()
+        
+        if not snapshots:
+            raise HTTPException(404, f"No recommendations found to export for architecture: {architecture_id}")
+        
+        if format == "json":
+            return {
+                "architecture_id": architecture_id,
+                "export_count": len(snapshots),
+                "snapshots": [
+                    {
+                        "id": s.id,
+                        "architecture_name": s.architecture_name,
+                        "status": s.status,
+                        "source": s.source,
+                        "card_count": s.card_count,
+                        "engine_count": s.engine_card_count,
+                        "llm_count": s.llm_card_count,
+                        "total_savings_monthly": s.total_savings_monthly,
+                        "generation_time_ms": s.generation_time_ms,
+                        "llm_model": s.llm_model,
+                        "created_at": s.created_at.isoformat() if s.created_at else None,
+                    }
+                    for s in snapshots
+                ]
+            }
+        
+        elif format == "detailed":
+            return {
+                "architecture_id": architecture_id,
+                "export_count": len(snapshots),
+                "snapshots": [
+                    {
+                        "id": s.id,
+                        "architecture_name": s.architecture_name,
+                        "status": s.status,
+                        "source": s.source,
+                        "card_count": s.card_count,
+                        "engine_count": s.engine_card_count,
+                        "llm_count": s.llm_card_count,
+                        "total_savings_monthly": s.total_savings_monthly,
+                        "generation_time_ms": s.generation_time_ms,
+                        "llm_model": s.llm_model,
+                        "created_at": s.created_at.isoformat() if s.created_at else None,
+                        "recommendations": s.cards or [],
+                    }
+                    for s in snapshots
+                ]
+            }
+        
+        elif format == "csv":
+            import csv
+            from io import StringIO
+            
+            output = StringIO()
+            writer = csv.writer(output)
+            writer.writerow([
+                "Snapshot ID", "Created", "Status", "Source",
+                "Total Cards", "Engine Cards", "LLM Cards",
+                "Monthly Savings", "Annual Savings", "Gen Time (ms)", "LLM Model"
+            ])
+            
+            for s in snapshots:
+                writer.writerow([
+                    s.id,
+                    s.created_at.isoformat() if s.created_at else "",
+                    s.status,
+                    s.source,
+                    s.card_count,
+                    s.engine_card_count,
+                    s.llm_card_count,
+                    s.total_savings_monthly,
+                    s.total_savings_monthly * 12,
+                    s.generation_time_ms,
+                    s.llm_model or "N/A",
+                ])
+            
+            return {
+                "format": "csv",
+                "architecture_id": architecture_id,
+                "data": output.getvalue(),
+            }
+        
+        else:
+            raise HTTPException(400, f"Unknown export format: {format}. Use: json, detailed, csv")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to export: %s", e)
+        raise HTTPException(500, f"Failed to export history: {str(e)}")
+
+
+# ─── Load Snapshot by ID ────────────────────────────────────────
+@router.get("/snapshot/{snapshot_id}")
+async def get_snapshot_by_id(
+    snapshot_id: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Load a complete recommendation snapshot by ID with all cards.
+    
+    This is the authoritative way to retrieve a single snapshot's full data.
+    """
+    try:
+        snapshot = db.query(RecSnapshot).filter(RecSnapshot.id == snapshot_id).first()
+        
+        if not snapshot:
+            raise HTTPException(404, f"Snapshot not found: {snapshot_id}")
+        
+        return {
+            "id": snapshot.id,
+            "architecture_id": snapshot.architecture_id,
+            "architecture_name": snapshot.architecture_name,
+            "status": snapshot.status,
+            "source": snapshot.source,
+            "card_count": snapshot.card_count,
+            "engine_card_count": snapshot.engine_card_count,
+            "llm_card_count": snapshot.llm_card_count,
+            "total_savings_monthly": snapshot.total_savings_monthly,
+            "generation_time_ms": snapshot.generation_time_ms,
+            "llm_model": snapshot.llm_model,
+            "created_at": snapshot.created_at.isoformat() if snapshot.created_at else None,
+            "recommendations": snapshot.cards or [],
+            "error_message": snapshot.error_message,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to load snapshot: %s", e)
+        raise HTTPException(500, f"Failed to load snapshot: {str(e)}")
 
 
 __all__ = ["router"]

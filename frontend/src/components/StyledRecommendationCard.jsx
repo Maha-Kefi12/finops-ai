@@ -21,32 +21,26 @@ function SourceBadge({ source, validationStatus, engineConfidence, llmConfidence
   if (isEngineBacked) {
     if (isValidated) {
       badgeClass += ' source-badge--ai-validated';
-      badgeIcon = '🤖✓';
       badgeText = 'AI Validated';
     } else {
       badgeClass += ' source-badge--engine';
-      badgeIcon = '⚙️';
       badgeText = 'Engine';
     }
   } else {
     if (isRejected) {
       badgeClass += ' source-badge--rejected';
-      badgeIcon = '💡✗';
       badgeText = 'AI Insight';
     } else if (isConflict) {
       badgeClass += ' source-badge--conflict';
-      badgeIcon = '⚠️';
       badgeText = 'Conflict';
     } else {
       badgeClass += ' source-badge--llm';
-      badgeIcon = '🤖';
       badgeText = 'AI Proposed';
     }
   }
   
   return (
     <div className={badgeClass}>
-      <span className="source-badge__icon">{badgeIcon}</span>
       <span className="source-badge__text">{badgeText}</span>
       {confidence > 0 && (
         <span className="source-badge__confidence">{confidencePercent}%</span>
@@ -60,48 +54,47 @@ function SourceBadge({ source, validationStatus, engineConfidence, llmConfidence
  * Uses Uiverse design template with carousel and pagination
  */
 export function StyledRecommendationCard({ recommendation, onViewDetails }) {
-  // Two-tier system fields
   const source = recommendation.source || 'engine';
+  const isLLM = source === 'llm_proposed' || source === 'llm';
   const validationStatus = recommendation.validation_status;
   const engineConfidence = recommendation.engine_confidence;
   const llmConfidence = recommendation.llm_confidence;
-  const validationNotes = recommendation.validation_notes;
   const savingsPerMonth = recommendation.total_estimated_savings || 0;
   const savingsPerYear = savingsPerMonth * 12;
+  const hasSavings = savingsPerMonth > 0;
+  const confScore = recommendation.confidence_score || 0;
+  const confLabel = confScore >= 70 ? 'High' : confScore >= 40 ? 'Medium' : 'Low';
   
-  // Extract key features from recommendation
-  const title = recommendation.title || 'Cost Optimization';
+  const title = recommendation.title || (isLLM ? 'AI Security Insight' : 'Cost Optimization');
   const description = recommendation.description || 
     recommendation.resource_identification?.service_type || 
-    'AWS Optimization';
+    (isLLM ? 'Architecture Review' : 'AWS Optimization');
   
   const handleViewDetails = (e) => {
     e.preventDefault();
-    if (onViewDetails) {
-      onViewDetails(recommendation);
-    }
+    if (onViewDetails) onViewDetails(recommendation);
   };
-  
+
+  // Build features list — different for engine vs LLM
   const features = [];
-  
-  // Add savings as first feature
-  if (savingsPerMonth > 0) {
+  if (!isLLM && hasSavings) {
     features.push(`Save $${savingsPerMonth.toFixed(0)}/month`);
   }
-  
-  // Add resource service type
+  if (isLLM) {
+    const cat = (recommendation.category || 'security').replace(/_/g, ' ');
+    features.push(`${cat.charAt(0).toUpperCase() + cat.slice(1)} Finding`);
+  }
   if (recommendation.resource_identification?.service_type) {
     features.push(recommendation.resource_identification.service_type);
   }
-  
-  // Add severity
   if (recommendation.severity) {
     features.push(`${recommendation.severity.toUpperCase()} Priority`);
   }
-  
-  // Add implementation complexity
   if (recommendation.implementation_complexity) {
     features.push(`${recommendation.implementation_complexity} Effort`);
+  }
+  if (confScore > 0) {
+    features.push(`${confLabel} Confidence (${confScore}%)`);
   }
 
   const graphCtx = recommendation.graph_context || {};
@@ -109,9 +102,14 @@ export function StyledRecommendationCard({ recommendation, onViewDetails }) {
   const res = recommendation.resource_identification || {};
   const steps = recommendation.recommendations?.[0]?.implementation_steps || [];
 
+  // Card theme class
+  const planClass = isLLM ? 'plan plan--ai-insight' : 'plan plan--engine';
+  const buttonClass = isLLM ? 'button button--ai' : 'button button--engine';
+  const drawerClass = isLLM ? 'plan-drawer plan-drawer--ai' : 'plan-drawer';
+
   return (
     <div className="plan-shell">
-      <div className="plan">
+      <div className={planClass}>
         <div className="plan__border" />
 
         <div className="card_title__container">
@@ -132,44 +130,57 @@ export function StyledRecommendationCard({ recommendation, onViewDetails }) {
         <ul className="card__list">
           {features.slice(0, 5).map((feature, idx) => (
             <li key={idx} className="card__list_item">
-              <span className="check">✓</span>
+              <span className={isLLM ? 'check check--ai' : 'check'}>{'✓'}</span>
               <span className="list_text">{feature}</span>
             </li>
           ))}
         </ul>
 
-        <div className="pricing">
-          <span>
-            ${savingsPerMonth.toFixed(0)}<small>/mo</small>
-          </span>
-          <span className="yearly">${savingsPerYear.toFixed(0)}/yr</span>
-        </div>
+        {/* Pricing: only show for engine cards with real savings */}
+        {!isLLM && hasSavings ? (
+          <div className="pricing">
+            <span>${savingsPerMonth.toFixed(0)}<small>/mo</small></span>
+            <span className="yearly">${savingsPerYear.toFixed(0)}/yr</span>
+          </div>
+        ) : isLLM ? (
+          <div className="pricing pricing--ai">
+            <span className="ai-finding-label">{(recommendation.category || 'security').replace(/_/g, ' ').toUpperCase()}</span>
+            <span className="ai-confidence-pill">{confLabel}</span>
+          </div>
+        ) : (
+          <div className="pricing pricing--neutral">
+            <span className="neutral-label">Optimization</span>
+          </div>
+        )}
 
         <div className="action">
-          <a className="button" href="#" onClick={handleViewDetails}>
-            View Details
+          <a className={buttonClass} href="#" onClick={handleViewDetails}>
+            {isLLM ? 'View AI Insight' : 'View Details'}
           </a>
         </div>
       </div>
 
-      <aside className="plan-drawer">
+      <aside className={drawerClass}>
         <div className="plan-drawer__border" />
         <div className="plan-drawer__body">
-          <h4 className="drawer-title">Recommendation Details</h4>
-          <p className="drawer-sub">{res.service_type || 'AWS'} · {res.resource_id || 'N/A'}</p>
+          <h4 className="drawer-title">{isLLM ? 'AI Insight Details' : 'Recommendation Details'}</h4>
+          <p className="drawer-sub">{res.service_type || 'AWS'} · {res.resource_id || res.resource_name || 'N/A'}</p>
 
-          <div className="drawer-section">
-            <h5>Financial Snapshot</h5>
-            <ul>
-              <li>Current Cost: ${(cost.current_monthly || 0).toFixed(2)}/mo</li>
-              <li>Projected Savings: ${savingsPerMonth.toFixed(2)}/mo</li>
-              <li>Annual Impact: ${savingsPerYear.toFixed(2)}</li>
-            </ul>
-          </div>
+          {/* Financial snapshot — only for engine cards with costs */}
+          {!isLLM && (cost.current_monthly > 0 || hasSavings) && (
+            <div className="drawer-section">
+              <h5>Financial Snapshot</h5>
+              <ul>
+                {cost.current_monthly > 0 && <li>Current Cost: ${(cost.current_monthly).toFixed(2)}/mo</li>}
+                {hasSavings && <li>Projected Savings: ${savingsPerMonth.toFixed(2)}/mo</li>}
+                {hasSavings && <li>Annual Impact: ${savingsPerYear.toFixed(2)}</li>}
+              </ul>
+            </div>
+          )}
 
           {(graphCtx.blast_radius_pct > 0 || graphCtx.dependency_count > 0 || graphCtx.is_spof) && (
             <div className="drawer-section">
-              <h5>Graph Context</h5>
+              <h5>{isLLM ? 'Architecture Impact' : 'Graph Context'}</h5>
               <ul>
                 {graphCtx.blast_radius_pct > 0 && <li>Blast Radius: {graphCtx.blast_radius_pct}%</li>}
                 {graphCtx.dependency_count > 0 && <li>Dependencies: {graphCtx.dependency_count}</li>}
@@ -180,8 +191,8 @@ export function StyledRecommendationCard({ recommendation, onViewDetails }) {
           )}
 
           {steps.length > 0 && (
-            <div className="drawer-section drawer-highlight">
-              <h5>Implementation Steps</h5>
+            <div className={isLLM ? 'drawer-section drawer-highlight--ai' : 'drawer-section drawer-highlight'}>
+              <h5>{isLLM ? 'Remediation Steps' : 'Implementation Steps'}</h5>
               <ol>
                 {steps.slice(0, 4).map((step, idx) => (
                   <li key={idx}>{step}</li>

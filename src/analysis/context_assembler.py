@@ -25,7 +25,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List, Optional, Tuple
 
-from src.knowledge_base import get_all_best_practices_text
+# PDF best practices are now loaded via src.llm.pdf_knowledge
 
 logger = logging.getLogger(__name__)
 
@@ -815,100 +815,43 @@ class ContextAssembler:
 
     def _section9_rag_docs(self, pkg: ArchitectureContextPackage):
         """Section 9: Graph RAG - Retrieve and ground with documentation.
-        
-        Indexes docs from /docs folder and retrieves relevant sections
-        based on architecture patterns, service types, and cost issues.
+
+        Uses the fast pdf_knowledge module (size-limited, cached) instead of
+        DocIndexer which hangs on large PDFs.
         """
         try:
-            from src.rag.doc_indexer import DocIndexer
-            
-            # Initialize and scan docs
-            indexer = DocIndexer()
-            chunk_count = indexer.scan_and_index()
-            
-            if chunk_count == 0:
-                logger.warning("No documentation chunks indexed")
-                return
-            
-            logger.info("✓ Indexed %d doc chunks for RAG retrieval", chunk_count)
-            
-            # Build search query from architecture
-            service_types = set()
-            for m in self._node_map.values():
-                service_types.add(m.get("node_type", "service"))
-            
-            patterns_to_search = []
-            
-            # Add high-level queries
-            patterns_to_search.append(f"AWS cost optimization {pkg.architecture_type}")
-            patterns_to_search.append("Right-sizing instances CPU utilization")
-            
-            # Add service-specific queries
-            for stype in list(service_types)[:5]:
-                patterns_to_search.append(f"AWS {stype} cost optimization best practices")
-            
-            # Add issue-specific queries
+            from src.llm.pdf_knowledge import retrieve_relevant_chunks
+
+            # Collect service types from the architecture
+            service_types = list({
+                m.get("node_type", "service")
+                for m in self._node_map.values()
+            })
+
+            categories = ["cost optimization", "right-sizing", "security",
+                          "reliability", "performance", "well-architected"]
+
+            # Add architecture-specific terms
             if pkg.cross_az_dependency_count > 3:
-                patterns_to_search.append("Cross-AZ data transfer costs AWS")
-            if any(p for p in pkg.anti_patterns if "cache" in p.get("name", "").lower()):
-                patterns_to_search.append("AWS ElastiCache Redis caching layers")
+                categories.append("cross-az data transfer")
             if pkg.total_waste_monthly > 100:
-                patterns_to_search.append("Identify waste unused resources AWS")
-            
-            # Retrieve docs for each query
-            all_docs = []
-            for query in patterns_to_search:
-                try:
-                    results = indexer.query_docs(query, top_k=2)
-                    for result in results:
-                        all_docs.append({
-                            "source": result.get("source", "unknown"),
-                            "content": result.get("text", "")[:500],  # Truncate for context length
-                            "score": result.get("similarity_score", 0),
-                        })
-                except Exception as e:
-                    logger.warning("RAG query failed for '%s': %s", query, e)
-            
-            # Deduplicate and sort by score
-            seen_sources = set()
-            unique_docs = []
-            for doc in sorted(all_docs, key=lambda x: x.get("score", 0), reverse=True):
-                source = doc["source"]
-                if source not in seen_sources:
-                    seen_sources.add(source)
-                    unique_docs.append(doc)
-            
-            pkg.rag_relevant_docs = unique_docs[:10]
-            
-            # Generate best practices summary from retrieved docs
-            best_practices = []
-            
-            # Add AWS FinOps Knowledge Base as primary context
-            try:
-                finops_kb = get_all_best_practices_text()
-                best_practices.append("=== AWS FinOps Best Practices Knowledge Base ===")
-                best_practices.append(finops_kb[:2000])  # Include key sections
-                best_practices.append("")  # Blank line separator
-            except Exception as e:
-                logger.warning("Failed to load FinOps KB: %s", e)
-            
-            # Add retrieved documentation as secondary context
-            if unique_docs:
-                best_practices.append("=== Additional AWS Documentation ===")
-                for doc in unique_docs[:5]:
-                    # Extract key points
-                    content = doc.get("content", "")
-                    if len(content) > 50:
-                        summary = content[:200] + "..."
-                        best_practices.append(f"- {summary}")
-            
-            pkg.rag_best_practices = best_practices
-            logger.info("✓ Retrieved %d relevant doc chunks for LLM context", len(unique_docs))
-            
-        except ImportError:
-            logger.warning("DocIndexer not available, skipping RAG docs retrieval")
+                categories.append("waste unused resources")
+
+            context = retrieve_relevant_chunks(
+                service_types=service_types[:10],
+                categories=categories,
+                max_chars=3000,
+            )
+
+            if context:
+                pkg.rag_best_practices = [context]
+                pkg.rag_relevant_docs = [{"source": "pdf_knowledge", "content": context[:500], "score": 1.0}]
+                logger.info("✓ Loaded %d chars of PDF best-practice context", len(context))
+            else:
+                logger.warning("No PDF best-practice context retrieved")
+
         except Exception as e:
-            logger.error("Error retrieving RAG docs: %s", e, exc_info=True)
+            logger.warning("Error in _section9_rag_docs: %s", e)
 
     def _infer_cost_outlier_reason(self, m: Dict) -> str:
         cpu = m.get("cpu_utilization")

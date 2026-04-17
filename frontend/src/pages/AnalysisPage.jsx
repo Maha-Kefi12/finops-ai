@@ -3,10 +3,13 @@ import { useLocation } from 'react-router-dom'
 import {
     listArchitectures, analyzeArchitecture, ingestFromAws,
     getAwsPipelineStatus, deepGraphAnalysis, generateRecommendations,
-    getLastRecommendations, getRecommendationsHistory, 
+    getLastRecommendations, getRecommendationsHistory, getRecommendationSnapshot,
     getLatestLLMReport, getLLMReportHistory,
+    exportRecommendationsPdf, exportLatestRecommendationsPdf,
+    exportLlmReportPdf, exportLatestLlmReportPdf,
 } from '../api/client'
-import { RecommendationCarousel } from '../components/StyledRecommendationCard'
+
+import { downloadPdf } from '../utils/download'
 import {
     BrainCircuit, Sparkles, AlertTriangle, Shield, TrendingUp,
     DollarSign, Activity, Cpu, Zap, ChevronDown, Search,
@@ -15,7 +18,7 @@ import {
     Lightbulb, Wrench, ArrowUpRight, Cloud, Loader2,
     Network, Database, Server, ChevronUp, AlertCircle,
     Hash, Gauge, Box, ArrowDown, Code, BarChart2,
-    CircleDot, TrendingDown, Flame, HardDrive, Workflow, BookOpen, History, Settings
+    CircleDot, TrendingDown, Flame, HardDrive, Workflow, BookOpen, History, Settings, FileDown
 } from 'lucide-react'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -251,12 +254,16 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
     const Icon = theme.icon
     const res = card.resource_identification || {}
     const cost = card.cost_breakdown || {}
-    const lineItems = cost.line_items || []
+    const lineItems = (cost.line_items || []).filter(li => li.cost > 0 || (li.usage && li.usage !== '0'))
     const inefficiencies = card.inefficiencies || []
     const recommendations = card.recommendations || []
     const sevClass = SEVERITY_BADGE[card.severity] || SEVERITY_BADGE.medium
     const complexClass = COMPLEXITY_BADGE[card.implementation_complexity] || COMPLEXITY_BADGE.medium
     const titleDisplay = cleanDisplayText(card.title)
+    const confScore = card.confidence_score || 0
+    const confLabel = confScore >= 70 ? 'High' : confScore >= 40 ? 'Medium' : 'Low'
+    const confColor = confScore >= 70 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : confScore >= 40 ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-600 border-gray-200'
+    const hasSavings = card.total_estimated_savings > 0
 
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-gray-200">
@@ -280,6 +287,11 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
                             <span className={`text-[10px] font-medium px-2.5 py-1 rounded-full ${complexClass}`}>
                                 {(card.implementation_complexity || 'medium').toUpperCase()} COMPLEXITY
                             </span>
+                            {confScore > 0 && (
+                                <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${confColor}`}>
+                                    {confLabel} Confidence
+                                </span>
+                            )}
                         </div>
                         <h4 className="text-lg font-bold text-gray-900 mb-2 tracking-tight">{titleDisplay}</h4>
                         <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -289,7 +301,7 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
                         </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                        {card.total_estimated_savings > 0 ? (
+                        {hasSavings ? (
                             <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2.5">
                                 <p className="text-[10px] text-emerald-600 uppercase font-semibold tracking-wider">Savings</p>
                                 <p className="text-2xl font-black text-emerald-700">
@@ -298,9 +310,9 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
                                 <p className="text-[10px] text-emerald-600">per month</p>
                             </div>
                         ) : (
-                            <div className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5">
-                                <p className="text-[10px] text-slate-500 uppercase font-semibold">Type</p>
-                                <p className="text-sm font-bold text-slate-700">Reliability</p>
+                            <div className="rounded-xl px-4 py-2.5" style={{ backgroundColor: theme.bg, border: `1px solid ${theme.border}` }}>
+                                <p className="text-[10px] uppercase font-semibold tracking-wider" style={{ color: theme.color }}>{theme.label}</p>
+                                <p className="text-sm font-bold text-gray-700">Optimization</p>
                             </div>
                         )}
                         <div className="mt-3 flex justify-end">
@@ -314,23 +326,28 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
             {isExpanded && (
                 <div className="border-t border-gray-100 bg-gradient-to-b from-gray-50/50 to-white">
 
-                    {/* ━━━ GRAPH CONTEXT: Business Impact ━━━ */}
-                    {card.graph_context && (card.graph_context.dependency_count > 0 || card.graph_context.blast_radius_pct > 0 || card.graph_context.narrative) && (
+                    {/* WHY THIS MATTERS — engine narrative from why_it_matters field */}
+                    {(card.why_it_matters || card.graph_context?.narrative) && (
                         <div className="px-6 py-5">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <Lightbulb className="w-4 h-4 text-amber-500" /> Why This Matters
+                            </h5>
+                            <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 rounded-xl p-5 shadow-sm">
+                                <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
+                                    {cleanDisplayText(card.why_it_matters || card.graph_context?.narrative || '')}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* IMPACT ANALYSIS — graph-based metrics, blast radius, dependencies */}
+                    {card.graph_context && (card.graph_context.dependency_count > 0 || card.graph_context.blast_radius_pct > 0) && (
+                        <div className="px-6 py-5 border-t border-gray-100">
                             <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                <Target className="w-4 h-4 text-red-500" /> Why This Matters — Business Impact
+                                <Target className="w-4 h-4 text-red-500" /> Impact Analysis
                             </h5>
 
-                            {/* Narrative (the graph-analyzer's rich description) */}
-                            {card.graph_context.narrative && (
-                                <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl p-5 mb-4 shadow-sm">
-                                    <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
-                                        {cleanDisplayText(card.graph_context.narrative)}
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Stats row: Blast Radius + Dependency Count + Cascade Risk */}
+                            {/* Stats row: Blast Radius + Dependency Count + Centrality */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                                 {card.graph_context.blast_radius_pct > 0 && (
                                     <div className={`rounded-xl p-4 border ${card.graph_context.blast_radius_pct > 50 ? 'bg-red-50 border-red-200' : card.graph_context.blast_radius_pct > 25 ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200'}`}>
@@ -378,12 +395,12 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
                                 )}
                                 {card.graph_context.cross_az_count > 0 && (
                                     <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 border border-orange-300">
-                                        <Cloud className="w-3.5 h-3.5" /> {card.graph_context.cross_az_count} CROSS-AZ DEPS (extra transfer costs)
+                                        <Cloud className="w-3.5 h-3.5" /> {card.graph_context.cross_az_count} CROSS-AZ DEPS
                                     </span>
                                 )}
                             </div>
 
-                            {/* Dependent services tree */}
+                            {/* Dependent services */}
                             {card.graph_context.dependent_services?.length > 0 && (
                                 <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
                                     <p className="text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-2">Services that depend on this resource:</p>
@@ -400,7 +417,7 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
                             {/* Cross-AZ dependency details */}
                             {card.graph_context.cross_az_dependencies?.length > 0 && (
                                 <div className="mt-3 bg-orange-50 rounded-xl p-4 border border-orange-100">
-                                    <p className="text-[10px] font-bold text-orange-700 uppercase tracking-wider mb-2">Cross-AZ Dependencies (generating transfer costs):</p>
+                                    <p className="text-[10px] font-bold text-orange-700 uppercase tracking-wider mb-2">Cross-AZ Dependencies:</p>
                                     <div className="flex flex-wrap gap-2">
                                         {card.graph_context.cross_az_dependencies.map((svc, i) => (
                                             <span key={i} className="text-xs bg-orange-100 text-orange-800 px-3 py-1.5 rounded-full border border-orange-200 font-medium">
@@ -434,8 +451,8 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
                         </div>
                     )}
 
-                    {/* CUR Cost Breakdown */}
-                    {lineItems.length > 0 && (
+                    {/* CUR Cost Breakdown — only show if there are real costs */}
+                    {lineItems.length > 0 && cost.current_monthly > 0 && (
                         <div className="px-6 py-4">
                             <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 flex items-center gap-2">
                                 <DollarSign className="w-3.5 h-3.5 text-gray-400" /> CUR Cost Breakdown
@@ -606,11 +623,329 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
 
                     {/* Footer */}
                     <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100">
-                        <div className="flex items-center gap-2">
-                            <BrainCircuit className="w-4 h-4 text-gray-400" />
-                            <span className="text-xs text-gray-500">
-                                FinOps AI · Priority #{card.priority} · Risk: {card.risk_level || 'medium'}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <BrainCircuit className="w-4 h-4 text-gray-400" />
+                                <span className="text-xs text-gray-500">
+                                    FinOps Engine · {theme.label} · Risk: {card.risk_level || 'medium'}
+                                </span>
+                            </div>
+                            {confScore > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                        <div className={`h-full rounded-full ${confScore >= 70 ? 'bg-emerald-500' : confScore >= 40 ? 'bg-blue-500' : 'bg-gray-400'}`} style={{ width: `${confScore}%` }} />
+                                    </div>
+                                    <span className="text-[10px] text-gray-400 font-medium">{confScore}%</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+/* ── AI Insight Card (LLM-proposed: security / reliability / performance) ── */
+const AI_CATEGORY_ACCENT = {
+    security:    { gradient: 'from-red-600 via-rose-500 to-pink-500',    bg: 'from-red-50 to-rose-50',    border: 'border-red-200',    text: 'text-red-700',   tag: 'bg-red-100 text-red-700 border-red-200',   icon: Shield,   label: 'Security' },
+    reliability: { gradient: 'from-teal-600 via-cyan-500 to-blue-500',   bg: 'from-teal-50 to-cyan-50',   border: 'border-teal-200',   text: 'text-teal-700',  tag: 'bg-teal-100 text-teal-700 border-teal-200', icon: Activity, label: 'Reliability' },
+    performance: { gradient: 'from-violet-600 via-purple-500 to-fuchsia-500', bg: 'from-violet-50 to-purple-50', border: 'border-violet-200', text: 'text-violet-700', tag: 'bg-violet-100 text-violet-700 border-violet-200', icon: Zap, label: 'Performance' },
+}
+
+function AIInsightCard({ card, index, isExpanded, onToggle }) {
+    const accent = AI_CATEGORY_ACCENT[card.category] || AI_CATEGORY_ACCENT.security
+    const Icon = accent.icon
+    const res = card.resource_identification || {}
+    const gc = card.graph_context || {}
+    const recs = card.recommendations || []
+    const rec = recs[0] || {}
+    const inefficiencies = card.inefficiencies || []
+    const sevClass = SEVERITY_BADGE[card.severity] || SEVERITY_BADGE.medium
+    const titleDisplay = cleanDisplayText(card.title)
+    const confScore = card.confidence_score || 0
+    const confLabel = confScore >= 70 ? 'High' : confScore >= 40 ? 'Medium' : 'Low'
+
+    return (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-gray-200">
+            {/* Gradient accent bar */}
+            <div className={`h-1.5 w-full bg-gradient-to-r ${accent.gradient}`} />
+
+            {/* Header */}
+            <div className="p-6 cursor-pointer" onClick={onToggle}>
+                <div className="flex items-start gap-5">
+                    {/* Icon with pulse ring */}
+                    <div className="relative flex-shrink-0">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br ${accent.bg} ${accent.border} border shadow-sm`}>
+                            <Icon className="w-6 h-6" style={{ color: accent.text.replace('text-', '') }} />
+                        </div>
+                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-violet-500 border-2 border-white animate-pulse" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-violet-100 text-violet-700 border border-violet-200 inline-flex items-center gap-1">
+                                <BrainCircuit className="w-3 h-3" /> AI INSIGHT
                             </span>
+                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${sevClass}`}>
+                                {(card.severity || 'medium').toUpperCase()}
+                            </span>
+                            <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${accent.tag}`}>
+                                {accent.label}
+                            </span>
+                            <span className={`text-[10px] font-medium px-2.5 py-1 rounded-full ${COMPLEXITY_BADGE[card.implementation_complexity] || COMPLEXITY_BADGE.medium}`}>
+                                {(card.implementation_complexity || 'medium').toUpperCase()} COMPLEXITY
+                            </span>
+                        </div>
+                        <h4 className="text-lg font-bold text-gray-900 mb-2 tracking-tight">{titleDisplay}</h4>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                            {res.service_name && <span className="flex items-center gap-1.5"><Server className="w-3.5 h-3.5" />{cleanDisplayText(res.service_name)}</span>}
+                            {res.service_type && <span className="flex items-center gap-1.5"><Box className="w-3.5 h-3.5" />{cleanDisplayText(res.service_type)}</span>}
+                            {res.region && <span className="flex items-center gap-1.5"><Cloud className="w-3.5 h-3.5" />{res.region}</span>}
+                        </div>
+                    </div>
+
+                    {/* Right side: Category badge instead of $0 */}
+                    <div className="text-right flex-shrink-0">
+                        <div className={`bg-gradient-to-br ${accent.bg} ${accent.border} border rounded-xl px-4 py-2.5`}>
+                            <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-500">Finding</p>
+                            <p className={`text-sm font-bold ${accent.text}`}>{accent.label}</p>
+                            <p className="text-[10px] text-gray-500">{confScore > 0 ? `${confScore}% confidence` : `${rec.confidence || 'medium'} confidence`}</p>
+                        </div>
+                        <div className="mt-3 flex justify-end">
+                            {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Expanded details ── */}
+            {isExpanded && (
+                <div className={`border-t ${accent.border} bg-gradient-to-b from-gray-50/50 to-white`}>
+
+                    {/* ━━━ FINDING: What was detected ━━━ */}
+                    {rec.description && (
+                        <div className="px-6 py-5">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <Eye className="w-4 h-4 text-violet-500" /> Finding
+                            </h5>
+                            <div className={`bg-gradient-to-br ${accent.bg} ${accent.border} border rounded-xl p-5 shadow-sm`}>
+                                <p className="text-sm text-gray-800 leading-relaxed font-medium">
+                                    {cleanDisplayText(rec.description)}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ━━━ WHY THIS MATTERS — LLM narrative ━━━ */}
+                    {(card.why_it_matters || gc.narrative) && (
+                        <div className="px-6 py-5">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <Lightbulb className="w-4 h-4 text-violet-500" /> Why This Matters
+                            </h5>
+                            <div className={`bg-gradient-to-br ${accent.bg} ${accent.border} border rounded-xl p-5 shadow-sm`}>
+                                <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
+                                    {cleanDisplayText(card.why_it_matters || gc.narrative || '')}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ━━━ IMPACT ANALYSIS — graph metrics ━━━ */}
+                    {(gc.dependency_count > 0 || gc.is_spof || (gc.cascading_failure_risk === 'critical' || gc.cascading_failure_risk === 'high')) && (
+                        <div className="px-6 py-4">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <Target className="w-4 h-4 text-red-500" /> Impact Analysis
+                            </h5>
+
+                            {/* Stat pills */}
+                            <div className="flex flex-wrap gap-3 mb-4">
+                                {gc.blast_radius_pct > 0 && (
+                                    <div className={`rounded-xl px-4 py-3 border ${gc.blast_radius_pct > 25 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
+                                        <p className="text-[10px] font-bold uppercase text-gray-500">Blast Radius</p>
+                                        <p className={`text-xl font-black ${gc.blast_radius_pct > 25 ? 'text-red-600' : 'text-gray-700'}`}>{gc.blast_radius_pct}%</p>
+                                    </div>
+                                )}
+                                {gc.dependency_count > 0 && (
+                                    <div className="rounded-xl px-4 py-3 bg-blue-50 border border-blue-200">
+                                        <p className="text-[10px] font-bold uppercase text-gray-500">Depends On It</p>
+                                        <p className="text-xl font-black text-blue-700">{gc.dependency_count}</p>
+                                    </div>
+                                )}
+                                {gc.depends_on_count > 0 && (
+                                    <div className="rounded-xl px-4 py-3 bg-slate-50 border border-slate-200">
+                                        <p className="text-[10px] font-bold uppercase text-gray-500">Upstream</p>
+                                        <p className="text-xl font-black text-slate-700">{gc.depends_on_count}</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Alert badges */}
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {gc.is_spof && (
+                                    <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-red-100 text-red-700 border border-red-300">
+                                        <AlertTriangle className="w-3.5 h-3.5" /> SINGLE POINT OF FAILURE
+                                    </span>
+                                )}
+                                {(gc.cascading_failure_risk === 'critical' || gc.cascading_failure_risk === 'high') && (
+                                    <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border ${gc.cascading_failure_risk === 'critical' ? 'bg-red-100 text-red-700 border-red-300' : 'bg-amber-100 text-amber-700 border-amber-300'}`}>
+                                        <Zap className="w-3.5 h-3.5" /> CASCADE RISK: {gc.cascading_failure_risk.toUpperCase()}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Named dependent services */}
+                            {gc.dependent_services?.length > 0 && (
+                                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                                    <p className="text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-2">Affected Services:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {gc.dependent_services.map((svc, i) => (
+                                            <span key={i} className="text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200 font-medium">
+                                                {svc}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ━━━ INEFFICIENCIES ━━━ */}
+                    {inefficiencies.length > 0 && (
+                        <div className="px-6 py-4">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Issues Detected
+                            </h5>
+                            <div className="space-y-2">
+                                {inefficiencies.map((ineff, i) => (
+                                    <div key={i} className={`flex items-start gap-3 rounded-xl p-4 border ${accent.bg} ${accent.border}`}>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border flex-shrink-0 mt-0.5 ${SEVERITY_BADGE[ineff.severity] || SEVERITY_BADGE.medium}`}>
+                                            {(ineff.severity || 'medium').toUpperCase()}
+                                        </span>
+                                        <div>
+                                            <p className="text-sm text-gray-800 font-medium">{cleanDisplayText(ineff.description)}</p>
+                                            {ineff.evidence && <p className="text-xs text-gray-500 mt-1 font-mono">{cleanDisplayText(ineff.evidence)}</p>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ━━━ REMEDIATION STEPS ━━━ */}
+                    {rec.implementation_steps?.length > 0 && (
+                        <div className="px-6 py-5 border-t border-gray-100">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <Wrench className="w-4 h-4 text-indigo-500" /> Remediation Steps
+                            </h5>
+                            <div className="space-y-3">
+                                {rec.implementation_steps.map((step, si) => (
+                                    <div key={si} className="flex items-start gap-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${accent.gradient} text-white flex items-center justify-center flex-shrink-0 text-sm font-bold shadow-sm`}>
+                                            {si + 1}
+                                        </div>
+                                        <p className="text-sm text-gray-700 leading-relaxed pt-0.5">{cleanDisplayText(String(step).replace(/^\d+\.\s*/, ''))}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ━━━ FULL ANALYSIS ━━━ */}
+                    {rec.full_analysis && (
+                        <div className="px-6 py-5 border-t border-gray-100">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-violet-500" /> Detailed Analysis
+                            </h5>
+                            <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                                <pre className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap font-sans">
+                                    {cleanDisplayText(rec.full_analysis)}
+                                </pre>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ━━━ PERFORMANCE + RISK side-by-side ━━━ */}
+                    <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {rec.performance_impact && (
+                            <div className="bg-blue-50/80 rounded-xl p-4 border border-blue-100">
+                                <p className="text-[10px] font-bold text-blue-600 uppercase mb-2 flex items-center gap-1">
+                                    <Activity className="w-3 h-3" /> Performance Impact
+                                </p>
+                                <p className="text-xs text-gray-700 leading-relaxed">{cleanDisplayText(rec.performance_impact)}</p>
+                            </div>
+                        )}
+                        {rec.risk_mitigation && (
+                            <div className="bg-amber-50/80 rounded-xl p-4 border border-amber-100">
+                                <p className="text-[10px] font-bold text-amber-600 uppercase mb-2 flex items-center gap-1">
+                                    <Shield className="w-3 h-3" /> Risk Mitigation
+                                </p>
+                                <p className="text-xs text-gray-700 leading-relaxed">{cleanDisplayText(rec.risk_mitigation)}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ━━━ VALIDATION STEPS ━━━ */}
+                    {rec.validation_steps?.length > 0 && (
+                        <div className="px-6 py-4">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Validation Commands
+                            </h5>
+                            <div className="space-y-2">
+                                {rec.validation_steps.map((v, vi) => (
+                                    <div key={vi} className="flex items-start gap-3 bg-gray-50 rounded-lg px-4 py-3 border border-gray-200 font-mono text-xs text-gray-700">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                        <span>{cleanDisplayText(String(v))}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ━━━ BEST PRACTICE ━━━ */}
+                    {card.finops_best_practice && (
+                        <div className="px-6 py-4">
+                            <h5 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                <BookOpen className="w-3.5 h-3.5 text-violet-500" /> AWS Well-Architected Reference
+                            </h5>
+                            <div className={`bg-gradient-to-br ${accent.bg} rounded-xl p-4 ${accent.border} border`}>
+                                <p className="text-sm text-gray-800 leading-relaxed">{cleanDisplayText(card.finops_best_practice)}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ━━━ Resource Config (collapsible) ━━━ */}
+                    {res.current_config && (
+                        <div className="px-6 py-3">
+                            <details className="group">
+                                <summary className="text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer flex items-center gap-2 hover:text-gray-700">
+                                    <Server className="w-3.5 h-3.5 text-gray-400" /> Resource Configuration
+                                    <ChevronDown className="w-3.5 h-3.5 group-open:rotate-180 transition-transform" />
+                                </summary>
+                                <div className="mt-2 bg-gray-50 rounded-xl p-4 text-xs text-gray-600 border border-gray-100 font-mono">
+                                    {cleanDisplayText(res.current_config)}
+                                </div>
+                            </details>
+                        </div>
+                    )}
+
+                    {/* ━━━ Footer ━━━ */}
+                    <div className={`px-6 py-4 bg-gradient-to-r ${accent.bg} border-t ${accent.border}`}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <BrainCircuit className="w-4 h-4 text-violet-500" />
+                                <span className="text-xs text-gray-600 font-medium">
+                                    AI-Powered {accent.label} Insight · {confLabel} Confidence
+                                </span>
+                            </div>
+                            {confScore > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                        <div className={`h-full rounded-full ${confScore >= 70 ? 'bg-emerald-500' : confScore >= 40 ? 'bg-violet-500' : 'bg-gray-400'}`} style={{ width: `${confScore}%` }} />
+                                    </div>
+                                    <span className="text-[10px] text-gray-500 font-medium">{confScore}%</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1142,6 +1477,7 @@ export default function AnalysisPage() {
     const [historyLoading, setHistoryLoading] = useState(false)
     const [historyError, setHistoryError] = useState(null)
     const [selectedHistorySnapshot, setSelectedHistorySnapshot] = useState(null)
+    const [loadingSnapshot, setLoadingSnapshot] = useState(false)
 
     // LLM report state (from 5-agent pipeline)
     const [llmReport, setLlmReport] = useState(null)
@@ -1276,6 +1612,19 @@ export default function AnalysisPage() {
         }
     }
 
+    async function loadSnapshotDetails(snapshotId) {
+        setLoadingSnapshot(true)
+        try {
+            const res = await getRecommendationSnapshot(snapshotId)
+            setSelectedHistorySnapshot(res.data)
+        } catch (e) {
+            console.error('Failed to load snapshot:', e)
+            setHistoryError(e.response?.data?.detail || e.message || 'Failed to load snapshot details')
+        } finally {
+            setLoadingSnapshot(false)
+        }
+    }
+
     async function loadLLMReportHistory() {
         if (!selectedArch) return
         setLlmHistoryError(null)
@@ -1299,6 +1648,44 @@ export default function AnalysisPage() {
             }
         } catch (e) {
             console.error('Failed to load latest LLM report:', e)
+        }
+    }
+
+    async function handleExportRecommendationsPdf() {
+        if (!recResult) {
+            alert('No recommendations to export')
+            return
+        }
+        try {
+            const response = await exportLatestRecommendationsPdf(selectedArch.architecture_id)
+            downloadPdf(response)
+        } catch (e) {
+            console.error('Failed to export PDF:', e)
+            alert('Failed to export PDF: ' + (e.response?.data?.detail || e.message))
+        }
+    }
+
+    async function handleExportLlmReportPdf() {
+        if (!llmReport) {
+            alert('No LLM report to export')
+            return
+        }
+        try {
+            const response = await exportLatestLlmReportPdf(selectedArch.architecture_id)
+            downloadPdf(response)
+        } catch (e) {
+            console.error('Failed to export PDF:', e)
+            alert('Failed to export PDF: ' + (e.response?.data?.detail || e.message))
+        }
+    }
+
+    async function handleExportSnapshotPdf(snapshotId) {
+        try {
+            const response = await exportRecommendationsPdf(snapshotId)
+            downloadPdf(response)
+        } catch (e) {
+            console.error('Failed to export PDF:', e)
+            alert('Failed to export PDF: ' + (e.response?.data?.detail || e.message))
         }
     }
 
@@ -1387,12 +1774,13 @@ export default function AnalysisPage() {
         .map(line => line.trim())
         .filter(line => line && !/^summary of recommendations:?$/i.test(line))
 
-    const fallbackSummaryLines = displayRecommendations.slice(0, 10).map((rec, idx) => {
+    const fallbackSummaryLines = displayRecommendations.map((rec, idx) => {
         const label = rec?.title || rec?.recommendations?.[0]?.action || 'Optimization action'
         const recSavings = parseMoneyValue(rec?.total_estimated_savings ?? rec?.estimated_monthly_savings ?? 0)
+        const source = rec?.source === 'llm_proposed' ? '[AI]' : '[Engine]'
         return recSavings > 0
-            ? `${idx + 1}. ${label} — Estimated savings: $${recSavings.toFixed(2)}/mo`
-            : `${idx + 1}. ${label}`
+            ? `${idx + 1}. ${source} ${label} — Estimated savings: $${recSavings.toFixed(2)}/mo`
+            : `${idx + 1}. ${source} ${label}`
     })
 
     const summaryDisplayLines = summaryLines.length > 0 ? summaryLines : fallbackSummaryLines
@@ -1645,75 +2033,37 @@ export default function AnalysisPage() {
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-center">
+                                    <div className="flex items-center justify-center gap-3">
                                         <button
                                             onClick={runRecommendations}
                                             disabled={recLoading}
                                             className="btn-secondary text-xs"
                                             title="Run a fresh Engine + LLM recommendation pipeline"
                                         >
-                                            {recLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} Run Fresh Engine + LLM
+                                            {recLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} Run AI Cost Analysis
                                         </button>
+                                        {recResult && (
+                                            <button
+                                                onClick={handleExportRecommendationsPdf}
+                                                className="btn-secondary text-xs"
+                                                title="Export recommendations as PDF"
+                                            >
+                                                <FileDown className="w-3.5 h-3.5" /> Export PDF
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Recommendation Cards */}
-                            <RecommendationCarousel 
-                                recommendations={displayRecommendations}
-                                onViewDetails={(rec) => {
-                                    const recIdx = (displayRecommendations || []).findIndex(r => r === rec);
-                                    if (recIdx >= 0) {
-                                        setExpandedCards(prev => ({ ...prev, [recIdx]: true }));
-                                        setTimeout(() => {
-                                            document.querySelector(`[data-rec-id="${recIdx}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                                        }, 100);
-                                    }
-                                }}
-                            />
-
-                            {/* Recommendation Summary */}
-                            {summaryDisplayLines.length > 0 && (
-                                <div className="card p-6 border-indigo-200 bg-gradient-to-br from-slate-50 via-indigo-50/60 to-violet-50/70">
-                                    <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
-                                        <h4 className="text-sm font-bold text-gray-900">Recommendations Summary</h4>
-                                        <span className="text-[11px] font-semibold text-indigo-700 bg-white border border-indigo-100 rounded-full px-2.5 py-1">
-                                            {summaryDisplayLines.length} key actions
-                                        </span>
-                                    </div>
-                                    <div className="rounded-xl border border-indigo-100 bg-white/70 backdrop-blur-sm p-4">
-                                        <ol className="space-y-2">
-                                            {summaryDisplayLines.map((line, idx) => (
-                                                <li key={idx} className="text-sm text-gray-700 leading-relaxed">{line}</li>
-                                            ))}
-                                        </ol>
-                                    </div>
+                            {/* Raw JSON LLM Output View */}
+                            <div className="bg-slate-900 rounded-xl border border-slate-700 shadow-inner overflow-hidden flex flex-col">
+                                <div className="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between">
+                                    <span className="text-xs font-semibold text-slate-300">Raw LLM Output (JSON)</span>
                                 </div>
-                            )}
-
-                            {/* Expanded Recommendation Details */}
-                            {Object.keys(expandedCards).map(idx => expandedCards[idx] && (displayRecommendations || [])[idx]).filter(Boolean).map((card, cardIdx) => {
-                                const originalIdx = (displayRecommendations || []).findIndex(r => r === card);
-                                return (
-                                    <div key={cardIdx} data-rec-id={originalIdx} className="mt-8">
-                                        <div className="mb-4 flex items-center gap-2">
-                                            <h3 className="text-lg font-bold text-gray-900">Recommendation Details</h3>
-                                            <button 
-                                                onClick={() => setExpandedCards(prev => ({ ...prev, [originalIdx]: false }))}
-                                                className="ml-auto text-sm text-blue-600 hover:text-blue-800 underline"
-                                            >
-                                                Close
-                                            </button>
-                                        </div>
-                                        <FullRecommendationCard
-                                            card={card}
-                                            index={originalIdx}
-                                            isExpanded={true}
-                                            onToggle={() => setExpandedCards(prev => ({ ...prev, [originalIdx]: !prev[originalIdx] }))}
-                                        />
-                                    </div>
-                                );
-                            })}
+                                <div className="p-4 overflow-y-auto max-h-[800px] text-xs font-mono text-emerald-400">
+                                    <pre>{JSON.stringify(displayRecommendations, null, 2)}</pre>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -1983,7 +2333,7 @@ export default function AnalysisPage() {
                                 {recHistory.map((item, idx) => (
                                     <div 
                                         key={item.id || idx} 
-                                        onClick={() => setSelectedHistorySnapshot(item)}
+                                        onClick={() => loadSnapshotDetails(item.id)}
                                         className={`card p-5 hover:shadow-md transition-all cursor-pointer border-l-4 ${
                                             selectedHistorySnapshot?.id === item.id
                                                 ? 'border-l-indigo-600 bg-indigo-50 shadow-md'
@@ -1993,7 +2343,7 @@ export default function AnalysisPage() {
                                         {/* Header */}
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
+                                                <div className="flex items-center gap-2 mb-1 flex-wrap">
                                                     <h3 className="font-semibold text-gray-900">
                                                         {item.architecture_name || 'Recommendation'}
                                                     </h3>
@@ -2016,7 +2366,17 @@ export default function AnalysisPage() {
                                                     })}
                                                 </p>
                                             </div>
-                                            <div className="text-right flex-shrink-0">
+                                            <div className="text-right flex-shrink-0 flex gap-2 items-start">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        handleExportSnapshotPdf(item.id)
+                                                    }}
+                                                    className="px-2 py-1 text-xs font-medium text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                                    title="Export as PDF"
+                                                >
+                                                    <FileDown className="w-3.5 h-3.5" />
+                                                </button>
                                                 <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
                                                     <p className="text-xs text-emerald-600 font-semibold uppercase">Potential Savings</p>
                                                     <p className="text-lg font-bold text-emerald-700">
@@ -2116,7 +2476,14 @@ export default function AnalysisPage() {
                                             Close
                                         </button>
                                     </div>
-                                    <RecommendationCarousel recommendations={selectedHistorySnapshot.recommendations || []} />
+                                    {loadingSnapshot ? (
+                                        <div className="flex items-center justify-center py-12">
+                                            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mr-3" />
+                                            <span className="text-gray-600">Loading recommendations...</span>
+                                        </div>
+                                    ) : (
+                                        <RecommendationCarousel recommendations={selectedHistorySnapshot.recommendations || []} />
+                                    )}
                                 </div>
                             )}
                         </div>

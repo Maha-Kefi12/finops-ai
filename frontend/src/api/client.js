@@ -70,7 +70,7 @@ export const generateRecommendations = (architectureId, architectureFile) => {
     const body = {}
     if (architectureId) body.architecture_id = architectureId
     if (architectureFile) body.architecture_file = architectureFile
-    return api.post('/analyze/recommendations', body, { timeout: 900000 })
+    return api.post('/analyze/recommendations', body, { timeout: 1800000 })
 }
 
 /** Load last stored recommendation result from DB (for retry after timeout/failure). */
@@ -87,6 +87,11 @@ export const getRecommendationsHistory = (architectureId, architectureFile, limi
     if (architectureId) params.architecture_id = architectureId
     if (architectureFile) params.architecture_file = architectureFile
     return api.get('/analyze/recommendations/history', { params })
+}
+
+/** Load a specific recommendation snapshot by ID with full cards. */
+export const getRecommendationSnapshot = (snapshotId) => {
+    return api.get(`/analyze/recommendations/load/${snapshotId}`)
 }
 
 /** Save LLM report from 5-agent pipeline. */
@@ -157,5 +162,30 @@ export const runCombinedTraversal = (archId, seedNode = null, targetNode = null,
 export const searchDocs = (query, topK = 5) =>
     api.post('/docs/search', { query, top_k: topK })
 export const getDocsStats = () => api.get('/docs/stats')
+
+// ── Export PDFs ──────────────────────────────────────────────────────
+export const exportRecommendationsPdf = (snapshotId) => {
+    return api.get(`/export/recommendations/pdf/${snapshotId}`, { 
+        responseType: 'blob' 
+    })
+}
+
+export const exportLatestRecommendationsPdf = (architectureId) => {
+    return api.get(`/export/recommendations/pdf?architecture_id=${architectureId}`, { 
+        responseType: 'blob' 
+    })
+}
+
+export const exportLlmReportPdf = (reportId) => {
+    return api.get(`/export/llm-report/pdf/${reportId}`, { 
+        responseType: 'blob' 
+    })
+}
+
+export const exportLatestLlmReportPdf = (architectureId) => {
+    return api.get(`/export/llm-report/pdf?architecture_id=${architectureId}`, { 
+        responseType: 'blob' 
+    })
+}
 
 export default api

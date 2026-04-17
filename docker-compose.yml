@@ -1,6 +1,8 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
     restart: unless-stopped
     environment:
       POSTGRES_USER: finops

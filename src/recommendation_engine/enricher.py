@@ -284,14 +284,24 @@ def _render_aws_native(match: dict, enrichment: dict) -> str:
 
 
 def _render_why_it_matters(match: dict, enrichment: dict) -> str:
-    """Render a rich business-impact narrative from graph analysis."""
+    """Render a rich, resource-type-specific business-impact narrative.
+
+    Uses ALL available match data (pattern, best practice, instance types,
+    config) plus graph enrichment to produce a unique paragraph per card.
+    """
     resource_name = match.get("resource_name", match.get("resource_id", "this resource"))
-    aws_service = match.get("aws_service", "AWS service")
+    aws_service = match.get("aws_service", "AWS service").upper()
     category = match.get("category", "optimization")
     savings = match.get("estimated_savings_monthly", 0)
     cost = match.get("current_monthly_cost", 0)
     env = match.get("environment", "production")
     region = match.get("region", "us-east-1")
+    current_type = match.get("current_instance_type", "")
+    recommended_type = match.get("recommended_instance_type", "")
+    best_practice = match.get("linked_best_practice", "")
+    pattern_id = match.get("pattern_id", "")
+    risk_level = match.get("risk_level", "LOW")
+    savings_pct = match.get("savings_percentage", 0)
 
     in_deg = enrichment.get("services_powered", 0)
     blast = enrichment.get("blast_radius_pct", 0)
@@ -301,85 +311,154 @@ def _render_why_it_matters(match: dict, enrichment: dict) -> str:
     cross_az = enrichment.get("cross_az", {})
     redundancy = enrichment.get("redundancy", {})
     deps_in = enrichment.get("dependencies_in", [])
+    deps_out = enrichment.get("dependencies_out", [])
 
     sentences = []
 
-    # Opening: resource context
-    sentences.append(
-        f"{resource_name} is a {aws_service} resource running in {env} ({region})"
-        + (f", currently costing ${cost:,.2f}/month" if cost > 0 else "")
-        + "."
-    )
-
-    # Dependency impact
-    if in_deg > 0:
-        dep_names = [d.get("resource", "") for d in deps_in[:4] if d.get("resource")]
-        dep_str = ", ".join(dep_names) if dep_names else f"{in_deg} service(s)"
+    # ── Opening: category-specific context about what was detected ──
+    cat_lower = category.lower().replace("_", "-")
+    if "right-sizing" in cat_lower or "right_sizing" in cat_lower:
+        if current_type and recommended_type:
+            sentences.append(
+                f"{resource_name} is currently running on a {current_type} instance in {env} ({region}), "
+                f"but utilization analysis indicates it is over-provisioned. "
+                f"Migrating to {recommended_type} would right-size this {aws_service} resource, "
+                f"reducing waste while maintaining the same performance headroom."
+            )
+        else:
+            sentences.append(
+                f"{resource_name} is an over-provisioned {aws_service} resource in {env} ({region}). "
+                f"Current utilization patterns show significant headroom that can be reclaimed "
+                f"through right-sizing without impacting workload performance."
+            )
+    elif "waste" in cat_lower:
         sentences.append(
-            f"It powers {in_deg} downstream service(s) ({dep_str}), "
-            f"meaning any disruption here would ripple across the architecture."
+            f"{resource_name} is a {aws_service} resource in {env} ({region}) that shows signs of "
+            f"underutilization or idle capacity. "
+            + (f"At ${cost:,.2f}/month, " if cost > 0 else "")
+            + f"this resource is consuming budget without delivering proportional value. "
+            f"Consolidating or eliminating idle resources is a core FinOps practice that "
+            f"directly improves cloud unit economics."
+        )
+    elif "network" in cat_lower:
+        sentences.append(
+            f"{resource_name} is a {aws_service} networking resource in {env} ({region}) "
+            + (f"costing ${cost:,.2f}/month. " if cost > 0 else ". ")
+            + f"Network-layer optimizations such as VPC endpoint adoption, NAT Gateway "
+            f"consolidation, or traffic routing improvements can significantly reduce "
+            f"data transfer costs and improve latency for services that route through this resource."
+        )
+    elif "storage" in cat_lower:
+        sentences.append(
+            f"{resource_name} is a {aws_service} storage resource in {env} ({region}) "
+            + (f"with a current spend of ${cost:,.2f}/month. " if cost > 0 else ". ")
+            + f"Storage optimization — such as migrating from gp2 to gp3, enabling lifecycle "
+            f"policies, or tiering infrequently accessed data — reduces costs while often "
+            f"improving throughput and IOPS performance."
+        )
+    elif "config" in cat_lower:
+        sentences.append(
+            f"{resource_name} is a {aws_service} resource in {env} ({region}) with a "
+            f"configuration that does not match its workload requirements. "
+            + (f"At ${cost:,.2f}/month, " if cost > 0 else "")
+            + f"adjusting settings such as Multi-AZ, backup retention, or instance class "
+            f"to align with the {env} tier can yield meaningful savings without risk."
+        )
+    elif "caching" in cat_lower:
+        sentences.append(
+            f"{resource_name} is a {aws_service} resource in {env} ({region}). "
+            f"Introducing or tuning a caching layer reduces repeated queries to "
+            f"origin services, lowering latency and backend load while cutting costs."
+        )
+    elif "reserved" in cat_lower:
+        sentences.append(
+            f"{resource_name} is a {aws_service} resource in {env} ({region}) "
+            + (f"running at ${cost:,.2f}/month on-demand pricing. " if cost > 0 else ". ")
+            + f"Committing to a Reserved Instance or Savings Plan for stable workloads "
+            f"typically reduces compute spend by 30-60% with no performance change."
+        )
+    else:
+        sentences.append(
+            f"{resource_name} is a {aws_service} resource in {env} ({region})"
+            + (f", currently costing ${cost:,.2f}/month" if cost > 0 else "")
+            + f". This {category.replace('_', ' ')} opportunity was detected through "
+            f"pattern analysis of the architecture graph."
         )
 
-    # Blast radius
+    # ── Dependent services — always name them ──
+    dep_names = [d.get("resource", "") for d in deps_in if d.get("resource")]
+    if dep_names:
+        named = ", ".join(dep_names[:6])
+        extra = f" and {len(dep_names) - 6} more" if len(dep_names) > 6 else ""
+        sentences.append(
+            f"This resource directly powers {len(dep_names)} downstream service(s): "
+            f"{named}{extra}. Any changes must account for these dependencies to avoid "
+            f"disrupting production traffic."
+        )
+
+    # ── Upstream deps (what it depends on) ──
+    up_names = [d.get("resource", "") for d in deps_out if d.get("resource")]
+    if up_names:
+        sentences.append(
+            f"It also depends on {len(up_names)} upstream service(s) "
+            f"({', '.join(up_names[:4])}), forming a critical path in the architecture."
+        )
+
+    # ── Blast radius / SPOF / cascade ──
     if blast > 5:
         sentences.append(
-            f"A failure or misconfiguration would impact approximately {blast:.0f}% "
-            f"of the entire architecture, affecting service availability and user experience."
+            f"The blast radius is approximately {blast:.0f}% of the architecture — "
+            f"a misconfiguration or outage would cascade to a significant portion of "
+            f"the service mesh."
         )
-
-    # SPOF
     if spof:
         sentences.append(
-            f"This resource is a single point of failure with no redundancy path — "
-            f"if it goes down, dependent services have no fallback."
+            f"This resource is a single point of failure with no redundancy path. "
+            f"Any downtime here leaves dependent services with zero fallback."
         )
-
-    # Cascade risk
-    if cascade not in ("low", "none"):
+    if cascade not in ("low", "none", ""):
         sentences.append(
-            f"The cascading failure risk is {cascade.upper()}: a partial outage here "
-            f"could trigger sequential failures in connected services."
+            f"Cascading failure risk is rated {cascade.upper()}, meaning a partial "
+            f"outage could propagate through connected services."
         )
 
-    # Traffic
+    # ── Traffic metrics ──
     qps = traffic.get("total_qps", 0)
     latency = traffic.get("avg_latency_ms", 0)
+    error_rate = traffic.get("avg_error_rate", 0)
     if qps > 0:
-        traffic_str = f"It handles approximately {qps:.0f} queries/second"
+        t = f"Current traffic: ~{qps:.0f} queries/sec"
         if latency > 0:
-            traffic_str += f" with an average latency of {latency:.0f}ms"
-        sentences.append(traffic_str + ".")
+            t += f", {latency:.0f}ms avg latency"
+        if error_rate > 0.01:
+            t += f", {error_rate:.2f}% error rate"
+        sentences.append(t + ".")
 
-    # Cross-AZ
+    # ── Cross-AZ costs ──
     if cross_az.get("has_cross_az"):
-        xaz_count = cross_az.get("cross_az_count", 0)
-        xaz_cost = cross_az.get("estimated_monthly_cost", 0)
         sentences.append(
-            f"Cross-AZ data transfer is detected across {xaz_count} edge(s), "
-            f"adding approximately ${xaz_cost:,.2f}/month in transfer costs."
+            f"Cross-AZ data transfer detected ({cross_az.get('cross_az_count', 0)} edges), "
+            f"adding ~${cross_az.get('estimated_monthly_cost', 0):,.2f}/month in transfer costs."
         )
 
-    # Redundancy
+    # ── Redundancy ──
     if not redundancy.get("has_full_redundancy", True):
-        dep_count = redundancy.get("dependent_count", 0)
         sentences.append(
-            f"There is no alternative path for {dep_count} dependent service(s) — "
-            f"adding a failover or replica is strongly recommended before making changes."
+            f"No alternative path exists for {redundancy.get('dependent_count', 0)} "
+            f"dependent service(s) — add a failover or replica before making changes."
         )
 
-    # Savings closing
+    # ── Financial impact ──
     if savings > 0:
         sentences.append(
-            f"Addressing this recommendation would save approximately ${savings:,.2f}/month "
-            f"(${savings * 12:,.2f}/year), improving cost efficiency without sacrificing reliability."
+            f"Implementing this change saves ${savings:,.2f}/month (${savings * 12:,.2f}/year"
+            + (f", a {savings_pct}% reduction" if savings_pct > 0 else "")
+            + f"). Risk level: {risk_level}."
         )
 
-    if not sentences or len(sentences) == 1:
-        sentences.append(
-            f"While no critical graph dependencies were detected, optimizing {resource_name} "
-            f"aligns with AWS Well-Architected best practices for {category.replace('_', ' ')} "
-            f"and reduces operational overhead in the {env} environment."
-        )
+    # ── Best practice reference ──
+    if best_practice:
+        sentences.append(f"This aligns with: {best_practice}.")
 
     return " ".join(sentences)
 

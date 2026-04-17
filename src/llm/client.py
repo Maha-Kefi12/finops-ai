@@ -147,6 +147,8 @@ def _call_ollama(system_prompt: str, user_prompt: str, temperature: float, max_t
     last_err = None
     for attempt in range(MAX_RETRIES):
         try:
+            with open('/tmp/prompt_dump.txt', 'w') as f:
+                f.write("=== SYSTEM ===\n" + system_prompt + "\n=== USER ===\n" + user_prompt)
             resp = requests.post(
                 f"{OLLAMA_URL}/api/chat",
                 json={
@@ -159,7 +161,7 @@ def _call_ollama(system_prompt: str, user_prompt: str, temperature: float, max_t
                     "options": {
                         "temperature": temperature,
                         "num_predict": max_tokens,
-                        "num_ctx": 16384,
+                        "num_ctx": 32768,
                     },
                 },
                 timeout=TIMEOUT,
@@ -446,29 +448,21 @@ def validate_recommendations(
 
 def generate_recommendations(context_package, architecture_name: str = "",
                             raw_graph_data: Optional[dict] = None) -> RecommendationResult:
-    """Generate FinOps cost optimization recommendations — two-agent LangChain pipeline.
+    """Generate FinOps cost optimization recommendations — batched LLM pipeline.
 
     Pipeline:
       1. Index graph data (services, edges, lookups)
-      2. Assemble rich context (inventory, cost anchors, waste signals, deps, KB, RAG)
-      3. Run LangChain SequentialChain: Agent 1 (KB Linker) → Agent 2 (Generator)
-         Fallback: raw HTTP call_llm() if LangChain unavailable
+      2. Compute waste signals (pre-computed actions for logs, ECR, ECS, etc.)
+      3. Run batched LLM pipeline: 3-5 nodes per call, each with targeted KB
       4. Parse JSON → build rich cards via _build_rich_llm_card()
       5. Guard validate → normalize
     """
-
-    from src.llm.prompts import (
-        FINOPS_KB_LINKER_SYSTEM_PROMPT,
-        FINOPS_KB_LINKER_USER_PROMPT,
-        FINOPS_GENERATOR_SYSTEM_PROMPT,
-        FINOPS_GENERATOR_USER_PROMPT,
-    )
 
     start = time.time()
     result = RecommendationResult(architecture_name=architecture_name)
 
     logger.info("=" * 70)
-    logger.info("GENERATING RECOMMENDATIONS (LangChain Two-Agent FinOps Pipeline)")
+    logger.info("GENERATING RECOMMENDATIONS (Batched LLM Pipeline — 100%% LLM)")
     logger.info("Backend: %s", "Gemini Flash" if USE_GEMINI else "Qwen 2.5 (Ollama)")
     logger.info("=" * 70)
     try:
@@ -488,95 +482,57 @@ def generate_recommendations(context_package, architecture_name: str = "",
             pkg_dict, raw_graph_data, svc_by_name, svc_by_id, services, edges
         )
 
-        # ═══ STAGE 3: Two-Agent Pipeline (LangChain → fallback to raw HTTP) ═══
+        # ═══ STAGE 3: Batched LLM Pipeline — 3-5 nodes per call ═══
         raw_response = None
-        used_langchain = False
-        action_mapping: Dict[str, List[str]] = {}  # Tier 1 action mapping (initialized for validation later)
 
-        # ── Try LangChain pipeline first ──
         try:
-            from src.llm.langchain_chain import run_finops_chain
+            from src.llm.langchain_chain import run_finops_chain_batched
 
-            logger.info("[LANGCHAIN] Attempting LangChain two-agent pipeline...")
-            raw_response = run_finops_chain(
-                context_parts=context_parts,
+            logger.info("[BATCH] Starting batched LLM pipeline (%d services)...", len(services))
+            raw_response = run_finops_chain_batched(
+                services=services,
+                edges=edges,
+                waste_signals_text=context_parts.get("waste_signals", ""),
                 architecture_name=architecture_name,
+                batch_size=5,
             )
-            used_langchain = True
-            logger.info("[LANGCHAIN] ✓ Pipeline returned %d chars", len(raw_response or ""))
+            logger.info("[BATCH] ✓ Pipeline returned %d chars", len(raw_response or ""))
 
         except ImportError as ie:
-            logger.warning("[LANGCHAIN] LangChain not available, falling back to raw HTTP: %s", ie)
-        except Exception as lc_err:
-            logger.warning("[LANGCHAIN] Pipeline failed, falling back to raw HTTP: %s", lc_err, exc_info=True)
+            logger.warning("[BATCH] Import failed, falling back to single-agent: %s", ie)
+        except Exception as batch_err:
+            logger.warning("[BATCH] Pipeline failed, falling back to single-agent: %s", batch_err, exc_info=True)
 
-        # ── Fallback: raw HTTP call_llm() (original path) ──
+        # ── Fallback: single-agent call if batched pipeline fails ──
         if not raw_response or len(raw_response.strip()) < 5:
-            if used_langchain:
-                logger.warning("[FALLBACK] LangChain returned empty output, trying raw HTTP path...")
+            from src.llm.prompts import FINOPS_GENERATOR_SYSTEM_PROMPT
 
-            logger.info("[FALLBACK] Running raw HTTP two-agent pipeline...")
-
-            # Agent 1: KB Linker
-            linker_user_prompt = FINOPS_KB_LINKER_USER_PROMPT.format(
-                service_inventory=context_parts.get("service_inventory", ""),
-                cost_anchors=context_parts.get("cost_anchors", ""),
-                best_practices=context_parts.get("best_practices", ""),
-                rag_knowledge=context_parts.get("rag_knowledge", ""),
+            logger.info("[FALLBACK] Running single-agent pipeline...")
+            _combined = (
+                "\u2501\u2501\u2501 SECTION 1: SERVICE INVENTORY \u2501\u2501\u2501\n" + context_parts.get("service_inventory", "") +
+                "\n\n\u2501\u2501\u2501 SECTION 2: COST ANCHORS \u2501\u2501\u2501\n" + context_parts.get("cost_anchors", "") +
+                "\n\n\u2501\u2501\u2501 SECTION 3: FINOPS KNOWLEDGE BASE \u2501\u2501\u2501\n" + context_parts.get("best_practices", "") +
+                "\n\n\u2501\u2501\u2501 SECTION 4: RAG KNOWLEDGE \u2501\u2501\u2501\n" + context_parts.get("rag_knowledge", "") +
+                "\n\n\u2501\u2501\u2501 SECTION 5: DEPENDENCIES \u2501\u2501\u2501\n" + context_parts.get("dependency_map", "") +
+                "\n\n\u2501\u2501\u2501 SECTION 6: WASTE SIGNALS \u2501\u2501\u2501\n" + context_parts.get("waste_signals", "") +
+                "\n\n\u2501\u2501\u2501 GENERATE RECOMMENDATIONS \u2501\u2501\u2501\n"
+                "For EVERY resource: find KB strategy, look up cost, compute savings, write detailed finding + why_it_matters + CLI remediation.\n"
+                "Sort by estimated_savings_monthly descending. Return ONLY a JSON array."
             )
-
-            logger.info("[AGENT 1] Calling KB Linker (raw HTTP)...")
-            t_agent1 = time.time()
-            kb_mapping_response = call_llm(
-                system_prompt=FINOPS_KB_LINKER_SYSTEM_PROMPT,
-                user_prompt=linker_user_prompt,
-                temperature=0.2,
-                max_tokens=4000,
-                architecture_name=architecture_name + "_linker",
-            )
-            logger.info("[AGENT 1] Completed in %.1fs (%d chars)", time.time() - t_agent1, len(kb_mapping_response or ""))
-
-            # ═══════ TIER 1: SERVICE → ACTIONS MAPPER (NEW) ═══════
-            # Before Agent 2 (Generator), map services to actions to create contract
-            logger.info("[TIER 1] Starting service → actions mapper...")
-            t_tier1 = time.time()
-
-            action_mapping = map_services_to_actions(
-                service_inventory=services,
-                cost_anchors={"raw": context_parts.get("cost_anchors", "")},  # Pass raw formatted string
-                graph_data=raw_graph_data or {},
-                kb_context=context_parts.get("best_practices", {}),
-            )
-
-            tier1_elapsed = time.time() - t_tier1
-            logger.info(
-                "[TIER 1] ✓ Completed in %.1fs: %d resources with actions",
-                tier1_elapsed, len(action_mapping)
-            )
-
-            # Agent 2: Generator
-            generator_user_prompt = FINOPS_GENERATOR_USER_PROMPT.format(
-                cost_anchors=context_parts.get("cost_anchors", ""),
-                dependency_map=context_parts.get("dependency_map", ""),
-                kb_mappings=kb_mapping_response or "[]",
-            )
-
-            logger.info("[AGENT 2] Calling Generator (raw HTTP)...")
-            t_agent2 = time.time()
+            t_single = time.time()
             raw_response = call_llm(
                 system_prompt=FINOPS_GENERATOR_SYSTEM_PROMPT,
-                user_prompt=generator_user_prompt,
+                user_prompt=_combined,
                 temperature=0.2,
-                max_tokens=6000,
+                max_tokens=16000,
                 architecture_name=architecture_name,
             )
-            logger.info("[AGENT 2] Completed in %.1fs (%d chars)", time.time() - t_agent2, len(raw_response or ""))
+            logger.info("[FALLBACK] Single-agent completed in %.1fs (%d chars)", time.time() - t_single, len(raw_response or ""))
 
-        # ═══ STAGE 4: Parse Agent 2 output → rich cards ═══
+        # ═══ STAGE 4: Parse output → raw cards (lightweight passthrough) ═══
         llm_cards: List[Dict[str, Any]] = []
         try:
             if raw_response:
-                import re as _re
                 clean = raw_response.strip()
                 # Find the first '[' and last ']' to extract the JSON array
                 start_idx = clean.find('[')
@@ -590,14 +546,21 @@ def generate_recommendations(context_package, architecture_name: str = "",
                             for item in parsed:
                                 if not isinstance(item, dict):
                                     continue
-                                # Allow both 'title' and 'summary' to be used interchangeably
-                                title = item.get("title") or item.get("summary")
+                                title = item.get("title") or item.get("summary") or item.get("resource", "")
                                 if not title:
                                     continue
-                                item["title"] = title # Ensure _build_rich_llm_card finds it
-                                llm_cards.append(
-                                    _build_rich_llm_card(item, svc_by_name, svc_by_id, edges, services, raw_graph_data)
-                                )
+                                # Pass through raw LLM output as a lightweight card
+                                llm_cards.append({
+                                    "title": title,
+                                    "resource": item.get("resource", ""),
+                                    "finding": item.get("finding", ""),
+                                    "action": item.get("action", ""),
+                                    "category": item.get("category", "cost-optimization"),
+                                    "severity": str(item.get("severity", "medium")).lower(),
+                                    "source": "llm_proposed",
+                                    "total_estimated_savings": float(item.get("estimated_savings_monthly", 0) or 0),
+                                    "confidence_score": 70,
+                                })
                     except json.JSONDecodeError as je:
                         logger.warning("[LLM] JSON parse failed on extracted array: %s", je)
 
@@ -607,68 +570,18 @@ def generate_recommendations(context_package, architecture_name: str = "",
                 if not llm_cards:
                     llm_cards = _parse_all_recommendations(raw_response)
 
-                pipeline_label = "LANGCHAIN" if used_langchain else "RAW-HTTP"
-                logger.info("[%s] Parsed: %d rich cards", pipeline_label, len(llm_cards))
+                logger.info("[BATCH] Parsed: %d cards", len(llm_cards))
         except Exception as e:
             logger.error("[LLM] Card parsing failed: %s", e, exc_info=True)
 
 
-        # ═══ STAGE 5: Populate metrics + Guard validate ═══
-        if raw_graph_data:
-            llm_cards = [_populate_card_metrics(c, raw_graph_data) for c in llm_cards]
-
-        llm_cards = _guard_validate_cards(llm_cards, raw_graph_data or {})
+        # ═══ STAGE 5: Skip heavy guard/normalize — cards are raw LLM passthrough ═══
+        logger.info("[BATCH] Returning %d raw LLM cards (no guard filtering)", len(llm_cards))
 
         if not llm_cards:
             logger.warning("⚠️  No recommendations generated from LLM — returning empty set")
 
-        # ═══ STAGE 5.2: LIGHTWEIGHT VALIDATION (Tier-based filtering) ═══
-        # Filter recommendations against Tier 1 action mapping
-        if llm_cards and action_mapping:
-            logger.info("[VALIDATE] Applying lightweight validation filter (%d recommendations)...", len(llm_cards))
-
-            # Convert cards to dicts for validation
-            card_dicts_for_validation = []
-            for c in llm_cards:
-                if hasattr(c, '__dataclass_fields__'):
-                    card_dicts_for_validation.append(asdict(c))
-                else:
-                    card_dicts_for_validation.append(c)
-
-            # Apply validation
-            card_dicts_for_validation = validate_recommendations(
-                recommendations=card_dicts_for_validation,
-                services=services,
-                action_mapping=action_mapping,
-            )
-
-            # Convert back to original format if needed
-            llm_cards = card_dicts_for_validation
-            logger.info("[VALIDATE] ✓ After validation: %d recommendations remain", len(llm_cards))
-        else:
-            logger.debug("[VALIDATE] No action mapping available, skipping validation")
-
-        # ═══ STAGE 5.5: ENRICHMENT PASS (Pass 3) ═══
-        # For each recommendation, call LLM to generate deep analysis
-        if llm_cards and raw_graph_data:
-            logger.info("[ENRICHMENT] Starting Pass 3: Deep LLM analysis on %d recommendations...", len(llm_cards))
-            t_enrich = time.time()
-            try:
-                # Convert cards to dict format for enrichment
-                card_dicts = [asdict(c) if hasattr(c, '__dataclass_fields__') else c for c in llm_cards]
-                enriched_card_dicts = enrich_recommendations_pass_3(
-                    recommendations=card_dicts,
-                    raw_graph_data=raw_graph_data,
-                    context_parts=context_parts,
-                )
-                # Merge enriched fields back (the enrichment function modifies the dicts in-place via update())
-                llm_cards = enriched_card_dicts
-                logger.info("[ENRICHMENT] ✓ Completed in %.1fs", time.time() - t_enrich)
-            except Exception as enrich_err:
-                logger.warning("[ENRICHMENT] Failed, continuing with non-enriched recommendations: %s", enrich_err, exc_info=True)
-
-        # ═══ STAGE 6: Normalize to unified flat schema ═══
-        cards = normalize_recommendations(llm_cards)
+        cards = llm_cards
 
         result.cards = cards
         result.llm_used = bool(cards)
@@ -680,11 +593,10 @@ def generate_recommendations(context_package, architecture_name: str = "",
 
         logger.info("=" * 70)
         logger.info(
-            "COMPLETE: %d recommendations, $%.2f savings, %dms (%s)",
+            "COMPLETE: %d recommendations, $%.2f savings, %dms (batched-LLM)",
             len(cards),
             result.total_estimated_savings,
             result.generation_time_ms,
-            "LangChain" if used_langchain else "raw-HTTP",
         )
         logger.info("=" * 70)
 
@@ -806,7 +718,88 @@ def _assemble_finops_context(
         if stype == "database" and itype and ("xlarge" in itype or "2xlarge" in itype):
             waste_lines.append(f"⚠ DB RIGHT-SIZING: {name} uses {itype} at ${cost:,.0f}/mo — evaluate smaller instance class")
 
-    waste_signals = "\n".join(waste_lines) if waste_lines else "No waste signals detected."
+        # CloudWatch log groups — SET_LOG_RETENTION saves 40-60% by eliminating unbounded retention
+        if stype in ("logs", "cloudwatch", "log_group") or name.startswith("/aws/"):
+            retention_raw = attrs.get("retention_in_days", attrs.get("retention_days", None))
+            retention = None
+            try:
+                if retention_raw is not None and str(retention_raw).lower() not in ("never", "infinite", "none"):
+                    retention = int(retention_raw)
+            except (ValueError, TypeError):
+                retention = None
+
+            if retention is None or retention == 0:
+                savings = round(cost * 0.50, 2)
+                waste_lines.append(
+                    f"⚠ LOG RETENTION UNSET: {name} (CloudWatch log group) costs ${cost:.2f}/mo with no retention policy. "
+                    f"ACTION=SET_LOG_RETENTION 14 days → saves ~${savings:.2f}/mo (50%). "
+                    f"CLI: aws logs put-retention-policy --log-group-name \"{name}\" --retention-in-days 14"
+                )
+            elif retention > 90:
+                savings = round(cost * 0.35, 2)
+                waste_lines.append(
+                    f"⚠ LOG RETENTION TOO LONG: {name} retains logs for {retention} days costing ${cost:.2f}/mo. "
+                    f"ACTION=SET_LOG_RETENTION 30 days → saves ~${savings:.2f}/mo (35%). "
+                    f"CLI: aws logs put-retention-policy --log-group-name \"{name}\" --retention-in-days 30"
+                )
+
+        # ECR / Container registry — lifecycle policy eliminates untagged images
+        if stype in ("ecr", "container_registry", "registry"):
+            savings = round(cost * 0.40, 2)
+            waste_lines.append(
+                f"⚠ ECR LIFECYCLE MISSING: {name} lacks an image lifecycle policy — untagged images accumulate. "
+                f"ACTION=ADD_LIFECYCLE → saves ~${savings:.2f}/mo (40%). "
+                f"CLI: aws ecr put-lifecycle-policy --repository-name {name} --lifecycle-policy-text '{{\"rules\":[{{\"rulePriority\":1,\"selection\":{{\"tagStatus\":\"untagged\",\"countType\":\"sinceImagePushed\",\"countUnit\":\"days\",\"countNumber\":14}},\"action\":{{\"type\":\"expire\"}}}}]}}'"
+            )
+
+        # Container/ECS tasks running on x86 eligible for Graviton (arm64)
+        if stype in ("container", "ecs_service", "ecs", "fargate") and cost > 5:
+            savings = round(cost * 0.20, 2)
+            waste_lines.append(
+                f"⚠ GRAVITON CANDIDATE (ECS): {name} running on x86 Fargate at ${cost:.2f}/mo. "
+                f"ACTION=MOVE_TO_GRAVITON (arm64 platform) → saves ~${savings:.2f}/mo (20%). "
+                f"CLI: aws ecs update-service --cluster <cluster> --service {name} --platform-version LATEST "
+                f"(add runtimePlatform cpuArchitecture=ARM64)"
+            )
+
+        # SageMaker Studio — expensive notebook instances left running
+        if stype in ("sagemaker", "ml", "notebook") and cost > 10:
+            savings = round(cost * 0.60, 2)
+            waste_lines.append(
+                f"⚠ SAGEMAKER IDLE COST: {name} costs ${cost:.2f}/mo — Studio/notebook instances run 24/7 if not stopped. "
+                f"ACTION=SCHEDULE_STOP_START (stop after 1h idle) → saves ~${savings:.2f}/mo (60%). "
+                f"CLI: aws sagemaker stop-notebook-instance --notebook-instance-name {name}"
+            )
+
+        # NAT Gateway — VPC Endpoints eliminate data processing charges
+        if stype in ("nat_gateway", "nat", "network") and cost > 20:
+            savings = round(cost * 0.45, 2)
+            waste_lines.append(
+                f"⚠ NAT GATEWAY COST: {name} costs ${cost:.2f}/mo including data-processing charges. "
+                f"ACTION=NAT_TO_VPC_ENDPOINT for S3/DynamoDB traffic → saves ~${savings:.2f}/mo (45%). "
+                f"CLI: aws ec2 create-vpc-endpoint --vpc-id <vpc> --service-name com.amazonaws.<region>.s3 --route-table-ids <rtb>"
+            )
+
+        # Dev/staging resources with Multi-AZ enabled (pure waste)
+        env = s.get("environment", "")
+        multi_az = attrs.get("multi_az", attrs.get("multi_az_enabled", False))
+        if env in ("dev", "staging", "development", "test") and multi_az and cost > 0:
+            savings = round(cost * 0.50, 2)
+            waste_lines.append(
+                f"⚠ MULTI-AZ IN DEV: {name} has Multi-AZ=enabled in {env} environment at ${cost:.2f}/mo. "
+                f"ACTION=DISABLE_MULTI_AZ → saves ~${savings:.2f}/mo (50%). "
+                f"CLI: aws rds modify-db-instance --db-instance-identifier {name} --no-multi-az --apply-immediately"
+            )
+
+        # ElastiCache with replication in dev
+        if stype in ("cache", "elasticache", "redis") and env in ("dev", "staging") and cost > 5:
+            savings = round(cost * 0.40, 2)
+            waste_lines.append(
+                f"⚠ ELASTICACHE OVERPROVISIONED: {name} runs with replication in {env} at ${cost:.2f}/mo. "
+                f"ACTION=DOWNSIZE to single-node → saves ~${savings:.2f}/mo (40%). "
+                f"CLI: aws elasticache modify-replication-group --replication-group-id {name} --num-node-groups 1 --apply-immediately"
+            )
+
 
     # ── SECTION 4: Dependency map ──
     dep_lines = []
@@ -847,7 +840,8 @@ def _assemble_finops_context(
     except Exception as e:
         logger.warning("[KB] Failed to load best practices: %s", e)
 
-    best_practices = "\n".join(bp_lines) if bp_lines else "AWS FinOps Best Practices: rightsize, Graviton, Savings Plans, storage tiering."
+    best_practices_raw = "\n".join(bp_lines) if bp_lines else "AWS FinOps Best Practices: rightsize, Graviton, Savings Plans, storage tiering."
+    best_practices = best_practices_raw[:2500]  # Hard cap: keep prompt compact
 
     # ── SECTION 6: RAG Knowledge (Pgvector Search) ──
     rag_knowledge = ""
@@ -874,9 +868,20 @@ def _assemble_finops_context(
     except Exception as e:
         logger.warning("[RAG] Failed to retrieve vector chunks: %s", e)
 
+    # Cap RAG to 1200 chars to save context space
+    if rag_knowledge and len(rag_knowledge) > 1200:
+        rag_knowledge = rag_knowledge[:1200] + "\n[...truncated for context budget...]"
+
+    # Cap waste signals and dependency map
+    waste_signals_raw = "\n".join(waste_lines) if waste_lines else "No waste signals detected."
+    waste_signals = waste_signals_raw[:1500]
+    dependency_map_raw = "\n".join(dep_lines) if dep_lines else "No dependencies found."
+    dependency_map = dependency_map_raw[:2000]
+
+    total_ctx = len(service_inventory) + len(cost_anchors) + len(waste_signals) + len(dependency_map) + len(best_practices) + len(rag_knowledge)
     logger.info(
-        "[CONTEXT] inventory=%d svcs, anchors=%d lines, waste=%d lines, deps=%d edges, bp=%d lines",
-        len(inv_lines), len(anchor_lines), len(waste_lines), len(dep_lines), len(bp_lines),
+        "[CONTEXT] inventory=%d svcs, anchors=%d lines, waste=%d lines, deps=%d edges, bp=%d lines | TOTAL CONTEXT CHARS: %d",
+        len(inv_lines), len(anchor_lines), len(waste_lines), len(dep_lines), len(bp_lines), total_ctx,
     )
 
     return {
@@ -1168,9 +1173,9 @@ def _build_rich_llm_card(
     impl_steps_raw = item.get("implementation_steps", [])
     perf_impact_llm = item.get("performance_impact", "")
     risk_assessment = item.get("risk_assessment", "")
-    confidence = item.get("confidence", "medium").lower()
-    complexity = item.get("complexity", "medium").lower()
-    why_it_matters_llm = item.get("why_it_matters", "")
+    confidence = str(item.get("confidence", "medium")).lower()
+    complexity = str(item.get("complexity", "medium")).lower()
+    why_it_matters_llm = str(item.get("why_it_matters", ""))
 
     # ── Resolve the resource from graph data ──
     svc = svc_by_name.get(resource_ref) or svc_by_id.get(resource_ref)

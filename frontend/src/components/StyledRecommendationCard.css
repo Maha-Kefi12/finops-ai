@@ -18,17 +18,34 @@
   gap: 1rem;
   padding: 1rem;
   width: 19rem;
-  min-height: 25rem;
+  min-height: 22rem;
+  border-radius: 1rem;
+}
+
+/* ── ENGINE CARD: AWS Orange/Purple dark theme ── */
+.plan--engine {
   background-color: hsla(240, 15%, 9%, 1);
   background-image:
     radial-gradient(at 88% 40%, hsla(240, 15%, 9%, 1) 0px, transparent 85%),
     radial-gradient(at 49% 30%, hsla(240, 15%, 9%, 1) 0px, transparent 85%),
     radial-gradient(at 14% 26%, hsla(240, 15%, 9%, 1) 0px, transparent 85%),
-    radial-gradient(at 0% 64%, hsla(263, 93%, 56%, 1) 0px, transparent 85%),
-    radial-gradient(at 41% 94%, hsla(284, 100%, 84%, 1) 0px, transparent 85%),
-    radial-gradient(at 100% 99%, hsla(306, 100%, 57%, 1) 0px, transparent 85%);
-  border-radius: 1rem;
-  box-shadow: 0 -16px 24px 0 rgba(255, 255, 255, 0.25) inset;
+    radial-gradient(at 0% 64%, hsla(30, 100%, 50%, 0.7) 0px, transparent 85%),
+    radial-gradient(at 41% 94%, hsla(36, 100%, 60%, 0.5) 0px, transparent 85%),
+    radial-gradient(at 100% 99%, hsla(263, 93%, 56%, 0.6) 0px, transparent 85%);
+  box-shadow: 0 -16px 24px 0 rgba(255, 153, 0, 0.15) inset;
+}
+
+/* ── AI INSIGHT CARD: Teal/Cyan/Blue theme ── */
+.plan--ai-insight {
+  background-color: hsla(210, 20%, 8%, 1);
+  background-image:
+    radial-gradient(at 88% 40%, hsla(210, 20%, 8%, 1) 0px, transparent 85%),
+    radial-gradient(at 49% 30%, hsla(210, 20%, 8%, 1) 0px, transparent 85%),
+    radial-gradient(at 14% 26%, hsla(210, 20%, 8%, 1) 0px, transparent 85%),
+    radial-gradient(at 0% 64%, hsla(174, 80%, 45%, 0.8) 0px, transparent 85%),
+    radial-gradient(at 41% 94%, hsla(199, 89%, 48%, 0.6) 0px, transparent 85%),
+    radial-gradient(at 100% 99%, hsla(220, 90%, 56%, 0.5) 0px, transparent 85%);
+  box-shadow: 0 -16px 24px 0 rgba(45, 212, 191, 0.15) inset;
 }
 
 .plan__border,
@@ -71,6 +88,26 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.plan--engine .plan__border::before {
+  background-image: linear-gradient(
+    0deg,
+    hsla(0, 0%, 100%, 0) 0%,
+    hsl(30, 100%, 50%) 40%,
+    hsl(30, 100%, 50%) 60%,
+    hsla(0, 0%, 40%, 0) 100%
+  );
+}
+
+.plan--ai-insight .plan__border::before {
+  background-image: linear-gradient(
+    0deg,
+    hsla(0, 0%, 100%, 0) 0%,
+    hsl(174, 80%, 45%) 40%,
+    hsl(199, 89%, 48%) 60%,
+    hsla(0, 0%, 40%, 0) 100%
+  );
 }
 
 .card_title__container .card_title {
@@ -125,6 +162,15 @@
   font-weight: 800;
 }
 
+.plan--engine .card__list_item .check {
+  background: linear-gradient(135deg, #FF9900, #EC7211);
+}
+
+.card__list .card__list_item .check--ai {
+  background: linear-gradient(135deg, #0d9488, #06b6d4);
+  font-size: 0.55rem;
+}
+
 .card__list .card__list_item .list_text {
   font-size: 0.75rem;
   color: var(--white);
@@ -161,14 +207,30 @@
   display: block;
   padding: 0.55rem;
   width: 100%;
-  background-image: linear-gradient(0deg, rgba(94, 58, 238, 1) 0%, rgba(197, 107, 240, 1) 100%);
   font-size: 0.75rem;
   color: var(--white);
   border: 0;
   border-radius: 9999px;
-  box-shadow: inset 0 -2px 25px -4px var(--white);
   text-decoration: none;
   text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+}
+
+.button--engine {
+  background-image: linear-gradient(0deg, rgba(255, 140, 0, 1) 0%, rgba(236, 114, 17, 1) 50%, rgba(197, 107, 240, 0.8) 100%);
+  box-shadow: inset 0 -2px 25px -4px rgba(255, 200, 100, 0.4);
+}
+
+.button--ai {
+  background-image: linear-gradient(0deg, rgba(13, 148, 136, 1) 0%, rgba(6, 182, 212, 1) 50%, rgba(56, 189, 248, 0.9) 100%);
+  box-shadow: inset 0 -2px 25px -4px rgba(153, 246, 228, 0.3);
+}
+
+.button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 
 .plan-drawer {
@@ -181,14 +243,23 @@
   background-color: hsla(240, 15%, 9%, 1);
   background-image:
     radial-gradient(at 82% 34%, hsla(240, 15%, 9%, 1) 0px, transparent 85%),
-    radial-gradient(at 10% 74%, hsla(263, 93%, 56%, 0.95) 0px, transparent 85%),
-    radial-gradient(at 98% 98%, hsla(306, 100%, 57%, 0.88) 0px, transparent 85%);
+    radial-gradient(at 10% 74%, hsla(30, 100%, 50%, 0.7) 0px, transparent 85%),
+    radial-gradient(at 98% 98%, hsla(263, 93%, 56%, 0.6) 0px, transparent 85%);
   box-shadow: 0 -16px 24px 0 rgba(255, 255, 255, 0.16) inset;
   opacity: 0;
   transform: translateX(-12px) scale(0.98);
   pointer-events: none;
   transition: opacity 0.28s ease, transform 0.28s ease;
   z-index: 30;
+}
+
+.plan-drawer--ai {
+  background-color: hsla(210, 20%, 8%, 1);
+  background-image:
+    radial-gradient(at 82% 34%, hsla(210, 20%, 8%, 1) 0px, transparent 85%),
+    radial-gradient(at 10% 74%, hsla(174, 80%, 45%, 0.8) 0px, transparent 85%),
+    radial-gradient(at 98% 98%, hsla(220, 90%, 56%, 0.5) 0px, transparent 85%);
+  box-shadow: 0 -16px 24px 0 rgba(45, 212, 191, 0.12) inset;
 }
 
 .plan-drawer__body {
@@ -288,6 +359,47 @@
   padding: 0.65rem;
   border-radius: 0.6rem;
   background: rgba(165, 108, 238, 0.22);
+}
+
+.drawer-highlight--ai {
+  padding: 0.65rem;
+  border-radius: 0.6rem;
+  background: rgba(45, 212, 191, 0.18);
+}
+
+/* ── AI Insight pricing row ── */
+.pricing--ai {
+  background: rgba(45, 212, 191, 0.12);
+  border: 1px solid rgba(45, 212, 191, 0.25);
+}
+
+.pricing--neutral {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ai-finding-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #5eead4;
+  letter-spacing: 0.06em;
+}
+
+.ai-confidence-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  background: rgba(45, 212, 191, 0.2);
+  color: #99f6e4;
+  border: 1px solid rgba(45, 212, 191, 0.3);
+}
+
+.neutral-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #a78bfa;
+  letter-spacing: 0.04em;
 }
 
 .plan-shell:hover .plan-drawer,
@@ -540,11 +652,6 @@
 .source-badge:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.source-badge__icon {
-  font-size: 0.85rem;
-  line-height: 1;
 }
 
 .source-badge__text {
