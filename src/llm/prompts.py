@@ -906,17 +906,36 @@ Generate as many unique recs as possible. Aim for 3-5 per high-cost resource.
 FINOPS_BATCH_USER_PROMPT = """━━━ RESOURCES TO ANALYZE ━━━
 {batch_inventory}
 
-━━━ COST DATA ━━━
+━━━ COST DATA (use ONLY these figures) ━━━
 {batch_costs}
 
+━━━ PRE-COMPUTED WASTE SIGNALS (mandatory — use these actions directly) ━━━
+{batch_waste_signals}
+
+━━━ AWS FINOPS BEST PRACTICES (KB) ━━━
+{batch_kb}
+
+━━━ ARCHITECTURAL DEPENDENCIES ━━━
+{batch_deps}
+
 ━━━ YOUR MISSION ━━━
-You are doing a thorough FinOps cost review. For EACH resource:
-1. Analyze its type, cost, environment, and configuration.
-2. Generate EVERY possible optimization — not just one. Think: sizing, scheduling, commitments, architecture, storage class, instance family.
-3. High-cost resources (>$10/mo) MUST have 3-5 different recs.
-4. Low-cost resources ($1-10/mo) should have at least 1-2 recs.
-5. estimated_savings_monthly MUST be > $0 on every single rec.
-6. NO duplicate action+resource combos.
+You are a VP of Cloud Engineering doing an exhaustive FinOps cost review.
+Your goal: generate the MAXIMUM number of unique, actionable recommendations.
+
+For EACH resource above:
+1. FIRST check WASTE SIGNALS above — if a signal exists for this resource, you MUST emit a rec using its ACTION and savings. These are mandatory.
+2. THEN check KB BEST PRACTICES — find every applicable strategy for the resource type.
+3. THEN think creatively across ALL categories: rightsizing, scheduling, commitments (Savings Plans/RIs), architecture changes, storage tiering, Graviton migration, lifecycle policies, log retention, cross-AZ optimization, consolidation.
+4. High-cost resources (>$10/mo) MUST have 3-5 different recs covering different optimization angles.
+5. Medium-cost resources ($1-10/mo) should have at least 2-3 recs.
+6. Even low-cost resources (<$1/mo) should have at least 1 rec if any optimization is possible.
+7. estimated_savings_monthly MUST be > $0 on every single rec.
+8. NO duplicate action+resource combos.
+9. Use EXACT resource names and costs from the data above.
+
+IMPORTANT: Do NOT hold back. Generate every valid optimization you can find.
+The more unique, well-justified recommendations, the better.
+
 Return ONLY a valid JSON array. No markdown, no wrapping, no commentary.
 """
 

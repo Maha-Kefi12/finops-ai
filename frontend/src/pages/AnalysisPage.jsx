@@ -18,7 +18,8 @@ import {
     Lightbulb, Wrench, ArrowUpRight, Cloud, Loader2,
     Network, Database, Server, ChevronUp, AlertCircle,
     Hash, Gauge, Box, ArrowDown, Code, BarChart2,
-    CircleDot, TrendingDown, Flame, HardDrive, Workflow, BookOpen, History, Settings, FileDown
+    CircleDot, TrendingDown, Flame, HardDrive, Workflow, BookOpen, History, Settings, FileDown,
+    X
 } from 'lucide-react'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -249,6 +250,147 @@ const COMPLEXITY_BADGE = {
     high: 'bg-red-50 text-red-600',
 }
 
+/* ── Compact AWS-Style Recommendation Card ──────────────── */
+function CompactAWSRecCard({ card, index, onToggle }) {
+    const theme = CATEGORY_THEMES[card.category] || CATEGORY_THEMES['right-sizing']
+    const Icon = theme.icon
+    const sevClass = SEVERITY_BADGE[card.severity] || SEVERITY_BADGE.medium
+    const title = cleanDisplayText(card.title)
+    const resource = card.resource_identification?.resource_id || card.resource || 'AWS Resource'
+    const savings = card.total_estimated_savings || 0
+
+    return (
+        <div 
+            className="group relative bg-white rounded-lg border border-slate-200 shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:border-slate-300 transition-all duration-300 overflow-hidden cursor-pointer flex flex-col h-full"
+            onClick={onToggle}
+        >
+            {/* Left accent bar - AWS Orange */}
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FF9900] shadow-[1px_0_4px_rgba(255,153,0,0.3)]" />
+            
+            <div className="p-5 pl-6 flex flex-col flex-1">
+                <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                        <div className="p-2 rounded-lg bg-orange-50 border border-orange-100 group-hover:bg-orange-100 group-hover:border-orange-200 transition-colors">
+                            <Icon className="w-4 h-4 text-[#FF9900]" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[10px] font-black text-[#FF9900] uppercase tracking-widest leading-none mb-1">
+                                {theme.label}
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-400 truncate" title={resource}>
+                                {resource}
+                            </span>
+                        </div>
+                    </div>
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border uppercase flex-shrink-0 tracking-tight ${sevClass}`}>
+                        {card.severity || 'medium'}
+                    </span>
+                </div>
+
+                <h5 className="text-sm font-black text-slate-900 line-clamp-2 leading-relaxed mb-5 min-h-[2.5rem] tracking-tight group-hover:text-[#FF9900] transition-colors">
+                    {title}
+                </h5>
+
+                <div className="flex items-end justify-between mt-auto">
+                    <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-400 uppercase font-black tracking-widest leading-none mb-1.5">Monthly Savings</span>
+                        <div className="flex items-baseline gap-0.5">
+                            <span className="text-2xl font-black text-emerald-600 leading-none tabular-nums tracking-tighter">
+                                ${savings.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-bold ml-0.5 uppercase">/mo</span>
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                        <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 mb-2">
+                           <BrainCircuit className="w-3.5 h-3.5 text-blue-500" />
+                           {card.confidence_score || 70}%
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-[#FF9900] group-hover:border-[#FF9900] transition-all duration-300 transform group-hover:translate-x-1 group-hover:-translate-y-1">
+                            <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+/* ── Floating Recommendation Modal ─────────────────────── */
+function RecommendationModal({ card, onClose }) {
+    if (!card) return null
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 lg:p-8">
+            {/* Backdrop */}
+            <div 
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300"
+                onClick={onClose}
+            />
+            
+            {/* Modal Container */}
+            <div className="relative w-full max-w-5xl max-h-[95vh] bg-white rounded-2xl shadow-[0_35px_100px_rgba(0,0,0,0.4)] border border-slate-200 overflow-hidden flex flex-col animate-in zoom-in-95 fade-in duration-500 ease-out">
+                {/* Header */}
+                <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-white via-white to-orange-50/30 backdrop-blur-md sticky top-0 z-10">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF9900] to-orange-600 text-white flex items-center justify-center shadow-lg shadow-orange-200 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
+                            <BrainCircuit className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-slate-900 tracking-tighter leading-none mb-1.5 flex items-center gap-2">
+                                AI Architecture Insight
+                                <span className="text-[10px] bg-[#FF9900] text-white px-2 py-0.5 rounded-full font-black uppercase tracking-widest">Live</span>
+                            </h3>
+                            <div className="flex items-center gap-2.5">
+                                <span className="text-[11px] text-slate-500 uppercase font-black tracking-widest">Comprehensive Analysis</span>
+                                <span className="w-1 h-1 rounded-full bg-slate-300" />
+                                <span className="text-[11px] text-[#FF9900] font-black uppercase tracking-widest">AWS Console Standard</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={onClose}
+                        className="p-3 rounded-2xl hover:bg-orange-50 text-slate-400 hover:text-[#FF9900] transition-all duration-300 active:scale-90 group"
+                    >
+                        <X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
+                    </button>
+                </div>
+
+                {/* Body (Scrollable) */}
+                <div className="flex-1 overflow-y-auto bg-slate-50/30">
+                    <div className="max-w-4xl mx-auto p-6 lg:p-10">
+                        <FullRecommendationCard 
+                            card={card} 
+                            isExpanded={true} 
+                            onToggle={() => {}} 
+                        />
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-8 py-5 bg-white border-t border-slate-100 flex items-center justify-between shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
+                    <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 font-black uppercase tracking-widest">
+                            <Shield className="w-4 h-4 text-[#FF9900]" /> High Precision
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 font-black uppercase tracking-widest">
+                            <Zap className="w-4 h-4 text-emerald-500" /> One-Click Deploy
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={onClose}
+                            className="px-8 py-3 bg-slate-900 text-white rounded-2xl text-[13px] font-black uppercase tracking-widest hover:bg-[#FF9900] transition-all duration-300 active:scale-95 shadow-xl shadow-slate-200"
+                        >
+                            Dismiss Analysis
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
     const theme = CATEGORY_THEMES[card.category] || CATEGORY_THEMES['right-sizing']
     const Icon = theme.icon
@@ -262,61 +404,62 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
     const titleDisplay = cleanDisplayText(card.title)
     const confScore = card.confidence_score || 0
     const confLabel = confScore >= 70 ? 'High' : confScore >= 40 ? 'Medium' : 'Low'
-    const confColor = confScore >= 70 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : confScore >= 40 ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-600 border-gray-200'
+    const confColor = confScore >= 70 ? 'bg-orange-100/50 text-[#FF9900] border-orange-200' : confScore >= 40 ? 'bg-orange-50/50 text-orange-600 border-orange-100' : 'bg-slate-50 text-slate-500 border-slate-200'
     const hasSavings = card.total_estimated_savings > 0
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-gray-200">
-            {/* Accent bar */}
-            <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${theme.color}, ${theme.color}99, ${theme.color}44)` }} />
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden transition-all duration-300">
+            {/* Accent bar - AWS Orange Gradient */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-[#FF9900] via-[#FF9900]/80 to-amber-400" />
 
             {/* Header */}
-            <div className="p-6 cursor-pointer" onClick={onToggle}>
-                <div className="flex items-start gap-5">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: theme.bg, border: `1px solid ${theme.border}` }}>
-                        <Icon className="w-6 h-6" style={{ color: theme.color }} />
+            <div className="p-8 cursor-pointer" onClick={onToggle}>
+                <div className="flex items-start gap-6">
+                    <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <Icon className="w-7 h-7 text-[#FF9900]" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${sevClass}`}>
+                        <div className="flex items-center gap-2.5 mb-3 flex-wrap">
+                            <span className={`text-[10px] font-black px-3 py-1 rounded-full border tracking-widest ${sevClass}`}>
                                 {(card.severity || 'medium').toUpperCase()}
                             </span>
-                            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: theme.bg, color: theme.color }}>
+                            <span className="text-[10px] font-black px-3 py-1 rounded-full bg-slate-900 text-white tracking-widest uppercase">
                                 {theme.label}
                             </span>
-                            <span className={`text-[10px] font-medium px-2.5 py-1 rounded-full ${complexClass}`}>
+                            <span className={`text-[10px] font-black px-3 py-1 rounded-full border tracking-widest ${complexClass}`}>
                                 {(card.implementation_complexity || 'medium').toUpperCase()} COMPLEXITY
                             </span>
                             {confScore > 0 && (
-                                <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${confColor}`}>
+                                <span className={`text-[10px] font-black px-3 py-1 rounded-full border tracking-widest uppercase ${confColor}`}>
                                     {confLabel} Confidence
                                 </span>
                             )}
                         </div>
-                        <h4 className="text-lg font-bold text-gray-900 mb-2 tracking-tight">{titleDisplay}</h4>
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                            {res.service_name && <span className="flex items-center gap-1.5"><Server className="w-3.5 h-3.5" />{cleanDisplayText(res.service_name)}</span>}
-                            {res.service_type && <span className="flex items-center gap-1.5"><Box className="w-3.5 h-3.5" />{cleanDisplayText(res.service_type)}</span>}
-                            {res.region && <span className="flex items-center gap-1.5"><Cloud className="w-3.5 h-3.5" />{res.region}</span>}
+                        <h4 className="text-xl font-black text-slate-900 mb-3 tracking-tight leading-tight">{titleDisplay}</h4>
+                        <div className="flex items-center gap-5 text-[11px] text-slate-500 font-bold uppercase tracking-wider">
+                            {res.service_name && <span className="flex items-center gap-2"><Server className="w-4 h-4 text-[#FF9900]" />{cleanDisplayText(res.service_name)}</span>}
+                            {res.service_type && <span className="flex items-center gap-2"><Box className="w-4 h-4 text-[#FF9900]" />{cleanDisplayText(res.service_type)}</span>}
+                            {res.region && <span className="flex items-center gap-2"><Cloud className="w-4 h-4 text-[#FF9900]" />{res.region}</span>}
                         </div>
                     </div>
                     <div className="text-right flex-shrink-0">
                         {hasSavings ? (
-                            <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2.5">
-                                <p className="text-[10px] text-emerald-600 uppercase font-semibold tracking-wider">Savings</p>
-                                <p className="text-2xl font-black text-emerald-700">
+                            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-3 shadow-sm">
+                                <p className="text-[10px] text-emerald-600 uppercase font-black tracking-widest mb-1">Monthly Savings</p>
+                                <p className="text-3xl font-black text-emerald-700 leading-none">
                                     ${card.total_estimated_savings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </p>
-                                <p className="text-[10px] text-emerald-600">per month</p>
                             </div>
                         ) : (
-                            <div className="rounded-xl px-4 py-2.5" style={{ backgroundColor: theme.bg, border: `1px solid ${theme.border}` }}>
-                                <p className="text-[10px] uppercase font-semibold tracking-wider" style={{ color: theme.color }}>{theme.label}</p>
-                                <p className="text-sm font-bold text-gray-700">Optimization</p>
+                            <div className="rounded-2xl px-5 py-3 bg-orange-50 border border-orange-100 shadow-sm">
+                                <p className="text-[10px] text-[#FF9900] uppercase font-black tracking-widest mb-1">{theme.label}</p>
+                                <p className="text-sm font-black text-slate-700">Optimization Required</p>
                             </div>
                         )}
-                        <div className="mt-3 flex justify-end">
-                            {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                        <div className="mt-4 flex justify-end">
+                            <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                                {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -348,35 +491,35 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
                             </h5>
 
                             {/* Stats row: Blast Radius + Dependency Count + Centrality */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                                 {card.graph_context.blast_radius_pct > 0 && (
-                                    <div className={`rounded-xl p-4 border ${card.graph_context.blast_radius_pct > 50 ? 'bg-red-50 border-red-200' : card.graph_context.blast_radius_pct > 25 ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200'}`}>
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Blast Radius</p>
-                                        <p className={`text-2xl font-black ${card.graph_context.blast_radius_pct > 50 ? 'text-red-600' : card.graph_context.blast_radius_pct > 25 ? 'text-amber-600' : 'text-gray-700'}`}>
+                                    <div className={`rounded-2xl p-5 border shadow-sm ${card.graph_context.blast_radius_pct > 50 ? 'bg-red-50 border-red-100' : card.graph_context.blast_radius_pct > 25 ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-200'}`}>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Blast Radius</p>
+                                        <p className={`text-3xl font-black leading-none mb-1 ${card.graph_context.blast_radius_pct > 50 ? 'text-red-600' : card.graph_context.blast_radius_pct > 25 ? 'text-amber-600' : 'text-slate-700'}`}>
                                             {card.graph_context.blast_radius_pct}%
                                         </p>
-                                        <p className="text-[10px] text-gray-500">{card.graph_context.blast_radius_services} services affected</p>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase">{card.graph_context.blast_radius_services} Impacted</p>
                                     </div>
                                 )}
                                 {card.graph_context.dependency_count > 0 && (
-                                    <div className="rounded-xl p-4 bg-blue-50 border border-blue-200">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Depends On It</p>
-                                        <p className="text-2xl font-black text-blue-700">{card.graph_context.dependency_count}</p>
-                                        <p className="text-[10px] text-gray-500">upstream services</p>
+                                    <div className="rounded-2xl p-5 bg-orange-50 border border-orange-100 shadow-sm">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-[#FF9900] mb-2">Incoming Deps</p>
+                                        <p className="text-3xl font-black text-slate-800 leading-none mb-1">{card.graph_context.dependency_count}</p>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase">Upstream Svcs</p>
                                     </div>
                                 )}
                                 {card.graph_context.centrality > 0 && (
-                                    <div className="rounded-xl p-4 bg-violet-50 border border-violet-200">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Centrality</p>
-                                        <p className="text-2xl font-black text-violet-700">{card.graph_context.centrality.toFixed(4)}</p>
-                                        <p className="text-[10px] text-gray-500">{card.graph_context.severity_label || 'architectural importance'}</p>
+                                    <div className="rounded-2xl p-5 bg-amber-50 border border-amber-100 shadow-sm">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-2">Centrality</p>
+                                        <p className="text-3xl font-black text-slate-800 leading-none mb-1">{card.graph_context.centrality.toFixed(4)}</p>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase">Topology Rank</p>
                                     </div>
                                 )}
                                 {card.graph_context.depends_on_count > 0 && (
-                                    <div className="rounded-xl p-4 bg-slate-50 border border-slate-200">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Depends On</p>
-                                        <p className="text-2xl font-black text-slate-700">{card.graph_context.depends_on_count}</p>
-                                        <p className="text-[10px] text-gray-500">downstream deps</p>
+                                    <div className="rounded-2xl p-5 bg-slate-50 border border-slate-200 shadow-sm">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Outgoing Deps</p>
+                                        <p className="text-3xl font-black text-slate-800 leading-none mb-1">{card.graph_context.depends_on_count}</p>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase">Downstream Svcs</p>
                                     </div>
                                 )}
                             </div>
@@ -406,7 +549,7 @@ function FullRecommendationCard({ card, index, isExpanded, onToggle }) {
                                     <p className="text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-2">Services that depend on this resource:</p>
                                     <div className="flex flex-wrap gap-2">
                                         {card.graph_context.dependent_services.map((svc, i) => (
-                                            <span key={i} className="text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200 font-medium">
+                                            <span key={i} className="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-xl border border-orange-100 font-bold uppercase tracking-tight">
                                                 {svc}
                                             </span>
                                         ))}
@@ -1470,6 +1613,7 @@ export default function AnalysisPage() {
     const [recLoading, setRecLoading] = useState(false)
     const [recError, setRecError] = useState(null)
     const [expandedCards, setExpandedCards] = useState({})
+    const [activeCard, setActiveCard] = useState(null)
     const [recRefreshing, setRecRefreshing] = useState(false)  // Background refresh state
 
     // Recommendation history state
@@ -1952,7 +2096,7 @@ export default function AnalysisPage() {
             {/* ═══ Recommendation Cards Tab ═══ */}
             {activeTab === 'recommendations' && selectedArch && (
                 <div className="space-y-6">
-                    {/* Background refresh indicator - only show if refreshing and we have results */}
+                    {/* Background refresh indicator */}
                     {recRefreshing && recResult && (
                         <div className="card p-3 bg-blue-50 border-blue-200 flex items-center gap-2">
                             <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
@@ -1960,114 +2104,161 @@ export default function AnalysisPage() {
                         </div>
                     )}
 
-                    {/* Loading - only show if loading and no previous results */}
+                    {/* Loading state (no previous results) */}
                     {recLoading && !recResult && (
-                        <div className="card p-10 flex flex-col items-center justify-center">
+                        <div className="card p-16 flex flex-col items-center justify-center">
                             <div className="relative mb-6">
-                                <div className="w-16 h-16 rounded-full border-4 border-purple-100 border-t-purple-600 animate-spin" />
-                                <Lightbulb className="w-7 h-7 text-purple-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                                <div className="w-16 h-16 rounded-full border-4 border-orange-100 border-t-orange-600 animate-spin" />
+                                <Lightbulb className="w-8 h-8 text-orange-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                             </div>
-                            <p className="text-gray-900 font-semibold mb-3">Discovering from CUR &amp; Generating Recommendations</p>
-                            <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
-                                {['Discovering from CUR', 'Graph Theory Analysis', 'Graph RAG Docs', 'LLM Recommendations'].map((step, i) => (
-                                    <span key={i} className="flex items-center gap-1">
-                                        <span className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-emerald-500 animate-pulse' :
-                                            i === 1 ? 'bg-blue-400 animate-pulse' :
-                                                i === 2 ? 'bg-purple-400' : 'bg-gray-300'
-                                            }`} />
-                                        {step}
-                                        {i < 3 && <span className="text-gray-300 mx-1">→</span>}
-                                    </span>
-                                ))}
-                            </div>
-                            <p className="text-[11px] text-gray-400 text-center max-w-lg">
-                                8-section context package · Centrality &amp; PageRank analysis ·
-                                Monte Carlo predictions · FinOps best practices from /docs ·
-                                Strict 5-section recommendation cards
+                            <p className="text-gray-900 font-bold mb-2 text-center text-lg">Analyzing Architecture Cost Signals...</p>
+                            <p className="text-sm text-gray-400 text-center max-w-md">
+                                Discovering usage from CUR data • Maping dependencies • Applying GraphRAG grounded AI logic
                             </p>
                         </div>
                     )}
 
-                    {/* Error */}
+                    {/* Error state */}
                     {recError && (
-                        <div className="card p-5 border-red-200 bg-red-50">
-                            <div className="flex items-center gap-2 text-red-700 mb-2">
-                                <XCircle className="w-5 h-5" />
-                                <span className="font-bold text-sm">Recommendation Generation Failed</span>
+                        <div className="card p-6 border-red-200 bg-red-50">
+                            <div className="flex items-center gap-3 text-red-700 mb-4">
+                                <AlertCircle className="w-6 h-6" />
+                                <span className="font-bold">Recommendation Generation Failed</span>
                             </div>
-                            <p className="text-sm text-red-600">{recError}</p>
-                            <div className="mt-3 flex items-center gap-3">
-                                <button onClick={runRecommendations} className="text-sm text-red-700 underline hover:text-red-900">Retry</button>
-                                <button onClick={loadLastRecommendations} className="text-sm text-blue-600 underline hover:text-blue-800">Load last result from DB</button>
+                            <p className="text-sm text-red-600 mb-6">{recError}</p>
+                            <div className="flex items-center gap-3">
+                                <button onClick={runRecommendations} className="btn-primary bg-red-600 hover:bg-red-700">Retry Analysis</button>
+                                <button onClick={loadLastRecommendations} className="btn-secondary">Load Cached Result</button>
                             </div>
                         </div>
                     )}
 
-                    {/* Results */}
+                    {/* Results Display */}
                     {recResult && (
-                        <div className="space-y-6">
-                            {/* Summary bar */}
-                            <div className="card p-5 bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
-                                <div className="flex flex-col items-center justify-center gap-4 text-center">
-                                    <div className="flex items-center gap-3 justify-center">
-                                        <div className="w-10 h-10 rounded-lg bg-purple-100 border border-purple-200 flex items-center justify-center">
-                                            <Lightbulb className="w-5 h-5 text-purple-600" />
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            
+                            {/* Summary bar — AWS Orange Console Style */}
+                            <div className="card p-6 bg-gradient-to-r from-amber-50 via-orange-50/20 to-white border-amber-200 shadow-sm overflow-hidden relative">
+                                <div className="absolute top-0 right-0 w-48 h-48 bg-[#FF9900]/5 rounded-full blur-3xl -mr-24 -mt-24" />
+                                
+                                <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-14 h-14 rounded-2xl bg-white border border-orange-200 flex items-center justify-center shadow-lg shadow-orange-100/50">
+                                            <Lightbulb className="w-7 h-7 text-[#FF9900]" />
                                         </div>
                                         <div>
-                                            <div className="flex items-center gap-2 flex-wrap justify-center">
-                                                <h3 className="text-base font-bold text-gray-900">
-                                                    Optimization Recommendations
+                                            <div className="flex items-center gap-3 flex-wrap">
+                                                <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                                                    Infrastructure Optimizations
                                                 </h3>
-                                                <span className="inline-flex items-center justify-center min-w-9 h-9 px-3 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 text-white text-sm font-black shadow-sm">
+                                                <span className="inline-flex items-center justify-center min-w-10 h-10 px-4 rounded-xl bg-[#FF9900] text-white text-base font-black shadow-lg shadow-orange-200">
                                                     {displayRecommendations.length}
                                                 </span>
                                             </div>
-                                            <p className="text-xs text-gray-500">Action-ready AWS cost and risk optimization plan</p>
+                                            <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest mt-1">Automated Cost & Resilience Strategy</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-center">
-                                        <div className="text-center">
-                                            <p className="text-[10px] text-gray-400 uppercase font-semibold">Total Potential Savings</p>
-                                            <p className="text-2xl font-black text-emerald-600">
-                                                ${displayedTotalSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span className="text-sm text-gray-400 font-normal">/mo</span>
-                                            </p>
+
+                                    <div className="flex flex-col items-center md:items-end">
+                                        <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Total Potential Savings</p>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-3xl font-black text-emerald-600 tabular-nums">
+                                                ${displayedTotalSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                            <span className="text-xs font-bold text-slate-400 uppercase">/mo</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-center gap-3">
+
+                                    <div className="flex items-center gap-3">
                                         <button
                                             onClick={runRecommendations}
                                             disabled={recLoading}
-                                            className="btn-secondary text-xs"
-                                            title="Run a fresh Engine + LLM recommendation pipeline"
+                                            className="px-5 py-2.5 bg-slate-900 group-hover:bg-[#FF9900] text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-slate-200"
                                         >
-                                            {recLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} Run AI Cost Analysis
+                                            {recLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} Re-Analyze
                                         </button>
-                                        {recResult && (
-                                            <button
-                                                onClick={handleExportRecommendationsPdf}
-                                                className="btn-secondary text-xs"
-                                                title="Export recommendations as PDF"
-                                            >
-                                                <FileDown className="w-3.5 h-3.5" /> Export PDF
-                                            </button>
-                                        )}
+                                        <button onClick={handleExportRecommendationsPdf} className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
+                                            <FileDown className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Raw JSON LLM Output View */}
-                            <div className="bg-slate-900 rounded-xl border border-slate-700 shadow-inner overflow-hidden flex flex-col">
-                                <div className="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-slate-300">Raw LLM Output (JSON)</span>
-                                </div>
-                                <div className="p-4 overflow-y-auto max-h-[800px] text-xs font-mono text-emerald-400">
-                                    <pre>{JSON.stringify(displayRecommendations, null, 2)}</pre>
-                                </div>
+                            {/* AWS-Style Card Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {displayRecommendations.map((card, idx) => (
+                                    <CompactAWSRecCard
+                                        key={card?.title || `rec-${idx}`}
+                                        card={card}
+                                        index={idx}
+                                        onToggle={() => setActiveCard(card)}
+                                    />
+                                ))}
                             </div>
+
+                            {/* Floating Detailed Modal */}
+                            {activeCard && (
+                                <RecommendationModal 
+                                    card={activeCard} 
+                                    onClose={() => setActiveCard(null)} 
+                                />
+                            )}
+
+                            {/* Quick List Summary */}
+                            {summaryDisplayLines.length > 0 && (
+                                <div className="card p-6 bg-slate-50 border-slate-200 border-dashed">
+                                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <History className="w-4 h-4" />
+                                        Executive Summary Log
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {summaryDisplayLines.map((line, i) => {
+                                            const savingsMatch = line.match(/\$([0-9,.]+)\/mo/)
+                                            const savings = savingsMatch ? savingsMatch[1] : null
+                                            const isAI = line.includes('[AI]')
+                                            return (
+                                                <div key={i} className="flex items-center gap-3 bg-white border border-slate-100 rounded-xl px-4 py-3 hover:border-[#FF9900]/30 transition-all cursor-pointer group"
+                                                     onClick={() => {
+                                                         const target = displayRecommendations[i]
+                                                         if (target) setActiveCard(target)
+                                                     }}>
+                                                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase ${isAI ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-50 text-slate-600 border-slate-100'}`}>
+                                                        {isAI ? 'AI' : 'System'}
+                                                    </span>
+                                                    <span className="text-sm text-slate-700 flex-1 font-medium truncate group-hover:text-slate-900">
+                                                        {cleanDisplayText(line.replace(/^\d+\.\s*\[(AI|Engine)\]\s*/, ''))}
+                                                    </span>
+                                                    {savings && (
+                                                        <span className="text-xs font-black text-emerald-600">
+                                                            +${savings}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Raw Data Toggle */}
+                            <details className="group">
+                                <summary className="cursor-pointer flex items-center gap-2 text-[10px] text-slate-400 hover:text-slate-600 font-bold uppercase tracking-widest px-1">
+                                    <ChevronDown className="w-3.5 h-3.5 group-open:rotate-180 transition-transform" />
+                                    View Raw Telemetry Output (JSON)
+                                </summary>
+                                <div className="mt-3 bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden animate-in slide-in-from-top-2">
+                                    <div className="p-5 overflow-y-auto max-h-[500px] text-[11px] font-mono text-emerald-400/80 leading-relaxed">
+                                        <pre>{JSON.stringify(displayRecommendations, null, 2)}</pre>
+                                    </div>
+                                </div>
+                            </details>
                         </div>
                     )}
                 </div>
             )}
+
+
+
 
             {/* ═══ AI Agent Pipeline Tab ═══ */}
             {activeTab === 'agents' && selectedArch && (

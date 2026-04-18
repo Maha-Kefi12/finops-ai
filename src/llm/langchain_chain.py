@@ -45,7 +45,7 @@ class OllamaFinOpsLLM(LLM):
     model: str = OLLAMA_MODEL
     base_url: str = OLLAMA_URL
     temperature: float = 0.2
-    max_tokens: int = 6000
+    max_tokens: int = 16000
     timeout: int = TIMEOUT
 
     @property
@@ -80,7 +80,7 @@ class OllamaFinOpsLLM(LLM):
                         "options": {
                             "temperature": self.temperature,
                             "num_predict": self.max_tokens,
-                            "num_ctx": 8192,
+                            "num_ctx": 32768,
                         },
                     },
                     timeout=self.timeout,
@@ -474,7 +474,7 @@ def run_finops_chain_batched(
     failed_batches = 0
 
     # Get LLM with generous timeout — 15 mins for the giant single batch
-    llm = _get_llm(max_tokens=6000, temperature=0.2)
+    llm = _get_llm(max_tokens=12000, temperature=0.2)
     llm.timeout = 300  # 5 minutes max per batch
 
     # SEQUENTIAL execution — Ollama can only handle 1 inference at a time
@@ -489,13 +489,19 @@ def run_finops_chain_batched(
 
         for attempt in range(max_retries):
             try:
-                # Build per-batch context (only inventory + costs needed)
+                # Build per-batch context with ALL signals
                 inventory = _build_batch_inventory(batch_services)
                 costs = _build_batch_costs(batch_services)
+                batch_waste = _build_batch_waste(batch_services, waste_signals_text)
+                batch_kb = _build_batch_kb(batch_services)
+                batch_deps = _build_batch_deps(batch_services, edges)
 
                 user_prompt = FINOPS_BATCH_USER_PROMPT.format(
                     batch_inventory=inventory,
                     batch_costs=costs,
+                    batch_waste_signals=batch_waste,
+                    batch_kb=batch_kb,
+                    batch_deps=batch_deps,
                 )
                 prompt = _build_prompt_string(FINOPS_BATCH_SYSTEM_PROMPT, user_prompt)
 

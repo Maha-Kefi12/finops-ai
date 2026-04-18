@@ -529,8 +529,8 @@ def generate_recommendations(context_package, architecture_name: str = "",
             )
             logger.info("[FALLBACK] Single-agent completed in %.1fs (%d chars)", time.time() - t_single, len(raw_response or ""))
 
-        # ═══ STAGE 4: Parse output → raw cards (lightweight passthrough) ═══
-        llm_cards: List[Dict[str, Any]] = []
+        # ═══ STAGE 4: Parse raw LLM JSON → enrich into rich cards ═══
+        raw_items: List[Dict[str, Any]] = []
         try:
             if raw_response:
                 clean = raw_response.strip()
@@ -549,34 +549,67 @@ def generate_recommendations(context_package, architecture_name: str = "",
                                 title = item.get("title") or item.get("summary") or item.get("resource", "")
                                 if not title:
                                     continue
-                                # Pass through raw LLM output as a lightweight card
-                                llm_cards.append({
-                                    "title": title,
-                                    "resource": item.get("resource", ""),
-                                    "finding": item.get("finding", ""),
-                                    "action": item.get("action", ""),
-                                    "category": item.get("category", "cost-optimization"),
-                                    "severity": str(item.get("severity", "medium")).lower(),
-                                    "source": "llm_proposed",
-                                    "total_estimated_savings": float(item.get("estimated_savings_monthly", 0) or 0),
-                                    "confidence_score": 70,
-                                })
+                                raw_items.append(item)
                     except json.JSONDecodeError as je:
                         logger.warning("[LLM] JSON parse failed on extracted array: %s", je)
 
-                # Fallback parsers if direct parsing failed or returned no valid cards
-                if not llm_cards:
-                    llm_cards = _parse_structured_json_recommendations(raw_response)
-                if not llm_cards:
-                    llm_cards = _parse_all_recommendations(raw_response)
+                # Fallback parsers if direct parsing failed
+                if not raw_items:
+                    raw_items = _parse_structured_json_recommendations(raw_response)
+                if not raw_items:
+                    raw_items = _parse_all_recommendations(raw_response)
 
-                logger.info("[BATCH] Parsed: %d cards", len(llm_cards))
+                logger.info("[BATCH] Parsed: %d raw items from LLM", len(raw_items))
         except Exception as e:
             logger.error("[LLM] Card parsing failed: %s", e, exc_info=True)
 
+        # ═══ STAGE 5: Enrich each raw item → full rich card ═══
+        llm_cards: List[Dict[str, Any]] = []
+        for item in raw_items:
+            try:
+                # Normalize the item into the shape _build_rich_llm_card expects
+                normalized = {
+                    "title": item.get("title") or item.get("summary") or item.get("resource", ""),
+                    "category": (item.get("category") or "cost-optimization").lower(),
+                    "severity": str(item.get("severity", "medium")).lower(),
+                    "resource": item.get("resource", ""),
+                    "finding": item.get("finding", ""),
+                    "remediation": item.get("action", ""),
+                    "estimated_savings_monthly": float(item.get("estimated_savings_monthly", 0) or 0),
+                    "current_monthly_cost": float(item.get("current_monthly_cost", 0) or 0),
+                    "confidence": item.get("confidence", "medium"),
+                    "complexity": item.get("complexity", "medium"),
+                    "why_it_matters": item.get("why_it_matters", ""),
+                    "implementation_steps": item.get("implementation_steps", []),
+                    "performance_impact": item.get("performance_impact", ""),
+                    "risk_assessment": item.get("risk_assessment", ""),
+                }
+                rich_card = _build_rich_llm_card(
+                    item=normalized,
+                    svc_by_name=svc_by_name,
+                    svc_by_id=svc_by_id,
+                    edges=edges,
+                    all_services=services,
+                    raw_graph_data=raw_graph_data or {},
+                )
+                llm_cards.append(rich_card)
+            except Exception as card_err:
+                logger.warning("[ENRICH] Failed to build rich card for '%s': %s",
+                               item.get("title", "?"), card_err)
+                # Fallback: still include as a lightweight card
+                llm_cards.append({
+                    "title": item.get("title") or item.get("resource", ""),
+                    "resource": item.get("resource", ""),
+                    "finding": item.get("finding", ""),
+                    "action": item.get("action", ""),
+                    "category": (item.get("category") or "cost-optimization").lower(),
+                    "severity": str(item.get("severity", "medium")).lower(),
+                    "source": "llm_proposed",
+                    "total_estimated_savings": float(item.get("estimated_savings_monthly", 0) or 0),
+                    "confidence_score": 70,
+                })
 
-        # ═══ STAGE 5: Skip heavy guard/normalize — cards are raw LLM passthrough ═══
-        logger.info("[BATCH] Returning %d raw LLM cards (no guard filtering)", len(llm_cards))
+        logger.info("[BATCH] Enriched %d / %d raw items into rich cards", len(llm_cards), len(raw_items))
 
         if not llm_cards:
             logger.warning("⚠️  No recommendations generated from LLM — returning empty set")
@@ -874,7 +907,7 @@ def _assemble_finops_context(
 
     # Cap waste signals and dependency map
     waste_signals_raw = "\n".join(waste_lines) if waste_lines else "No waste signals detected."
-    waste_signals = waste_signals_raw[:1500]
+    waste_signals = waste_signals_raw[:6000]
     dependency_map_raw = "\n".join(dep_lines) if dep_lines else "No dependencies found."
     dependency_map = dependency_map_raw[:2000]
 
