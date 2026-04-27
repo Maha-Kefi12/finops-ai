@@ -76,7 +76,7 @@ class DocumentIndexer:
     """Indexes documents into the vector database."""
     
     DOCS_DIR = '/app/docs' if os.path.isdir('/app/docs') else '/home/finops/finops-ai-system/docs'
-    BATCH_SIZE = 1000
+    BATCH_SIZE = 200
     
     def __init__(self, mode: str = 'full', verbose: bool = False):
         self.mode = mode
@@ -131,8 +131,13 @@ class DocumentIndexer:
         embeddings = self.embedder.batch_transform([chunk.text for chunk in chunks])
         return embeddings
     
-    def index_documents(self, mode: str = 'full') -> IndexingStats:
-        """Index all documents."""
+    def index_documents(self, mode: str = 'incremental') -> IndexingStats:
+        """Index all documents.
+
+        Args:
+            mode: 'incremental' (default) — skip chunks that already exist (by content_hash).
+                  'full' — re-index everything (drops existing chunks first).
+        """
         self.stats.start_time = datetime.utcnow()
         
         try:
@@ -173,64 +178,113 @@ class DocumentIndexer:
             
             # Step 3: Initialize embedder
             self.init_embedder(all_chunks)
-            
+
+            # ── SANITY CHECK: Verify embedding dimension matches DB schema ──
+            actual_dim = self.embedder.vocab_size
+            expected_dim = 128  # Must match vector(128) column in doc_chunks
+            if actual_dim != expected_dim:
+                raise RuntimeError(
+                    f"Embedding dimension mismatch: embedder produced {actual_dim} dims "
+                    f"but database expects {expected_dim}. "
+                    f"Check TFIDFEmbedder.MAX_FEATURES == {expected_dim}."
+                )
+            logger.info(f"✓ Dimension check passed: {actual_dim} dims == vector({expected_dim})")
+
+            # ── Persist vocabulary so the retrieval service uses the SAME space ──
+            # Without this, retrieve() re-fits on a different random sample and
+            # produces vectors that are NOT comparable to the stored embeddings.
+            vocab_path = os.path.join(os.path.dirname(__file__), "tfidf_vocab.json")
+            self.embedder.save(vocab_path)
+            logger.info(f"✓ Vocabulary saved to {vocab_path} ({self.embedder.vocab_size} tokens)")
+
             # Step 4: Insert into database in batches
+
             db = SessionLocal()
             try:
-                # Load existing hashes
-                if mode == 'incremental':
+                # If full mode, purge existing chunks first
+                if mode == 'full':
+                    deleted = db.execute(text("DELETE FROM doc_chunks")).rowcount
+                    db.commit()
+                    logger.info(f"[FULL MODE] Purged {deleted} existing chunks from doc_chunks")
+                    self.existing_hashes = set()  # Reset — nothing left to deduplicate against
+                else:
+                    # Incremental: skip already-indexed chunks
                     self.load_existing_hashes(db)
                 
                 # Process in batches
-                batch = []
+                total = len(all_chunks)
+                stored_in_batch = 0
+                skipped_errors = 0
+
                 for i, chunk in enumerate(all_chunks):
                     # Check for duplicates
                     if chunk.content_hash in self.existing_hashes:
                         self.stats.duplicate_chunks_skipped += 1
                         continue
-                    
-                    # Get embedding
-                    embedding = self.embedder.transform(chunk.text)
-                    
-                    # Create DocChunk
-                    doc_chunk = DocChunk(
-                        chunk_text=chunk.text,
-                        chunk_number=chunk.chunk_number,
-                        source_file=chunk.source_file,
-                        source_type=chunk.source_type,
-                        section_hierarchy=chunk.section_hierarchy,
-                        embedding=embedding,
-                        embedding_model='tfidf',
-                        chunk_size_chars=chunk.chunk_size_chars,
-                        content_hash=chunk.content_hash,
-                        indexed_at=datetime.utcnow(),
-                        metadata_json={
-                            'chunked_at': datetime.utcnow().isoformat(),
-                            'chunker_version': '1.0',
-                        }
-                    )
-                    
-                    batch.append(doc_chunk)
-                    self.stats.total_chunks_stored += 1
-                    
-                    # Batch insert
-                    if len(batch) >= self.BATCH_SIZE:
-                        db.bulk_save_objects(batch)
-                        db.commit()
-                        logger.info(f"Inserted batch of {len(batch)} chunks ({i + 1}/{len(all_chunks)} total)")
-                        batch = []
-                
-                # Insert remaining chunks
-                if batch:
-                    db.bulk_save_objects(batch)
+
+                    try:
+                        # Get embedding
+                        embedding = self.embedder.transform(chunk.text)
+
+                        # Create DocChunk
+                        doc_chunk = DocChunk(
+                            chunk_text=chunk.text,
+                            chunk_number=chunk.chunk_number,
+                            source_file=chunk.source_file,
+                            source_type=chunk.source_type,
+                            section_hierarchy=chunk.section_hierarchy,
+                            embedding=embedding,
+                            embedding_model='tfidf',
+                            chunk_size_chars=chunk.chunk_size_chars,
+                            content_hash=chunk.content_hash,
+                            indexed_at=datetime.utcnow(),
+                            metadata_json={
+                                'chunked_at': datetime.utcnow().isoformat(),
+                                'chunker_version': '1.1',
+                            }
+                        )
+
+                        db.add(doc_chunk)
+                        stored_in_batch += 1
+                        self.stats.total_chunks_stored += 1
+
+                        # Flush every 50 items to keep memory usage manageable
+                        if stored_in_batch % 50 == 0:
+                            db.flush()
+
+                        # Commit + log progress every BATCH_SIZE items
+                        if stored_in_batch % self.BATCH_SIZE == 0:
+                            db.commit()
+                            pct = round((i + 1) / total * 100, 1)
+                            logger.info(
+                                f"[INSERT] {self.stats.total_chunks_stored} chunks committed "
+                                f"({pct}% of {total} | {skipped_errors} errors skipped)"
+                            )
+
+                    except Exception as chunk_err:
+                        db.rollback()
+                        skipped_errors += 1
+                        if skipped_errors <= 10:
+                            logger.warning(
+                                f"[SKIP] Chunk {i} from {chunk.source_file} skipped: {chunk_err}"
+                            )
+
+                # Final commit for remaining items
+                try:
                     db.commit()
-                    logger.info(f"Inserted final batch of {len(batch)} chunks")
-                
+                    logger.info(
+                        f"[INSERT] Final commit: {self.stats.total_chunks_stored} total stored "
+                        f"({skipped_errors} skipped)"
+                    )
+                except Exception as final_err:
+                    logger.error(f"[INSERT] Final commit failed: {final_err}")
+                    db.rollback()
+
                 self.stats.total_files_indexed = self.stats.total_files_processed
                 self.stats.status = 'success'
-                
+
                 logger.info(f"✓ Indexing complete: {self.stats.total_chunks_stored} chunks stored")
-                
+
             finally:
                 db.close()
             

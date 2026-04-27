@@ -66,7 +66,7 @@ OLLAMA_MODEL = os.getenv("FINOPS_MODEL", "qwen2.5:7b")  # Use Qwen 2.5 7B as pri
 USE_GEMINI = os.getenv("USE_GEMINI", "false").lower() == "true" and GEMINI_API_KEY
 
 MAX_RETRIES = 3
-TIMEOUT = int(os.getenv("LLM_TIMEOUT", "1800"))  # Allow override via env var, default 30 minutes
+TIMEOUT = int(os.getenv("LLM_TIMEOUT", "3600"))  # Allow override via env var, increased to 1 hour for large prod jobs
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -524,7 +524,7 @@ def generate_recommendations(context_package, architecture_name: str = "",
                 system_prompt=FINOPS_GENERATOR_SYSTEM_PROMPT,
                 user_prompt=_combined,
                 temperature=0.2,
-                max_tokens=16000,
+                max_tokens=48000,
                 architecture_name=architecture_name,
             )
             logger.info("[FALLBACK] Single-agent completed in %.1fs (%d chars)", time.time() - t_single, len(raw_response or ""))
@@ -885,7 +885,7 @@ def _assemble_finops_context(
         top_names = [s.get("name", s.get("id")) for s in sorted_svcs[:10]]
         query = f"AWS FinOps cost optimization and right-sizing strategies for {', '.join(top_types)} and {', '.join(top_names)}"
         
-        chunks = retrieve(query, top_k=6)
+        chunks = retrieve(query, top_k=8)
         if chunks:
             rag_parts = []
             for i, c in enumerate(chunks):
@@ -901,9 +901,9 @@ def _assemble_finops_context(
     except Exception as e:
         logger.warning("[RAG] Failed to retrieve vector chunks: %s", e)
 
-    # Cap RAG to 1200 chars to save context space
-    if rag_knowledge and len(rag_knowledge) > 1200:
-        rag_knowledge = rag_knowledge[:1200] + "\n[...truncated for context budget...]"
+    # Allow up to 3000 chars of RAG context — Qwen 2.5's 32k window has plenty of room
+    if rag_knowledge and len(rag_knowledge) > 3000:
+        rag_knowledge = rag_knowledge[:3000] + "\n[...truncated for context budget...]"
 
     # Cap waste signals and dependency map
     waste_signals_raw = "\n".join(waste_lines) if waste_lines else "No waste signals detected."

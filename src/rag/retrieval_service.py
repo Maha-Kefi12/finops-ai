@@ -126,25 +126,44 @@ class RetrievalService:
         self.cache_enabled = cache_enabled
     
     def init_embedder(self) -> None:
-        """Initialize embedder by fitting on all chunks in database."""
+        """Initialize embedder from the persisted vocabulary file.
+
+        CRITICAL: We MUST load the same vocabulary that was used at index time.
+        Re-fitting on the DB chunks would produce a different vocabulary ordering,
+        making stored vectors and query vectors incomparable (all scores ~= 0).
+        """
+        import os
+        vocab_path = os.path.join(os.path.dirname(__file__), "tfidf_vocab.json")
+
+        if os.path.exists(vocab_path):
+            try:
+                self.embedder = TFIDFEmbedder.load(vocab_path)
+                logger.info(
+                    "[RETRIEVAL] Loaded persisted vocabulary: %d tokens from %s",
+                    self.embedder.vocab_size, vocab_path
+                )
+                return
+            except Exception as e:
+                logger.warning("[RETRIEVAL] Failed to load vocabulary file: %s — falling back to re-fit", e)
+
+        # Fallback: re-fit on all stored chunks (less accurate but functional)
+        logger.warning(
+            "[RETRIEVAL] No vocabulary file found at %s. "
+            "Run the indexing pipeline first to generate it.",
+            vocab_path
+        )
         db = SessionLocal()
         try:
-            # Get all chunk texts
-            chunks = db.query(DocChunk.chunk_text).all()
-            if not chunks:
-                logger.warning("No chunks in database, embedder not initialized")
+            chunk_texts = [row[0] for row in db.query(DocChunk.chunk_text).limit(5000).all()]
+            if not chunk_texts:
+                logger.warning("[RETRIEVAL] No chunks in database — embedder not initialized")
                 return
-            
-            chunk_texts = [chunk[0] for chunk in chunks]
-            logger.info(f"Initializing embedder with {len(chunk_texts)} chunks...")
-            
+            logger.info("[RETRIEVAL] Re-fitting embedder on %d chunks (vocabulary may differ from index time)", len(chunk_texts))
             self.embedder = TFIDFEmbedder()
             self.embedder.fit(chunk_texts)
-            
-            logger.info(f"Embedder ready: vocab_size={self.embedder.vocab_size}")
-        
         finally:
             db.close()
+
     
     def _ensure_embedder(self) -> None:
         """Ensure embedder is initialized."""
@@ -163,91 +182,129 @@ class RetrievalService:
         return dot_product / (norm_v1 * norm_v2)
     
     def retrieve(self, query: str, top_k: int = 5) -> List[RetrievalResult]:
-        """Retrieve top-K chunks for a query."""
+        """Retrieve top-K chunks using pgvector native cosine search.
+
+        Changes from the previous implementation:
+        - Uses pgvector <=> operator (cosine distance) directly in SQL
+          instead of loading all 27k chunks into Python memory.
+        - Adds source diversification: results are spread across at least
+          min(n_sources, 3) different PDFs so the LLM gets a broader
+          knowledge base (not just 5 chunks from the same document).
+        """
         start_time = time.time()
-        
-        # Check cache
+
+        # Cache check
         if self.cache_enabled and self.cache:
             cached = self.cache.get(query, top_k)
             if cached:
                 latency_ms = (time.time() - start_time) * 1000
                 self.latencies.append(latency_ms)
-                logger.info(f"Retrieved {len(cached)} cached chunks in {latency_ms:.2f}ms")
+                logger.info("[RETRIEVAL] Cache hit: %d chunks in %.1fms", len(cached), latency_ms)
                 return cached
-        
+
         self._ensure_embedder()
-        
         if not self.embedder:
-            logger.error("Embedder not available")
+            logger.error("[RETRIEVAL] Embedder not available")
             return []
-        
-        # Embed query
-        query_embedding = self.embedder.transform(query)
-        
-        # Search database
+
+        # Embed the query into the SAME vector space as the stored chunks
+        query_vec = self.embedder.transform(query)
+        # pgvector expects the vector as a string literal: '[0.1,0.2,...]'
+        vec_str = "[" + ",".join(f"{v:.6f}" for v in query_vec) + "]"
+
         db = SessionLocal()
         try:
-            # Query all chunks
-            all_chunks = db.query(DocChunk).filter(DocChunk.is_active == True).all()
-            
-            # Score and rank chunks
-            scored_chunks = []
-            for chunk in all_chunks:
-                # Cosine similarity
-                relevance_score = self._vector_distance(query_embedding, chunk.embedding)
-                
-                # Apply relevance boost
-                final_score = relevance_score * chunk.relevance_boost
-                
-                # Recency boost (more recent chunks score higher)
-                age_days = (datetime.utcnow() - chunk.indexed_at).days
-                recency_factor = 1.0 if age_days < 1 else (1.0 - 0.1 * min(age_days, 10))
-                final_score *= recency_factor
-                
-                # Popularity boost (frequently retrieved chunks score higher)
-                popularity_factor = 1.0 + 0.01 * min(chunk.retrieval_count, 100)
-                final_score *= popularity_factor
-                
-                scored_chunks.append((chunk, relevance_score, final_score))
-            
-            # Sort by final score (descending)
-            scored_chunks.sort(key=lambda x: x[2], reverse=True)
-            
-            # Get top-K
+            # ── Phase 1: Retrieve top (top_k * 6) candidates via pgvector ──
+            # Multiplying by 6 gives the diversity pass enough candidates to
+            # spread across multiple source files without losing quality.
+            candidate_limit = top_k * 6
+            sql = text("""
+                SELECT
+                    id, chunk_text, source_file, source_type,
+                    section_hierarchy, retrieval_count, relevance_boost,
+                    indexed_at,
+                    1 - (embedding <=> CAST(:vec AS vector)) AS cosine_similarity
+                FROM doc_chunks
+                WHERE is_active = true
+                ORDER BY embedding <=> CAST(:vec AS vector)
+                LIMIT :lim
+            """)
+            rows = db.execute(sql, {"vec": vec_str, "lim": candidate_limit}).fetchall()
+
+            if not rows:
+                logger.warning("[RETRIEVAL] pgvector returned 0 candidates for query")
+                return []
+
+            # ── Phase 2: Source diversification ──
+            # Greedily pick the best chunk per source file first,
+            # then fill remaining slots with the next-best overall.
+            seen_sources: Dict[str, int] = {}   # source_file -> count selected
+            max_per_source = max(1, top_k // 3)  # at most 1/3 of results from same doc
+            selected = []
+            remainder = []
+
+            for row in rows:
+                src = row.source_file
+                if seen_sources.get(src, 0) < max_per_source:
+                    selected.append(row)
+                    seen_sources[src] = seen_sources.get(src, 0) + 1
+                    if len(selected) >= top_k:
+                        break
+                else:
+                    remainder.append(row)
+
+            # Fill missing slots from remainder (different sources exhausted)
+            for row in remainder:
+                if len(selected) >= top_k:
+                    break
+                selected.append(row)
+
+            # ── Phase 3: Build results + update retrieval counts ──
             results = []
-            for chunk, relevance_score, final_score in scored_chunks[:top_k]:
-                result = RetrievalResult(
-                    chunk_id=chunk.id,
-                    text=chunk.chunk_text,
-                    source_file=chunk.source_file,
-                    source_type=chunk.source_type,
-                    section_hierarchy=chunk.section_hierarchy,
-                    score=final_score,
-                    relevance_score=relevance_score,
-                    retrieved_at=datetime.utcnow()
+            ids_to_update = []
+            for row in selected:
+                results.append(RetrievalResult(
+                    chunk_id=row.id,
+                    text=row.chunk_text,
+                    source_file=row.source_file,
+                    source_type=row.source_type,
+                    section_hierarchy=row.section_hierarchy,
+                    score=float(row.cosine_similarity),
+                    relevance_score=float(row.cosine_similarity),
+                    retrieved_at=datetime.utcnow(),
+                ))
+                ids_to_update.append(row.id)
+
+            if ids_to_update:
+                db.execute(
+                    text("""
+                        UPDATE doc_chunks
+                        SET retrieval_count = retrieval_count + 1,
+                            last_retrieved  = NOW()
+                        WHERE id = ANY(:ids)
+                    """),
+                    {"ids": ids_to_update},
                 )
-                results.append(result)
-                
-                # Update retrieval count
-                chunk.retrieval_count += 1
-                chunk.last_retrieved = datetime.utcnow()
-            
-            db.commit()
-            
-            # Cache results
+                db.commit()
+
+            # Cache the results
             if self.cache_enabled and self.cache:
                 self.cache.set(query, top_k, results)
-            
-            # Track latency
+
             latency_ms = (time.time() - start_time) * 1000
             self.latencies.append(latency_ms)
-            
-            logger.info(f"Retrieved {len(results)} chunks in {latency_ms:.2f}ms (cold)")
-            
+
+            sources_used = list(seen_sources.keys())
+            logger.info(
+                "[RETRIEVAL] %d chunks from %d sources in %.1fms: %s",
+                len(results), len(sources_used), latency_ms,
+                ", ".join(sources_used)
+            )
             return results
-        
+
         finally:
             db.close()
+
     
     def retrieve_by_source(self, source_file: str) -> List[DocChunk]:
         """Retrieve all active chunks from a specific source file."""

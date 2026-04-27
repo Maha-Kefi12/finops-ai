@@ -28,26 +28,61 @@ class TFIDFEmbedder:
         tokens = re.findall(r'[a-z0-9]+(?:[\-_][a-z0-9]+)*', text.lower())
         return [t for t in tokens if len(t) > 1]
 
+    # ── Fixed output dimension — MUST match the database schema vector(128) ──
+    MAX_FEATURES: int = 128
+
     def fit(self, documents: List[str]) -> "TFIDFEmbedder":
-        """Build vocabulary and IDF from a corpus of documents."""
+        """Build vocabulary and IDF from a corpus of documents.
+
+        Output dimension is ALWAYS exactly MAX_FEATURES (128) to match
+        the PostgreSQL vector(128) column:
+        - corpus > 128 unique tokens: keep top-128 by IDF.
+        - corpus < 128 unique tokens: pad with __pad_N__ sentinel tokens.
+        """
         self.doc_count = len(documents)
         doc_freq: Dict[str, int] = defaultdict(int)
 
-        all_tokens = set()
+        all_tokens: set = set()
         for doc in documents:
             tokens = set(self._tokenize(doc))
             for t in tokens:
                 doc_freq[t] += 1
             all_tokens.update(tokens)
 
-        # Build vocab — keep tokens appearing in at least 2 docs or if small corpus
-        min_df = 1 if self.doc_count < 50 else 2
-        sorted_tokens = sorted(t for t in all_tokens if doc_freq[t] >= min_df)
-        self.vocab = {t: i for i, t in enumerate(sorted_tokens)}
+        # Build candidate vocab — filter extreme frequencies
+        # min_df: exclude tokens appearing in < 2 docs (too rare / unique)
+        # max_df: exclude tokens appearing in > 95% of docs (stop words like 'the', 'and')
+        min_df = 2 if self.doc_count >= 50 else 1
+        max_df = int(0.95 * self.doc_count) or self.doc_count
+        candidate_tokens = [
+            t for t in all_tokens
+            if min_df <= doc_freq[t] <= max_df
+        ]
 
-        # IDF = log(N / df)
-        for token, idx in self.vocab.items():
-            self.idf[token] = math.log((self.doc_count + 1) / (doc_freq[token] + 1)) + 1
+        # Compute IDF scores (used as weights in transform())
+        idf_scores: Dict[str, float] = {}
+        for token in candidate_tokens:
+            idf_scores[token] = math.log((self.doc_count + 1) / (doc_freq[token] + 1)) + 1
+
+        # ── KEY FIX: Select top MAX_FEATURES by DOCUMENT FREQUENCY descending ──
+        # High doc_freq tokens appear in the MOST documents, so they will
+        # produce non-zero embeddings for the majority of chunks during
+        # transform(). Sorting by IDF (rarest first) caused all-zero vectors
+        # because those rare tokens appeared in almost no individual chunk.
+        top_tokens = sorted(candidate_tokens, key=lambda t: doc_freq[t], reverse=True)
+        top_tokens = top_tokens[:self.MAX_FEATURES]
+
+        # Pad with sentinel tokens if corpus vocabulary < MAX_FEATURES
+        if len(top_tokens) < self.MAX_FEATURES:
+            n_pad = self.MAX_FEATURES - len(top_tokens)
+            for i in range(n_pad):
+                pad_tok = f"__pad_{i}__"
+                top_tokens.append(pad_tok)
+                idf_scores[pad_tok] = 0.0  # Zero weight — no effect on similarity
+
+        # Final vocab — stable alphabetical ordering for reproducibility
+        self.vocab = {t: i for i, t in enumerate(sorted(top_tokens))}
+        self.idf = {t: idf_scores.get(t, 0.0) for t in self.vocab}
 
         self._fitted = True
         return self
@@ -79,6 +114,40 @@ class TFIDFEmbedder:
     @property
     def vocab_size(self) -> int:
         return len(self.vocab)
+
+    def save(self, path: str) -> None:
+        """Persist vocab and IDF weights to a JSON file.
+
+        Call this once after fit() so the retrieval service can reload
+        the exact same vocabulary without re-fitting on the whole corpus.
+        """
+        import json as _json
+        state = {
+            "vocab": self.vocab,
+            "idf": self.idf,
+            "doc_count": self.doc_count,
+            "max_features": self.MAX_FEATURES,
+        }
+        with open(path, "w", encoding="utf-8") as f:
+            _json.dump(state, f)
+
+    @classmethod
+    def load(cls, path: str) -> "TFIDFEmbedder":
+        """Reconstruct a fitted TFIDFEmbedder from a saved JSON file.
+
+        This is the correct way to initialize the retrieval-time embedder:
+        it uses the EXACT same vocabulary built at index time, so query
+        vectors are comparable to stored vectors.
+        """
+        import json as _json
+        with open(path, "r", encoding="utf-8") as f:
+            state = _json.load(f)
+        obj = cls()
+        obj.vocab = state["vocab"]
+        obj.idf = state["idf"]
+        obj.doc_count = state["doc_count"]
+        obj._fitted = True
+        return obj
 
 
 def architecture_to_text(arch: Dict[str, Any]) -> str:

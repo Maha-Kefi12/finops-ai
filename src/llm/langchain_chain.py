@@ -80,7 +80,7 @@ class OllamaFinOpsLLM(LLM):
                         "options": {
                             "temperature": self.temperature,
                             "num_predict": self.max_tokens,
-                            "num_ctx": 32768,
+                            "num_ctx": 131072,
                         },
                     },
                     timeout=self.timeout,
@@ -320,6 +320,50 @@ def _build_batch_kb(batch_services: List[Dict]) -> str:
     return "\n\n".join(lines) if lines else "(no KB available)"
 
 
+def _build_batch_rag(batch_services: List[Dict]) -> str:
+    """Retrieve targeted RAG context from pgvector for this batch's service types.
+
+    Queries the persistent doc_chunks table (populated once from /docs PDFs and MDs)
+    and returns the most relevant FinOps strategies for the services in this batch.
+    This grounds the LLM in real AWS documentation rather than generic knowledge.
+    """
+    try:
+        from src.rag.retrieval_service import retrieve
+
+        # Build a targeted query from the batch's service names and types
+        service_names = [svc.get("name", svc.get("id", "")) for svc in batch_services]
+        service_types = list({svc.get("type", "service") for svc in batch_services})
+
+        query = (
+            f"AWS FinOps cost optimization strategies for "
+            f"{', '.join(service_types)}. "
+            f"Resources: {', '.join(service_names[:5])}. "
+            f"Right-sizing, Savings Plans, Reserved Instances, Graviton migration, "
+            f"storage tiering, lifecycle policies, scheduling."
+        )
+
+        chunks = retrieve(query, top_k=4)
+        if not chunks:
+            logger.debug("[RAG] No chunks retrieved for batch query")
+            return "(no RAG context available)"
+
+        rag_parts = []
+        for c in chunks:
+            # Keep each chunk concise but informative
+            text = c.text[:800] if hasattr(c, 'text') else str(c.get('text', ''))[:800]
+            source = c.source_file if hasattr(c, 'source_file') else c.get('source_file', 'unknown')
+            rag_parts.append(f"[Source: {source}]\n{text}")
+
+        combined = "\n\n".join(rag_parts)
+        logger.info("[RAG] Injected %d chars from %d chunks into batch",
+                    len(combined), len(chunks))
+        return combined
+
+    except Exception as e:
+        logger.warning("[RAG] Failed to retrieve doc chunks for batch: %s", e)
+        return "(RAG retrieval unavailable)"
+
+
 def _build_batch_waste(batch_services: List[Dict], waste_signals_text: str) -> str:
     """Extract waste signals relevant to nodes in this batch."""
     if not waste_signals_text or waste_signals_text.strip() in ("(no pre-computed signals)", ""):
@@ -461,8 +505,9 @@ def run_finops_chain_batched(
         cost_relevant = sorted(services, key=lambda s: float(s.get("cost_monthly", 0) or 0), reverse=True)[:10]
         logger.info("[BATCH] Fallback: using top %d services by cost", len(cost_relevant))
 
-    # Small batches (5 services) complete fast on CPU Ollama (~60-90s each)
-    optimal_batch_size = 5
+    # High-performance batching: reduction in API roundtrips
+    # Qwen (local) is faster with 10-20 per batch; Gemini (cloud) scales to 50+
+    optimal_batch_size = 50 if USE_GEMINI else 15
     
     batches = [cost_relevant[i:i + optimal_batch_size] for i in range(0, len(cost_relevant), optimal_batch_size)]
 
@@ -473,9 +518,11 @@ def run_finops_chain_batched(
     batch_times = []
     failed_batches = 0
 
-    # Get LLM with generous timeout — 15 mins for the giant single batch
-    llm = _get_llm(max_tokens=12000, temperature=0.2)
-    llm.timeout = 300  # 5 minutes max per batch
+    # Get LLM with generous context budget
+    # Gemini Flash supports huge output; Qwen 2.5 handles context up to 128k
+    llm_tokens = 64000 if USE_GEMINI else 40000
+    llm = _get_llm(max_tokens=llm_tokens, temperature=0.2)
+    llm.timeout = 900  # 15 minutes max per batch for massive production batches
 
     # SEQUENTIAL execution — Ollama can only handle 1 inference at a time
     for batch_idx, batch_services in enumerate(batches):
@@ -495,6 +542,7 @@ def run_finops_chain_batched(
                 batch_waste = _build_batch_waste(batch_services, waste_signals_text)
                 batch_kb = _build_batch_kb(batch_services)
                 batch_deps = _build_batch_deps(batch_services, edges)
+                batch_rag = _build_batch_rag(batch_services)
 
                 user_prompt = FINOPS_BATCH_USER_PROMPT.format(
                     batch_inventory=inventory,
@@ -502,6 +550,7 @@ def run_finops_chain_batched(
                     batch_waste_signals=batch_waste,
                     batch_kb=batch_kb,
                     batch_deps=batch_deps,
+                    batch_rag=batch_rag,
                 )
                 prompt = _build_prompt_string(FINOPS_BATCH_SYSTEM_PROMPT, user_prompt)
 

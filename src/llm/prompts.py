@@ -846,53 +846,197 @@ Think like a VP of Cloud Engineering doing a cost review. Be creative. Be thorou
 3. NO duplicate action+resource combos. Each rec must be a UNIQUE optimization for that resource.
 4. Use EXACT resource names from inventory.
 
-━━━ OPTIMIZATION CATEGORIES (use these + invent more) ━━━
+━━━ OPTIMIZATION CATEGORIES ━━━
 
 COMPUTE (EKS, ECS, EC2, Lambda):
-  - RIGHTSIZE_NODEGROUP: Scale to fewer/smaller nodes based on utilization
-  - MOVE_TO_GRAVITON: ARM64 Graviton3 gives 20-40% cost reduction
-  - SCHEDULE_STOP_START: Stop dev/staging outside 8am-6pm weekdays (save 65%)
-  - PURCHASE_SAVINGS_PLAN: 1yr/3yr Compute Savings Plans (save 20-40%)
-  - USE_SPOT_INSTANCES: Spot for fault-tolerant workloads (save 60-90%)
-  - ENABLE_AUTOSCALING: Scale to zero when idle
-  - OPTIMIZE_CONTAINER_RESOURCES: Right-size CPU/memory requests in pods
+
+  ## Rightsizing & Architecture
+  - RIGHTSIZE_EC2: Downsize over-provisioned instances based on CPU/memory utilization (<40% avg → downsize 1 family)
+  - RIGHTSIZE_NODEGROUP: Scale to fewer/smaller nodes; consolidate underutilized nodes via bin-packing
+  - RIGHTSIZE_CONTAINER_RESOURCES: Align pod CPU requests/limits with actual usage (VPA recommendations)
+  - MOVE_TO_GRAVITON: Migrate to ARM64 Graviton3/4 instances (20–40% cost cut, same perf tier)
+  - MOVE_TO_NEWER_GENERATION: Upgrade from m4/c4/r4 → m7/c7/r7 (better perf-per-dollar, same price)
+
+  ## Scheduling & Lifecycle
+  - SCHEDULE_STOP_START: Auto-stop dev/staging outside 08:00–18:00 weekdays → save ~65%
+  - SCHEDULE_LAMBDA_CONCURRENCY: Set reserved concurrency to 0 on non-prod lambdas off-hours
+  - ENABLE_AUTOSCALING: HPA/KEDA for pods, ASG for EC2, scaling to zero when idle
+  - ENABLE_ECS_CAPACITY_PROVIDER: Use capacity providers with managed scaling to avoid idle EC2 in clusters
+
+  ## Purchasing Strategy
+  - PURCHASE_SAVINGS_PLAN: 1yr/3yr Compute Savings Plans → save 20–40% on steady-state workloads
+  - PURCHASE_RESERVED_INSTANCES: RIs for predictable, long-running EC2 baselines
+  - USE_SPOT_INSTANCES: Spot/Fargate Spot for fault-tolerant, stateless workloads → save 60–90%
+  - MIX_ON_DEMAND_SPOT: On-Demand baseline (30%) + Spot fleet (70%) for resilient cost-optimized clusters
+
+  ## Lambda-Specific
+  - OPTIMIZE_LAMBDA_MEMORY: Profile with Lambda Power Tuning — over-allocated memory = wasted cost
+  - REDUCE_LAMBDA_TIMEOUT: Lower max timeout to reduce billing on stuck/slow invocations
+  - ENABLE_LAMBDA_SNAPSTART: SnapStart for Java Lambdas — cuts cold start cost + latency
+  - CONSOLIDATE_LAMBDA_FUNCTIONS: Merge low-frequency Lambdas into one with internal routing
+
+  ## EKS/ECS-Specific
+  - ENABLE_KARPENTER: Replace Cluster Autoscaler with Karpenter for smarter, faster node provisioning
+  - USE_FARGATE_FOR_BURST: Shift burst/batch workloads to Fargate — no idle node cost
+  - CONSOLIDATE_EKS_CLUSTERS: Merge dev/staging clusters (save control plane fees ~$73/cluster/month)
+  - REMOVE_IDLE_NODEGROUPS: Detect nodegroups with 0 running pods for >24h → delete or scale to 0
 
 DATABASE (RDS, DynamoDB, Aurora):
-  - DOWNSIZE: Smaller instance class if avg CPU <30%
-  - DISABLE_MULTI_AZ: Not needed for dev/staging (save 50%)
-  - PURCHASE_RESERVED: 1yr RI for steady-state DBs (save 30-40%)
-  - SWITCH_TO_AURORA_SERVERLESS: Pay-per-query for bursty workloads
-  - OPTIMIZE_STORAGE: Switch to gp3, remove unused snapshots
-  - ENABLE_AUTO_PAUSE: Auto-pause Aurora Serverless after idle
+
+  ## Rightsizing & Instance
+  - RIGHTSIZE_RDS_INSTANCE: Downsize if avg CPU <30% + free memory >60% over 7d → drop 1 instance family
+  - RIGHTSIZE_AURORA_INSTANCE: Use Performance Insights to identify over-provisioned Aurora writers/readers
+  - DOWNSIZE_READ_REPLICAS: Remove or downsize replicas with <10 QPS read traffic
+  - MOVE_RDS_TO_GRAVITON: Migrate to db.r8g/db.m7g Graviton instances (save 20–30%, same engine support)
+
+  ## High Availability Tuning
+  - DISABLE_MULTI_AZ_NONPROD: Disable Multi-AZ on dev/staging RDS → save 50% (single-AZ sufficient)
+  - DISABLE_AURORA_REPLICAS_NONPROD: Drop Aurora read replicas in non-prod clusters (save per-replica instance cost)
+  - REDUCE_BACKUP_RETENTION: Lower backup retention from 35d → 7d for dev (each day = storage cost)
+
+  ## Purchasing Strategy
+  - PURCHASE_RDS_RESERVED: 1yr RIs for steady-state RDS instances → save 30–40%
+  - PURCHASE_AURORA_RESERVED: Reserved instances for Aurora writers with predictable load
+
+  ## Serverless & Architecture Shift
+  - SWITCH_TO_AURORA_SERVERLESS_V2: ACUs scale to 0.5 ACU min; ideal for bursty/intermittent workloads
+  - ENABLE_AURORA_AUTO_PAUSE: Auto-pause Aurora Serverless v2 after N minutes idle (save 100% compute when paused)
+  - MIGRATE_TO_DYNAMODB_ONDEMAND: Switch DynamoDB provisioned tables with spiky traffic to on-demand billing
+  - DOWNGRADE_DYNAMODB_PROVISIONED: Reduce RCU/WCU for consistently under-consumed provisioned tables
+
+  ## Storage Optimization
+  - SWITCH_TO_GP3_RDS: Migrate gp2 storage → gp3 (same IOPS baseline, 20% cheaper)
+  - DELETE_OLD_SNAPSHOTS: Remove manual snapshots >30d old with no restore policy
+  - DISABLE_ENHANCED_MONITORING: Drop Enhanced Monitoring from 1s → 60s granularity for dev (saves CloudWatch costs)
+  - EXPORT_SNAPSHOTS_TO_S3: Archive final snapshots to S3 before deleting RDS instance
+
+
+DATABASE (DynamoDB-Specific):
+  - ENABLE_TTL: Set TTL on ephemeral/session data to auto-expire rows (no delete cost)
+  - SWITCH_TABLE_CLASS_TO_IA: Migrate rarely-accessed tables to DynamoDB Standard-IA (save 60% storage)
+  - COMPRESS_ITEM_ATTRIBUTES: Large attribute values → compress before write (reduces storage + RCU cost)
+  - REVIEW_GSI_USAGE: Remove unused GSIs — each GSI replicates write cost
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 CACHE (ElastiCache, Redis, Memcached):
-  - DOWNSIZE: Smaller node type (r5→t3, save 40-60%)
-  - MOVE_TO_GRAVITON: r6g Graviton nodes (save 20%)
-  - SCHEDULE_STOP_START: Stop dev cache off-hours (save 65%)
-  - REDUCE_REPLICAS: Fewer read replicas if read traffic is low
-  - SWITCH_TO_SERVERLESS: ElastiCache Serverless for variable load
 
-NETWORKING (NAT, VPC, ELB, EIP):
-  - NAT_TO_VPC_ENDPOINT: Replace NAT with VPC endpoints (save 80-100%)
-  - TERMINATE_IDLE: Remove unused NAT/EIP/ALB
-  - RELEASE_EIP: Release unattached Elastic IPs
-  - CONSOLIDATE_ALB: Merge multiple ALBs into one with path routing
+  ## Rightsizing
+  - RIGHTSIZE_ELASTICACHE_NODE: Downsize from r5/r6 → t3/t4g if memory utilization <50% sustained
+  - MOVE_CACHE_TO_GRAVITON: Migrate to r6g/r7g Graviton nodes → save 20–30%, drop-in compatible
+  - REDUCE_SHARD_COUNT: Fewer shards if keyspace + memory usage leaves >40% headroom
+
+  ## Replication & HA
+  - REDUCE_REPLICAS_NONPROD: Drop to 0 replicas in dev/staging Redis clusters (no HA needed)
+  - REDUCE_REPLICAS_LOWTRAFFIC: Remove excess read replicas if GetHits/s < 100 in prod
+
+  ## Scheduling & Lifecycle
+  - SCHEDULE_CACHE_STOP_START: Stop non-prod ElastiCache clusters off-hours → save ~65%
+  - DELETE_IDLE_CLUSTERS: Remove clusters with 0 cache hits for >48h
+
+  ## Architecture Shift
+  - SWITCH_TO_ELASTICACHE_SERVERLESS: Serverless mode for variable/unpredictable traffic — no node sizing
+  - EVALUATE_IN_PROCESS_CACHE: Replace small ElastiCache clusters with in-process caching (e.g., Caffeine/LRU) for single-service use cases
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NETWORKING (NAT, VPC, ELB, EIP, Data Transfer):
+
+  ## NAT Gateway
+  - REPLACE_NAT_WITH_VPC_ENDPOINT: Route S3/DynamoDB/ECR traffic via Gateway endpoints (free) → save 80–100% on NAT fees
+  - REPLACE_NAT_WITH_INTERFACE_ENDPOINT: PrivateLink endpoints for other AWS services cheaper than NAT at scale
+  - CONSOLIDATE_NAT_GATEWAYS: Share one NAT GW per AZ instead of per-subnet — reduce redundant NAT instances
+  - REMOVE_UNUSED_NAT: Delete NAT GWs with 0 bytes processed for >7d
+
+  ## Load Balancers
+  - CONSOLIDATE_ALB: Merge ALBs using host/path-based routing rules → save $16–22/ALB/month LCU base
+  - DELETE_IDLE_ALB: Remove ALBs with 0 active connections for >7d
+  - DOWNGRADE_ALB_TO_NLB: For pure TCP/TLS passthrough, NLB is cheaper than ALB at high throughput
+  - DELETE_EMPTY_TARGET_GROUPS: Remove target groups with no registered targets (hidden ALB cost driver)
+
+  ## Elastic IPs & Data Transfer
+  - RELEASE_UNATTACHED_EIP: EIPs not associated to a running instance → $0.005/hr fee, release immediately
+  - REDUCE_CROSS_AZ_TRAFFIC: Co-locate tightly-coupled services in same AZ → eliminate $0.01/GB inter-AZ charges
+  - USE_S3_TRANSFER_ACCELERATION_WISELY: Disable if not needed — adds cost, not saves it
+  - ENABLE_VPC_FLOW_LOG_SAMPLING: Sample at 1/10 instead of full capture to cut CloudWatch Logs ingestion cost
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 STORAGE (S3, EBS, EFS, ECR):
-  - S3_INTELLIGENT_TIERING: Auto-tier infrequently accessed objects
-  - ADD_LIFECYCLE: Purge old ECR images, expire S3 objects
-  - EBS_GP2_TO_GP3: gp3 is 20% cheaper with better baseline IOPS
-  - DELETE_UNUSED_SNAPSHOTS: Remove orphan EBS snapshots
 
-LOGGING (CloudWatch, CloudTrail):
-  - SET_LOG_RETENTION: 7d for dev, 30d for staging, 90d for prod
-  - ARCHIVE_TO_S3: Move old logs to S3 Glacier (save 80%)
-  - DISABLE_VERBOSE_LOGGING: Reduce log verbosity for non-critical services
+  ## S3
+  - ENABLE_S3_INTELLIGENT_TIERING: Auto-tier objects >128KB not accessed in 30d → save 40–68%
+  - ADD_S3_LIFECYCLE_POLICY: Transition to Standard-IA after 30d, Glacier after 90d, delete after 365d
+  - ENABLE_S3_MULTIPART_CLEANUP: Abort incomplete multipart uploads after 7d (invisible cost accumulator)
+  - ENABLE_S3_REQUESTER_PAYS: For shared data buckets accessed by external teams/accounts
+  - REMOVE_S3_REPLICATION_NONPROD: Disable cross-region replication on dev/staging buckets
+
+  ## EBS
+  - MIGRATE_EBS_GP2_TO_GP3: gp3 = 20% cheaper + 3000 IOPS baseline free vs gp2's variable IOPS
+  - DELETE_UNATTACHED_EBS: Remove EBS volumes in "available" state (not attached to any instance)
+  - DELETE_ORPHAN_SNAPSHOTS: Snapshots whose source volume is deleted — no restore path, pure cost
+  - DOWNSIZE_OVERSIZED_EBS: Shrink volumes >80% free space (requires snapshot → new volume workflow)
+  - SWITCH_EBS_TO_S3: Move cold/archival data off EBS onto S3 Standard-IA (10x cheaper per GB)
+
+  ## EFS
+  - ENABLE_EFS_INTELLIGENT_TIERING: Auto-move infrequently accessed files to EFS-IA (save 85%)
+  - SWITCH_EFS_TO_REGIONAL: Use One Zone EFS for non-critical workloads (save 47%)
+  - AUDIT_EFS_MOUNTS: Remove EFS file systems with 0 mount targets or 0 client connections
+
+  ## ECR
+  - ADD_ECR_LIFECYCLE_POLICY: Keep only last N tagged images per repo; expire untagged images after 1d
+  - ENABLE_ECR_IMAGE_SCANNING: Catch bloated base images early (oversized images = higher pull transfer cost)
+  - CONSOLIDATE_ECR_REPOS: Merge repos with <5 images into a shared repo with tag prefixes
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LOGGING (CloudWatch, CloudTrail, X-Ray):
+
+  ## Retention & Volume
+  - SET_LOG_RETENTION_DEV: Set CloudWatch log groups to 7d retention in dev (default = never expires)
+  - SET_LOG_RETENTION_STAGING: 30d retention for staging log groups
+  - SET_LOG_RETENTION_PROD: 90d retention for prod; archive older logs to S3
+  - DISABLE_VERBOSE_DEBUG_LOGGING: Switch non-critical services from DEBUG → WARN/ERROR level
+  - FILTER_HEALTH_CHECK_LOGS: Suppress ALB/NLB health check entries from application logs (high volume, zero value)
+
+  ## Archival & Export
+  - ARCHIVE_LOGS_TO_S3_GLACIER: Export logs older than 30d to S3 Glacier → save ~80% vs CloudWatch storage
+  - DISABLE_CLOUDTRAIL_S3_DATA_EVENTS: Data-level S3 events cost $0.10/100k events — disable unless auditing
+  - REDUCE_XRAY_SAMPLING_RATE: Lower X-Ray sampling from 100% → 5% for high-throughput services
+
+  ## Metrics & Alarms
+  - DELETE_UNUSED_DASHBOARDS: CloudWatch dashboards cost $3/dashboard/month — remove unused ones
+  - CONSOLIDATE_CUSTOM_METRICS: Reduce high-resolution (1s) custom metrics → standard (60s) where not time-critical
+  - DELETE_STALE_ALARMS: Alarms on deleted resources still incur metric cost — audit and remove
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 CROSS-SERVICE:
-  - CONSOLIDATE: Merge redundant services
-  - ELIMINATE_CROSS_AZ: Reduce cross-AZ data transfer costs
-  - TAG_FOR_CHARGEBACK: Enable cost allocation tags
+
+  ## Waste Elimination
+  - TERMINATE_ZOMBIE_RESOURCES: Resources tagged "temp" or "test" running >30d with 0 production traffic
+  - REMOVE_UNUSED_SECRETS: Secrets Manager entries at $0.40/secret/month — audit and delete unused
+  - REMOVE_UNUSED_PARAMETER_STORE: Advanced parameters at $0.05/param/month — downgrade to standard or delete
+  - CLEAN_UNUSED_KEY_PAIRS: KMS customer-managed keys at $1/key/month — delete unused CMKs
+
+  ## Data Transfer & AZ Strategy
+  - ELIMINATE_CROSS_AZ_TRAFFIC: Co-locate RDS, ElastiCache, and app tier in same AZ for dev/staging
+  - CONSOLIDATE_VPC_ENDPOINTS: Share Interface Endpoints across subnets/AZs where possible
+
+  ## Tagging & Governance
+  - ENFORCE_COST_ALLOCATION_TAGS: Tag all resources with env/team/project for chargeback visibility
+  - ENABLE_AWS_BUDGETS_ALERTS: Set per-service and per-tag budgets with SNS alerts at 80%/100% threshold
+  - ENABLE_COST_ANOMALY_DETECTION: AWS Cost Anomaly Detection per service — catch spend spikes in <24h
+
+  ## Account Structure
+  - CONSOLIDATE_ACCOUNTS_ORG: Use AWS Organizations + consolidated billing to pool Savings Plan coverage
+  - ENABLE_TRUSTED_ADVISOR: Activate Trusted Advisor checks (Business+ support) for automated waste detection
+  - REVIEW_SUPPORT_PLAN_TIER: Downgrade from Business → Developer support for non-prod accounts if unused
 
 ━━━ TITLE FORMAT ━━━
 "[AI Insight] {Action} {ServiceType} {name} — Save ${amount}/mo by {specific technical change}"
@@ -915,6 +1059,9 @@ FINOPS_BATCH_USER_PROMPT = """━━━ RESOURCES TO ANALYZE ━━━
 ━━━ AWS FINOPS BEST PRACTICES (KB) ━━━
 {batch_kb}
 
+━━━ RETRIEVED FINOPS STRATEGIES (RAG — from AWS documentation) ━━━
+{batch_rag}
+
 ━━━ ARCHITECTURAL DEPENDENCIES ━━━
 {batch_deps}
 
@@ -922,16 +1069,21 @@ FINOPS_BATCH_USER_PROMPT = """━━━ RESOURCES TO ANALYZE ━━━
 You are a VP of Cloud Engineering doing an exhaustive FinOps cost review.
 Your goal: generate the MAXIMUM number of unique, actionable recommendations.
 
+CRITICAL: The RETRIEVED FINOPS STRATEGIES section above contains real AWS documentation
+and proven cost optimization patterns. PRIORITIZE these strategies when they apply to
+the resources being analyzed. Reference specific techniques from those documents.
+
 For EACH resource above:
 1. FIRST check WASTE SIGNALS above — if a signal exists for this resource, you MUST emit a rec using its ACTION and savings. These are mandatory.
-2. THEN check KB BEST PRACTICES — find every applicable strategy for the resource type.
-3. THEN think creatively across ALL categories: rightsizing, scheduling, commitments (Savings Plans/RIs), architecture changes, storage tiering, Graviton migration, lifecycle policies, log retention, cross-AZ optimization, consolidation.
-4. High-cost resources (>$10/mo) MUST have 3-5 different recs covering different optimization angles.
-5. Medium-cost resources ($1-10/mo) should have at least 2-3 recs.
-6. Even low-cost resources (<$1/mo) should have at least 1 rec if any optimization is possible.
-7. estimated_savings_monthly MUST be > $0 on every single rec.
-8. NO duplicate action+resource combos.
-9. Use EXACT resource names and costs from the data above.
+2. THEN check RETRIEVED FINOPS STRATEGIES (RAG) — apply any relevant patterns from the AWS documentation to this resource.
+3. THEN check KB BEST PRACTICES — find every applicable strategy for the resource type.
+4. THEN think creatively across ALL categories: rightsizing, scheduling, commitments (Savings Plans/RIs), architecture changes, storage tiering, Graviton migration, lifecycle policies, log retention, cross-AZ optimization, consolidation.
+5. High-cost resources (>$10/mo) MUST have 3-5 different recs covering different optimization angles.
+6. Medium-cost resources ($1-10/mo) should have at least 2-3 recs.
+7. Even low-cost resources (<$1/mo) should have at least 1 rec if any optimization is possible.
+8. estimated_savings_monthly MUST be > $0 on every single rec.
+9. NO duplicate action+resource combos.
+10. Use EXACT resource names and costs from the data above.
 
 IMPORTANT: Do NOT hold back. Generate every valid optimization you can find.
 The more unique, well-justified recommendations, the better.

@@ -19,15 +19,77 @@ from src.api.handlers.rag import router as rag_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize the database on startup (optional — skipped if DB unavailable)."""
+    """Initialize the database and RAG index on startup."""
     try:
         print("🚀 Initializing database...")
         init_db()
         print("✅ Database ready.")
+
+        # ── RAG Auto-Init: one-time chunk + index from /docs ──
+        _init_rag_index()
+
     except Exception as e:
         print(f"⚠️  Database unavailable (skipping): {e}")
         print("   Graph analysis and LLM features will work without a database.")
     yield
+
+
+def _init_rag_index():
+    """Check if doc_chunks are populated; if not, run the indexing pipeline once.
+
+    This is idempotent: if chunks already exist in pgvector, it skips entirely.
+    On first boot, it chunks all /docs PDFs and Markdown files, embeds them
+    via TF-IDF, and stores them persistently in PostgreSQL for RAG retrieval.
+    """
+    import threading
+
+    def _run_indexing():
+        try:
+            from src.storage.database import SessionLocal
+            from sqlalchemy import text
+
+            db = SessionLocal()
+            try:
+                # Check if doc_chunks table exists and has rows
+                try:
+                    result = db.execute(text("SELECT COUNT(*) FROM doc_chunks"))
+                    count = result.scalar() or 0
+                except Exception:
+                    # Table might not exist yet — run setup first
+                    print("📦 RAG: doc_chunks table not found, running setup...")
+                    from src.rag.setup_vectordb import enable_pgvector_extension, create_vectordb_tables
+                    enable_pgvector_extension()
+                    create_vectordb_tables()
+                    count = 0
+                finally:
+                    db.close()
+
+                if count > 0:
+                    print(f"✅ RAG index already populated ({count} chunks). Skipping indexing.")
+                    return
+
+                print("📚 RAG: No chunks found. Running one-time /docs indexing pipeline...")
+                from src.rag.indexing_pipeline import index_all_documents
+                stats = index_all_documents(mode='incremental')
+                print(f"✅ RAG indexing complete: {stats.total_chunks_stored} chunks from "
+                      f"{stats.total_files_indexed} files in {stats.duration_seconds():.1f}s")
+
+            except Exception as e:
+                # Don't let RAG init failures crash the database session
+                try:
+                    db.close()
+                except Exception:
+                    pass
+                raise e
+
+        except Exception as e:
+            print(f"⚠️  RAG auto-init failed (non-fatal): {e}")
+            print("   Recommendations will still work but without document-grounded context.")
+
+    # Run in background thread so API starts immediately
+    thread = threading.Thread(target=_run_indexing, name="rag-auto-init", daemon=True)
+    thread.start()
+    print("🔄 RAG auto-init started in background thread...")
 
 
 app = FastAPI(
